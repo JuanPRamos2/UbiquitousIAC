@@ -1,0 +1,79 @@
+    <?xml version="1.0" encoding="UTF-8"?>
+<library xmlns="https://example.com/library" generatedFrom="PostgreSQL">
+	<books>
+		<book id="1">
+			<isbn>9780307474728</isbn>
+			<title>Cien años de soledad</title>
+			<publicationYear>1967</publicationYear>
+			<price currency="USD">24.90</price>
+			<stock>12</stock>
+			<format>Tapa blanda</format>
+			<category>Literatura</category>
+			<authors>
+				<author>Gabriel García Márquez</author>
+			</authors>
+			<genres>
+				<genre>Realismo mágico</genre>
+				<genre>Novela</genre>
+			</genres>
+			<images>
+				<image alt="Portada de Cien años de soledad">https://images.example.com/cien-anos-de-soledad.jpg</image>
+			</images>
+			<concepts>
+				<concept name="Memoria">
+					<definition>La memoria colectiva de Macondo conserva el pasado familiar y social.</definition>
+				</concept>
+				<concept name="Identidad">
+					<definition>La identidad de los Buendía se transforma a través de generaciones.</definition>
+				</concept>
+			</concepts>
+		</book>
+		<book id="2">
+			<isbn>9780132350884</isbn>
+			<title>Clean Code</title>
+			<publicationYear>2008</publicationYear>
+			<price currency="USD">39.90</price>
+			<stock>8</stock>
+			<format>Tapa dura</format>
+			<category>Tecnología</category>
+			<authors>
+				<author>Robert C. Martin</author>
+			</authors>
+			<genres>
+				<genre>Programación</genre>
+			</genres>
+			<images>
+				<image alt="Portada de Clean Code">https://images.example.com/clean-code.jpg</image>
+			</images>
+			<concepts>
+				<concept name="Código limpio">
+					<definition>Código expresivo, simple y fácil de mantener por otros desarrolladores.</definition>
+				</concept>
+			</concepts>
+		</book>
+		<book id="3">
+			<isbn>9780062316097</isbn>
+			<title>Sapiens</title>
+			<publicationYear>2011</publicationYear>
+			<price currency="USD">29.90</price>
+			<stock>10</stock>
+			<format>Digital</format>
+			<category>Ciencias sociales</category>
+			<authors>
+				<author>Yuval Noah Harari</author>
+			</authors>
+			<genres>
+				<genre>Historia</genre>
+				<genre>Novela</genre>
+			</genres>
+			<images>
+				<image alt="Portada de Sapiens">https://images.example.com/sapiens.jpg</image>
+			</images>
+			<concepts>
+				<concept name="Civilización">
+					<definition>Organización humana basada en cooperación, mitos compartidos e instituciones.</definition>
+				</concept>
+			</concepts>
+		</book>
+	</books>
+</library>

@@ -1,0 +1,12 @@
+node_modules
+.git
+.github
+.env
+*.log
+dump.rdb
+data
+coverage
+.cursor
+*.md
+docs
+tests

@@ -1,0 +1,19 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <h1>Hola, <%= currentUser.full_name.split(' ')[0] %></h1>
+  <p class="lede">
+    <% if (currentUser.role === 'admin') { %>
+      Puedes administrar libros, catálogos y cuentas.
+    <% } else { %>
+      Puedes consultar el catálogo, buscar por ISBN o título y ver el detalle de cada libro.
+    <% } %>
+  </p>
+  <div class="stats">
+    <div class="stat"><h3>Libros</h3><p><%= stats.books %></p></div>
+    <div class="stat"><h3>Categorías</h3><p><%= stats.categories %></p></div>
+    <div class="stat"><h3>Autores</h3><p><%= stats.authors %></p></div>
+    <div class="stat"><h3>Usuarios</h3><p><%= stats.users %></p></div>
+  </div>
+  <p><a class="btn" href="<%= u('/books') %>">Ver libros</a></p>
+</section>
+<%- include('../partials/footer') %>

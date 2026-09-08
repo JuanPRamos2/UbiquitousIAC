@@ -1,0 +1,17 @@
+{
+  "java.project.sourcePaths": ["src"],
+  "java.project.outputPath": "bin",
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.jdt.ls.java.home": "/home/bold/Documents/IAC/cloud_models_classifier/.jdk/jdk-21.0.12+8",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "/home/bold/Documents/IAC/cloud_models_classifier/.jdk/jdk-21.0.12+8",
+      "default": true
+    }
+  ],
+  "files.exclude": {
+    "bin": true,
+    ".jdk": true
+  }
+}

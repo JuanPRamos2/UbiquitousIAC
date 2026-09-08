@@ -1,0 +1,26 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <h1>Administración de usuarios</h1>
+  <a class="btn" href="/">Volver al inicio</a>
+  <div class="book-list">
+    <% users.forEach((user) => { %>
+      <article class="book-item">
+        <h3><%= user.full_name %></h3>
+        <p><strong>Correo:</strong> <%= user.email %></p>
+        <p><strong>Rol actual:</strong> <%= user.role %></p>
+        <form action="/admin/users/<%= user.id %>/role" method="POST">
+          <label for="role-<%= user.id %>">Cambiar rol</label>
+          <select id="role-<%= user.id %>" name="role">
+            <option value="client" <%= user.role === 'client' ? 'selected' : '' %>>Cliente</option>
+            <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Administrador</option>
+          </select>
+          <button class="btn" type="submit">Guardar rol</button>
+        </form>
+        <form action="/admin/users/<%= user.id %>/delete" method="POST">
+          <button class="danger-btn" type="submit">Eliminar usuario</button>
+        </form>
+      </article>
+    <% }) %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

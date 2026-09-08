@@ -1,0 +1,5 @@
+# Ubiquitous no permite "Options" en .htaccess (Apache userdir).
+# Esa directiva provoca HTTP 500 en toda esta carpeta y las subcarpetas.
+# Apache ya sirve index.html por defecto.
+# No bloquear .env aquí: Require/Deny también puede dar 500.
+# El monolito Node no se publica; ver library/.htaccess.

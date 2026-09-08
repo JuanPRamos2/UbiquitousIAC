@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plataforma de Bienestar Laboral — Nexum Servicios Corporativos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.4.8/highcharts.min.js"></script>
+<style>
+:root{
+  --ink:#16202E;
+  --ink-soft:#5A6675;
+  --paper:#F6F7F9;
+  --surface:#FFFFFF;
+  --navy:#1F3864;
+  --navy-soft:#E8EDF5;
+  --teal:#0F6B62;
+  --teal-soft:#E4F0EE;
+  --amber:#8A5A00;
+  --amber-soft:#FBF0DC;
+  --line:#DCE1E8;
+  --line-strong:#C3CBD6;
+  --serif:"Source Serif 4",Georgia,serif;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);
+  background:var(--paper);
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.2;letter-spacing:-.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--navy)}
+
+/* ---------- LOGIN ---------- */
+#login{
+  min-height:100vh;display:grid;place-items:center;padding:24px;
+  background:linear-gradient(180deg,#FFF 0%,var(--paper) 100%);
+}
+.login-card{
+  width:100%;max-width:920px;background:var(--surface);
+  border:1px solid var(--line);border-radius:4px;
+  display:grid;grid-template-columns:1.1fr .9fr;overflow:hidden;
+}
+.login-brand{
+  background:var(--navy);color:#fff;padding:48px 44px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.login-brand h1{font-size:31px;color:#fff;margin-bottom:16px}
+.login-brand p{font-size:14.5px;color:#C5D2E6;max-width:34ch;line-height:1.65}
+.brand-mark{
+  font-family:var(--serif);font-size:13px;color:#9FB4D4;
+  border-bottom:1px solid #35507E;padding-bottom:14px;margin-bottom:34px;
+}
+.brand-foot{font-size:12.5px;color:#8FA5C7;margin-top:40px;line-height:1.6}
+.login-form{padding:48px 44px}
+.login-form h2{font-size:21px;margin-bottom:6px}
+.login-form .sub{font-size:14px;color:var(--ink-soft);margin-bottom:28px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.field input,.field select{
+  width:100%;padding:10px 12px;border:1px solid var(--line-strong);
+  border-radius:3px;background:#fff;font-size:14.5px;
+}
+.field input:focus,.field select:focus{outline:2px solid var(--navy);outline-offset:-1px;border-color:var(--navy)}
+.btn{
+  border:1px solid transparent;border-radius:3px;padding:10px 18px;
+  font-size:14.5px;font-weight:500;cursor:pointer;background:var(--navy);color:#fff;
+}
+.btn:hover{background:#16294A}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.btn-full{width:100%;padding:11px}
+.btn-ghost{background:transparent;color:var(--navy);border-color:var(--line-strong)}
+.btn-ghost:hover{background:var(--navy-soft)}
+.btn-teal{background:var(--teal)}
+.btn-teal:hover{background:#0B534C}
+.btn-sm{padding:6px 12px;font-size:13px}
+.demo-hint{
+  margin-top:24px;padding:14px 16px;background:var(--paper);
+  border:1px solid var(--line);border-radius:3px;font-size:12.5px;color:var(--ink-soft);
+}
+.demo-hint strong{color:var(--ink);font-weight:600}
+
+/* ---------- APP SHELL ---------- */
+#app{display:none;min-height:100vh;grid-template-columns:250px 1fr}
+#app.on{display:grid}
+.side{background:var(--navy);color:#fff;padding:22px 0;display:flex;flex-direction:column}
+.side-brand{padding:0 22px 20px;border-bottom:1px solid #35507E;margin-bottom:18px}
+.side-brand .t{font-family:var(--serif);font-size:16.5px;font-weight:600;line-height:1.25}
+.side-brand .s{font-size:11.5px;color:#9FB4D4;margin-top:5px}
+.side nav{flex:1;padding:0 12px}
+.side nav button{
+  display:block;width:100%;text-align:left;background:none;border:none;
+  color:#C5D2E6;padding:9px 12px;border-radius:3px;cursor:pointer;font-size:14px;margin-bottom:2px;
+}
+.side nav button:hover{background:#2A4675;color:#fff}
+.side nav button.sel{background:#fff;color:var(--navy);font-weight:600}
+.side-user{padding:16px 22px 0;border-top:1px solid #35507E;margin-top:18px}
+.side-user .n{font-size:13.5px;font-weight:500}
+.side-user .r{font-size:11.5px;color:#9FB4D4;margin:3px 0 10px}
+
+.main{padding:34px 40px 60px;max-width:1180px}
+.page-head{margin-bottom:26px}
+.page-head h1{font-size:26px;margin-bottom:5px}
+.page-head p{color:var(--ink-soft);font-size:14.5px;max-width:70ch}
+
+/* ---------- CARDS / TABLES ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px 24px;margin-bottom:18px}
+.card > h2{font-size:17px;margin-bottom:4px}
+.card > .card-sub{font-size:13.5px;color:var(--ink-soft);margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{
+  text-align:left;font-weight:600;font-size:12.5px;color:var(--ink-soft);
+  padding:8px 12px;border-bottom:1px solid var(--line-strong);
+}
+td{padding:11px 12px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+.mono{font-variant-numeric:tabular-nums;font-size:13.5px}
+
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:500}
+.tag-ok{background:var(--teal-soft);color:var(--teal)}
+.tag-warn{background:var(--amber-soft);color:var(--amber)}
+.tag-off{background:#EEF0F3;color:var(--ink-soft)}
+
+/* ---------- PRIVACY STRIP (signature element) ---------- */
+.privacy{
+  border-left:3px solid var(--teal);background:var(--teal-soft);
+  padding:14px 18px;border-radius:0 3px 3px 0;margin-bottom:18px;
+}
+.privacy.blocked{border-left-color:var(--amber);background:var(--amber-soft)}
+.privacy .h{font-weight:600;font-size:14px;margin-bottom:3px}
+.privacy .b{font-size:13.5px;color:#42505F;max-width:72ch}
+
+.suppressed{
+  border:1px dashed var(--line-strong);border-radius:3px;
+  padding:34px 24px;text-align:center;background:repeating-linear-gradient(
+    45deg,#FCFCFD,#FCFCFD 8px,#F5F6F8 8px,#F5F6F8 16px);
+}
+.suppressed .big{font-family:var(--serif);font-size:19px;margin-bottom:6px}
+.suppressed .small{font-size:13.5px;color:var(--ink-soft);max-width:48ch;margin:0 auto}
+
+/* metric */
+.metric{padding:16px 0}
+.metric .v{font-family:var(--serif);font-size:38px;font-weight:600;line-height:1}
+.metric .l{font-size:13px;color:var(--ink-soft);margin-top:5px}
+.metric .v.amber{color:var(--amber)}
+.metric .v.teal{color:var(--teal)}
+
+/* bars */
+.bar-row{margin-bottom:14px}
+.bar-row .lab{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:5px}
+.bar-row .lab .n{font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.bar{height:7px;background:#EDEFF3;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--navy);border-radius:4px}
+
+/* survey */
+.q{padding:18px 0;border-bottom:1px solid var(--line)}
+.q:last-child{border-bottom:none}
+.q .qt{font-size:15px;margin-bottom:11px}
+.q .qd{font-size:12.5px;color:var(--ink-soft);margin-bottom:11px}
+.scale{display:flex;gap:8px;flex-wrap:wrap}
+.scale label{
+  flex:1;min-width:64px;text-align:center;border:1px solid var(--line-strong);
+  border-radius:3px;padding:9px 4px;cursor:pointer;font-size:13px;background:#fff;
+}
+.scale input{position:absolute;opacity:0;width:0;height:0}
+.scale input:checked + span{font-weight:600}
+.scale label:has(input:checked){background:var(--navy);color:#fff;border-color:var(--navy)}
+.scale label:focus-within{outline:2px solid var(--navy);outline-offset:1px}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.toolbar select,.toolbar input{padding:8px 11px;border:1px solid var(--line-strong);border-radius:3px;font-size:14px;background:#fff}
+.right{margin-left:auto}
+.note{font-size:12.5px;color:var(--ink-soft);margin-top:12px;line-height:1.6}
+
+.toast{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(90px);
+  background:var(--ink);color:#fff;padding:13px 22px;border-radius:3px;font-size:14px;
+  opacity:0;transition:transform .28s ease,opacity .28s ease;z-index:50;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+@media (max-width:860px){
+  .login-card{grid-template-columns:1fr}
+  .login-brand{padding:32px 28px}
+  .login-form{padding:32px 28px}
+  #app.on{grid-template-columns:1fr}
+  .side{position:sticky;top:0;z-index:10;padding:14px 0}
+  .side nav{display:flex;overflow-x:auto;gap:4px}
+  .side nav button{white-space:nowrap;width:auto}
+  .side-user,.side-brand{padding-bottom:12px}
+  .main{padding:22px 18px 48px}
+}
+/* ---------- SITIO PÚBLICO ---------- */
+#publico{display:none}
+#publico.on{display:block}
+.pub-nav{
+  position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);
+  backdrop-filter:saturate(180%) blur(8px);border-bottom:1px solid var(--line);
+}
+.pub-nav .wrap{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:18px}
+.pub-nav .logo{font-family:var(--serif);font-weight:600;font-size:16px;color:var(--navy)}
+.pub-nav .logo span{display:block;font-family:var(--sans);font-size:11px;color:var(--ink-soft);font-weight:400}
+.pub-nav .links{margin-left:auto;display:flex;gap:6px;align-items:center}
+.pub-nav .links a{padding:8px 12px;font-size:14px;color:var(--ink-soft);text-decoration:none;border-radius:3px}
+.pub-nav .links a:hover{color:var(--ink);background:var(--paper)}
+.hero{max-width:1080px;margin:0 auto;padding:70px 24px 54px;display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+.hero-copy .eyebrow{font-size:13px;color:var(--teal);font-weight:600;margin-bottom:14px}
+.hero-copy h1{font-size:44px;line-height:1.08;margin-bottom:18px;letter-spacing:-.02em}
+.hero-copy p{font-size:16.5px;color:var(--ink-soft);max-width:52ch;line-height:1.6;margin-bottom:26px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn-lg{padding:13px 24px;font-size:15.5px}
+.hero-card{
+  background:var(--navy);border-radius:6px;padding:32px;color:#fff;
+}
+.hero-card .n{font-family:var(--serif);font-size:52px;font-weight:600;line-height:1}
+.hero-card .n2{font-family:var(--serif);font-size:30px;font-weight:600;line-height:1;color:#fff}
+.hero-card .l{font-size:14px;color:#C5D2E6;margin:6px 0 26px}
+.hero-card .l:last-child{margin-bottom:0}
+.hero-card hr{border:none;border-top:1px solid #35507E;margin:22px 0}
+.pub-section{max-width:1080px;margin:0 auto;padding:54px 24px;border-top:1px solid var(--line)}
+.pub-section h2{font-size:28px;margin-bottom:8px}
+.pub-section .lead{font-size:16px;color:var(--ink-soft);max-width:62ch;margin-bottom:34px}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:26px}
+.feat .item{padding-top:18px;border-top:2px solid var(--navy)}
+.feat .item h3{font-size:17px;margin-bottom:7px}
+.feat .item p{font-size:14px;color:var(--ink-soft);line-height:1.6}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;counter-reset:s}
+.steps .st{position:relative;padding:22px 20px;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.steps .st::before{
+  counter-increment:s;content:counter(s);font-family:var(--serif);font-size:15px;font-weight:700;
+  color:#fff;background:var(--teal);width:28px;height:28px;border-radius:50%;
+  display:grid;place-items:center;margin-bottom:14px;
+}
+.steps .st h3{font-size:15.5px;margin-bottom:6px}
+.steps .st p{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.pub-foot{background:var(--ink);color:#B7C0CC;padding:40px 24px;font-size:13.5px}
+.pub-foot .wrap{max-width:1080px;margin:0 auto;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.pub-foot strong{color:#fff;font-family:var(--serif);font-weight:600}
+.chart{width:100%;height:300px}
+.chart-sm{width:100%;height:240px}
+
+/* notificaciones */
+.notif{display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
+.notif:last-child{border-bottom:none}
+.notif .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);margin-top:7px;flex-shrink:0}
+.notif.read .dot{background:var(--line-strong)}
+.notif .body .t{font-size:14.5px;font-weight:500;margin-bottom:2px}
+.notif .body .m{font-size:13.5px;color:var(--ink-soft)}
+.notif .body .f{font-size:12px;color:var(--ink-soft);margin-top:4px}
+.bell{position:relative;display:inline-block}
+.bell .badge{position:absolute;top:-6px;right:-6px;background:var(--amber);color:#fff;font-size:10px;
+  font-weight:600;min-width:16px;height:16px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;padding:44px 20px 36px;gap:32px}
+  .hero-copy h1{font-size:34px}
+  .pub-nav .links a:not(.btn){display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ================= SITIO PÚBLICO ================= -->
+<div id="publico" class="on">
+  <header class="pub-nav">
+    <div class="wrap">
+      <div class="logo">Bienestar Laboral<span>Nexum Servicios Corporativos</span></div>
+      <nav class="links">
+        <a href="#como">Cómo funciona</a>
+        <a href="#privacidad">Privacidad</a>
+        <a href="#normativa">Normativa</a>
+        <a href="#" class="btn btn-sm" onclick="irLogin();return false">Iniciar sesión</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">Programa voluntario de prevención de burnout</div>
+      <h1>Tu bienestar, medido sin vigilarte.</h1>
+      <p>Una plataforma para identificar cargas de trabajo problemáticas por área y turno, sin que nadie pueda ver lo que respondiste de forma individual. Participar es voluntario y puedes retirarte cuando quieras.</p>
+      <div class="hero-cta">
+        <a href="#" class="btn btn-lg" onclick="irLogin();return false">Entrar a la plataforma</a>
+        <a href="#como" class="btn btn-ghost btn-lg">Ver cómo funciona</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="n">5</div>
+      <div class="l">respuestas mínimas por grupo antes de mostrar cualquier resultado</div>
+      <hr>
+      <div class="n2">Seudónimo</div>
+      <div class="l">Tu identidad y tus respuestas se guardan por separado</div>
+      <hr>
+      <div class="n2">100%</div>
+      <div class="l">de los accesos a tu información quedan registrados y los puedes consultar</div>
+    </div>
+  </section>
+
+  <section class="pub-section" id="como">
+    <h2>Cómo funciona</h2>
+    <p class="lead">Un recorrido corto y claro: consientes, respondes y los resultados solo se muestran de forma agregada.</p>
+    <div class="steps">
+      <div class="st"><h3>Das tu consentimiento</h3><p>Lees el aviso de privacidad y decides participar. Puedes revocarlo después sin dar explicaciones.</p></div>
+      <div class="st"><h3>Respondes la encuesta</h3><p>Tus respuestas se guardan bajo un seudónimo, nunca junto a tu nombre o número de empleado.</p></div>
+      <div class="st"><h3>Se agregan los datos</h3><p>El sistema calcula promedios por unidad, solo si el grupo tiene al menos cinco respuestas.</p></div>
+      <div class="st"><h3>Se actúa por área</h3><p>La organización interviene sobre áreas y turnos, no sobre personas identificadas.</p></div>
+    </div>
+  </section>
+
+  <section class="pub-section" id="privacidad">
+    <h2>Cómo protegemos tu privacidad</h2>
+    <p class="lead">Estas no son promesas del aviso de privacidad: son reglas construidas dentro del sistema.</p>
+    <div class="feat">
+      <div class="item"><h3>Seudonimización</h3><p>Tu identidad y tus respuestas viven en almacenes separados, unidos solo por un seudónimo de acceso restringido.</p></div>
+      <div class="item"><h3>Umbral mínimo de grupo</h3><p>Ningún resultado se muestra si el grupo tiene menos de cinco respuestas, para que no se pueda deducir quién dijo qué.</p></div>
+      <div class="item"><h3>Sin acceso individual para jefes</h3><p>Ningún mando con autoridad laboral puede llegar a tu dato individual, por diseño del sistema.</p></div>
+      <div class="item"><h3>Transparencia verificable</h3><p>Puedes consultar en cualquier momento quién ha accedido a información relacionada contigo.</p></div>
+    </div>
+  </section>
+
+  <section class="pub-section" id="normativa">
+    <h2>Marco normativo</h2>
+    <p class="lead">La plataforma se diseñó para cumplir la legislación mexicana vigente en materia laboral y de datos personales.</p>
+    <div class="feat">
+      <div class="item"><h3>NOM-035-STPS-2018</h3><p>Identificación y prevención de factores de riesgo psicosocial en el trabajo, con resultados consultables por el personal.</p></div>
+      <div class="item"><h3>LFPDPPP (2025)</h3><p>Consentimiento libre, específico e informado, revocable en cualquier momento mediante un mecanismo sencillo.</p></div>
+      <div class="item"><h3>Ley Federal del Trabajo</h3><p>La información nunca se usa como insumo de decisiones disciplinarias o de evaluación de desempeño.</p></div>
+    </div>
+  </section>
+
+  <footer class="pub-foot">
+    <div class="wrap">
+      <div><strong>Bienestar Laboral</strong> · Nexum Servicios Corporativos, S.A. de C.V.<br>Proyecto académico — Equipo 03</div>
+      <div>Monterrey, Nuevo León<br>Prototipo del primer parcial</div>
+    </div>
+  </footer>
+</div>
+
+<!-- ================= LOGIN ================= -->
+<section id="login" style="display:none">
+  <div class="login-card">
+    <div class="login-brand">
+      <div>
+        <div class="brand-mark">Nexum Servicios Corporativos</div>
+        <h1>Plataforma de Bienestar Laboral</h1>
+        <p>Tus respuestas se guardan bajo un seudónimo. Ni tu jefe directo ni Recursos Humanos pueden ver lo que contestaste de forma individual.</p>
+      </div>
+      <div class="brand-foot">
+        Cumple NOM-035-STPS-2018 y la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
+      </div>
+    </div>
+    <div class="login-form">
+      <div id="loginBox">
+      <h2>Iniciar sesión</h2>
+      <p class="sub">Usa tu correo institucional.</p>
+      <div class="field">
+        <label for="u">Correo</label>
+        <select id="u"></select>
+      </div>
+      <div class="field">
+        <label for="p">Contraseña</label>
+        <input id="p" type="password" value="demo123">
+      </div>
+      <button class="btn btn-full" onclick="entrar()">Entrar</button>
+      <p style="margin-top:14px;font-size:13.5px"><a href="#" onclick="mostrarRecuperar(true);return false">¿Olvidaste tu contraseña?</a></p>
+      <p style="margin-top:6px;font-size:13.5px"><a href="#" onclick="irPublico();return false">← Volver al inicio</a></p>
+      <div class="demo-hint">
+        <strong>Prototipo.</strong> Los siete perfiles usan la contraseña <strong>demo123</strong>.
+        Cambia la cuenta para ver cómo el menú y los datos disponibles cambian según el perfil.
+      </div>
+      </div><!-- /loginBox -->
+
+      <div id="recuperar" style="display:none">
+        <h2>Recuperar contraseña</h2>
+        <p class="sub">Te enviaremos un enlace para restablecerla a tu correo institucional.</p>
+        <div class="field">
+          <label for="rmail">Correo institucional</label>
+          <input id="rmail" type="email" placeholder="nombre@nexum.com.mx">
+        </div>
+        <button class="btn btn-full" onclick="enviarRecuperacion()">Enviar enlace</button>
+        <p style="margin-top:14px;font-size:13.5px"><a href="#" onclick="mostrarRecuperar(false);return false">← Volver a iniciar sesión</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <aside class="side">
+    <div class="side-brand">
+      <div class="t">Bienestar Laboral</div>
+      <div class="s">Nexum Servicios Corporativos</div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="side-user">
+      <div class="n" id="uName"></div>
+      <div class="r" id="uRole"></div>
+      <button class="btn btn-ghost btn-sm" style="color:#C5D2E6;border-color:#35507E" onclick="salir()">Cerrar sesión</button>
+    </div>
+  </aside>
+  <main class="main" id="view"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ DATOS (espejo de bienestar_nexum_postgres) ============ */
+const DB = {
+  parametros:{ k:5, version_consentimiento:'CONSENT-v3-2026-07-01' },
+  usuarios:[
+    {id:'USR-00001',nom:'Ana Pérez Gómez',correo:'ana.perez@nexum.com.mx',perfil:'COLAB',seud:'SEUD-2026-014892',unidad:'UO-CALLCENTER-TURNO-B'},
+    {id:'USR-00011',nom:'Lucía Hernández Martínez',correo:'lucia.hernandez@nexum.com.mx',perfil:'LIDER_TURNO',unidad:'UO-CALLCENTER-TURNO-B'},
+    {id:'USR-00003',nom:'Mariana Solís Cantú',correo:'mariana.solis@nexum.com.mx',perfil:'ESP_BIENESTAR'},
+    {id:'USR-00002',nom:'Carlos Ramírez López',correo:'carlos.ramirez@nexum.com.mx',perfil:'ADMIN_SISTEMA'},
+    {id:'USR-00027',nom:'Roberto García Vázquez',correo:'roberto.garcia@nexum.com.mx',perfil:'AUDITOR'},
+    {id:'USR-00004',nom:'Fernando Treviño Salazar',correo:'fernando.trevino@nexum.com.mx',perfil:'COMITE_NOM035'},
+    {id:'USR-00005',nom:'Patricia Villarreal Del Bosque',correo:'patricia.villarreal@nexum.com.mx',perfil:'DIRECCION_GRAL'},
+  ],
+  perfiles:{
+    COLAB:'Colaborador', LIDER_TURNO:'Líder de Turno',
+    ESP_BIENESTAR:'Especialista de Bienestar Laboral', ADMIN_SISTEMA:'Administrador del Sistema',
+    AUDITOR:'Auditor de Cumplimiento', COMITE_NOM035:'Comité NOM-035', DIRECCION_GRAL:'Dirección General'
+  },
+  unidades:[
+    {id:'UO-CALLCENTER-TURNO-A',nom:'Call Center — Turno A',padre:null,activa:true,plantilla:24},
+    {id:'UO-CALLCENTER-TURNO-B',nom:'Call Center — Turno B',padre:null,activa:true,plantilla:6},
+    {id:'UO-LOGISTICA-TURNO-A',nom:'Logística — Turno A',padre:null,activa:true,plantilla:3},
+  ],
+  instrumentos:[
+    {id:'INST-NOM035-GUIA3',nom:'NOM-035 Guía III',tipo:'NOM035',ver:2,vig:'2026-01-01',activo:true,reactivos:5},
+    {id:'INST-CLIMA-BREVE',nom:'Cuestionario Breve de Clima',tipo:'CLIMA',ver:1,vig:'2026-01-01',activo:true,reactivos:3},
+  ],
+  reactivos:[
+    {id:'R-01',texto:'Siento que mi carga de trabajo es manejable',dim:'Carga'},
+    {id:'R-02',texto:'Tengo claridad sobre mis responsabilidades',dim:'Claridad'},
+    {id:'R-03',texto:'Recibo retroalimentación constante',dim:'Retroalimentación'},
+    {id:'R-04',texto:'Mi jornada me permite descansar',dim:'Jornada'},
+    {id:'R-05',texto:'Me siento apoyado por mi equipo',dim:'Apoyo'},
+  ],
+  campanias:[
+    {id:'CAMP-2026-Q3-CALLCENTER',nom:'Campaña Q3 — Call Center',ini:'2026-08-01',fin:'2026-09-30',inst:'INST-NOM035-GUIA3',ver:2,activa:true},
+    {id:'CAMP-2026-Q3-LOGISTICA',nom:'Campaña Q3 — Logística',ini:'2026-08-01',fin:'2026-09-30',inst:'INST-CLIMA-BREVE',ver:1,activa:true},
+  ],
+  agregados:[
+    {camp:'CAMP-2026-Q3-CALLCENTER',unidad:'UO-CALLCENTER-TURNO-B',inst:'INST-NOM035-GUIA3',n:6,supera:true,k:5,prom:3.27,
+     dim:{Carga:2.83,Claridad:3.50,'Retroalimentación':3.67,Jornada:2.67,Apoyo:3.67},riesgo:'MEDIO'},
+    {camp:'CAMP-2026-Q3-LOGISTICA',unidad:'UO-LOGISTICA-TURNO-A',inst:'INST-CLIMA-BREVE',n:2,supera:false,k:5,prom:null,dim:null,riesgo:null},
+  ],
+  bitacora:[
+    {act:'USR-00027',perf:'Auditor de Cumplimiento',acc:'CONSULTA_HISTORIAL_CONSENTIMIENTO',rec:'SEUD-2026-014892',res:'EXITO',corr:'corr-8f2e1a3b-4c5d',ip:'10.20.4.18',f:'2026-08-14 18:05'},
+    {act:'USR-00011',perf:'Líder de Turno',acc:'CONSULTA_AGREGADO',rec:'UO-CALLCENTER-TURNO-B',res:'EXITO',corr:'corr-1a9b7c3e-22f0',ip:'10.20.7.44',f:'2026-08-15 10:41'},
+    {act:'USR-00011',perf:'Líder de Turno',acc:'CONSULTA_AGREGADO',rec:'UO-LOGISTICA-TURNO-A',res:'GRUPO_INSUFICIENTE',corr:'corr-1a9b7c3e-22f1',ip:'10.20.7.44',f:'2026-08-15 10:44'},
+    {act:'USR-00002',perf:'Administrador del Sistema',acc:'CAMBIO_UMBRAL_K',rec:'parametro_global.k',res:'EXITO',corr:'corr-99d4e2f1-7ab3',ip:'10.20.1.5',f:'2026-08-16 08:22'},
+    {act:'USR-00001',perf:'Colaborador',acc:'LOGIN_EXITOSO',rec:'—',res:'EXITO',corr:'corr-3b7f0c21-9de4',ip:'10.20.4.18',f:'2026-08-17 07:58'},
+  ],
+  consentimiento:{ estado:'ACEPTADO', version:'CONSENT-v3-2026-07-01', fecha:'2026-08-05 09:14',
+    historial:[
+      {v:'CONSENT-v3-2026-07-01',f:'2026-08-05 09:14',e:'ACEPTADO'},
+      {v:'CONSENT-v2-2026-05-10',f:'2026-05-12 11:03',e:'EXPIRADO'},
+    ]},
+  respondida:false,
+  notificaciones:{
+    COLAB:[
+      {t:'Nueva campaña disponible',m:'La encuesta Q3 de tu área ya está abierta. Cierra el 30 de septiembre.',f:'Hace 2 días',leida:false},
+      {t:'Tu consentimiento sigue vigente',m:'No necesitas hacer nada. Puedes revisarlo cuando quieras.',f:'Hace 1 semana',leida:true},
+    ],
+    LIDER_TURNO:[
+      {t:'Resultados disponibles',m:'Tu unidad Call Center Turno B ya alcanzó el umbral mínimo. Ya puedes ver el resultado agregado.',f:'Hace 3 horas',leida:false},
+      {t:'Grupo insuficiente',m:'La unidad Logística Turno A aún no alcanza 5 respuestas.',f:'Hace 1 día',leida:false},
+    ],
+    ESP_BIENESTAR:[
+      {t:'Campaña por cerrar',m:'La campaña Q3 — Logística cierra en 30 días con baja participación.',f:'Hace 5 horas',leida:false},
+    ],
+    ADMIN_SISTEMA:[
+      {t:'Cambio de umbral registrado',m:'El umbral k se modificó recientemente. Revisa la bitácora.',f:'Hace 6 horas',leida:false},
+    ],
+    AUDITOR:[
+      {t:'Consulta suprimida',m:'Se registró un intento de consulta con resultado GRUPO_INSUFICIENTE.',f:'Hace 1 día',leida:false},
+    ],
+    COMITE_NOM035:[
+      {t:'Unidad con riesgo medio',m:'Call Center Turno B presenta nivel de riesgo MEDIO en la campaña Q3.',f:'Hace 2 días',leida:false},
+    ],
+    DIRECCION_GRAL:[
+      {t:'Reporte trimestral listo',m:'El resumen de participación Q3 ya está disponible.',f:'Hace 1 día',leida:false},
+    ],
+  }
+};
+
+/* menú por perfil — refleja la matriz de permisos */
+const MENU = {
+  COLAB:['inicio','consentimiento','encuesta','misAccesos','notificaciones'],
+  LIDER_TURNO:['inicio','agregados','reportes','notificaciones'],
+  ESP_BIENESTAR:['inicio','agregados','reportes','instrumentos','unidades','campanias','notificaciones'],
+  ADMIN_SISTEMA:['inicio','usuarios','unidades','parametros','bitacora','notificaciones'],
+  AUDITOR:['inicio','bitacora','consentimientos','reportes','notificaciones'],
+  COMITE_NOM035:['inicio','agregados','reportes','bitacora','notificaciones'],
+  DIRECCION_GRAL:['inicio','agregados','reportes','notificaciones'],
+};
+const TITULOS = {
+  inicio:'Inicio', consentimiento:'Mi consentimiento', encuesta:'Responder encuesta',
+  misAccesos:'Quién vio mis datos', agregados:'Resultados por unidad', reportes:'Reportes',
+  instrumentos:'Instrumentos', unidades:'Unidades organizacionales', campanias:'Campañas',
+  usuarios:'Usuarios y perfiles', parametros:'Parámetros del sistema',
+  bitacora:'Bitácora de auditoría', consentimientos:'Evidencia de consentimiento',
+  notificaciones:'Notificaciones'
+};
+
+let SES=null, VISTA='inicio';
+
+/* ================= LOGIN ================= */
+const sel=document.getElementById('u');
+DB.usuarios.forEach(u=>{
+  const o=document.createElement('option');
+  o.value=u.id; o.textContent=`${u.correo} — ${DB.perfiles[u.perfil]}`;
+  sel.appendChild(o);
+});
+/* navegación público <-> login */
+function irLogin(){
+  document.getElementById('publico').classList.remove('on');
+  document.getElementById('login').style.display='grid';
+  mostrarRecuperar(false);
+  window.scrollTo(0,0);
+}
+function irPublico(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('publico').classList.add('on');
+  window.scrollTo(0,0);
+}
+function mostrarRecuperar(v){
+  document.getElementById('loginBox').style.display=v?'none':'block';
+  document.getElementById('recuperar').style.display=v?'block':'none';
+}
+function enviarRecuperacion(){
+  const m=document.getElementById('rmail').value.trim();
+  if(!m||!m.includes('@')){toast('Escribe un correo válido');return}
+  mostrarRecuperar(false);
+  toast('Si el correo existe, enviamos un enlace de recuperación');
+}
+
+function entrar(){
+  if(document.getElementById('p').value!=='demo123'){toast('Contraseña incorrecta. Usa demo123.');return}
+  SES=DB.usuarios.find(x=>x.id===sel.value);
+  VISTA='inicio';
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.add('on');
+  document.getElementById('uName').textContent=SES.nom;
+  document.getElementById('uRole').textContent=DB.perfiles[SES.perfil];
+  pintarNav(); render();
+}
+function salir(){
+  if(!confirm('¿Cerrar tu sesión?'))return;
+  SES=null;
+  document.getElementById('app').classList.remove('on');
+  irPublico();
+  toast('Sesión cerrada');
+}
+function noLeidas(){return (DB.notificaciones[SES.perfil]||[]).filter(x=>!x.leida).length}
+function pintarNav(){
+  const n=document.getElementById('nav'); n.innerHTML='';
+  MENU[SES.perfil].forEach(k=>{
+    const b=document.createElement('button');
+    if(k==='notificaciones'){
+      const nl=noLeidas();
+      b.innerHTML='Notificaciones'+(nl?` <span style="background:var(--amber);color:#fff;font-size:10px;font-weight:600;padding:1px 7px;border-radius:9px;margin-left:4px">${nl}</span>`:'');
+    }else{
+      b.textContent=TITULOS[k];
+    }
+    if(k===VISTA)b.className='sel';
+    b.onclick=()=>{VISTA=k;pintarNav();render()};
+    n.appendChild(b);
+  });
+}
+function toast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600);
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= RENDER ================= */
+function render(){document.getElementById('view').innerHTML=V[VISTA]()}
+const head=(t,s)=>`<div class="page-head"><h1>${t}</h1><p>${s}</p></div>`;
+
+const V={};
+
+V.inicio=()=>{
+  const p=SES.perfil;
+  if(p==='COLAB'){
+    const c=DB.consentimiento;
+    return head('Hola, '+SES.nom.split(' ')[0],'Tu participación es voluntaria y puedes retirarla cuando quieras.')+
+    `<div class="privacy"><div class="h">Tus respuestas están seudonimizadas</div>
+      <div class="b">Se guardan bajo el identificador <span class="mono">${c.estado==='ACEPTADO'?SES.seud:'—'}</span>, separado de tu expediente.
+      Tu líder de turno solo ve promedios de al menos ${DB.parametros.k} personas.</div></div>
+    <div class="grid2">
+      <div class="card"><h2>Consentimiento</h2><p class="card-sub">Versión ${c.version}</p>
+        <span class="tag ${c.estado==='ACEPTADO'?'tag-ok':'tag-off'}">${c.estado}</span>
+        <p class="note">Otorgado el ${c.fecha}.</p>
+        <p style="margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="VISTA='consentimiento';pintarNav();render()">Ver o cambiar</button></p></div>
+      <div class="card"><h2>Encuesta Q3</h2><p class="card-sub">NOM-035 Guía III · cierra 30 sep 2026</p>
+        ${DB.respondida
+          ? `<span class="tag tag-ok">Enviada</span><p class="note">Gracias por participar. Solo puedes responder una vez por campaña.</p>`
+          : `<span class="tag tag-warn">Pendiente</span><p class="note">Toma unos 4 minutos.</p>
+             <p style="margin-top:14px"><button class="btn btn-teal btn-sm" onclick="VISTA='encuesta';pintarNav();render()">Responder ahora</button></p>`}
+      </div>
+    </div>`;
+  }
+  if(p==='LIDER_TURNO'){
+    return head('Panel de turno','Resultados agregados de las unidades a tu cargo.')+
+    `<div class="privacy"><div class="h">Solo ves promedios de grupo</div>
+      <div class="b">No tienes acceso a respuestas individuales ni a la lista de quién participó. Los grupos con menos de ${DB.parametros.k} respuestas se suprimen.</div></div>
+    ${tarjetasMetricas([['1','Unidad a tu cargo'],['6','Respuestas recibidas'],['100%','Participación']])}
+    <div class="card"><h2>Resultados disponibles</h2><p class="card-sub">Campaña Q3 — Call Center</p>${tablaAgregados(['UO-CALLCENTER-TURNO-B'])}</div>`;
+  }
+  if(p==='ESP_BIENESTAR'){
+    return head('Panel de bienestar','Seguimiento de campañas e instrumentos.')+
+    tarjetasMetricas([['2','Campañas activas'],['8','Respuestas totales'],['1','Grupo suprimido']])+
+    `<div class="card"><h2>Campañas en curso</h2><p class="card-sub">Periodo julio–septiembre 2026</p>${tablaCampanias()}</div>`;
+  }
+  if(p==='ADMIN_SISTEMA'){
+    return head('Administración','Usuarios, catálogos y parámetros del sistema.')+
+    tarjetasMetricas([['7','Usuarios activos'],['7','Perfiles'],[String(DB.parametros.k),'Umbral k vigente']])+
+    `<div class="card"><h2>Actividad reciente</h2><p class="card-sub">Últimos eventos registrados</p>${tablaBitacora(DB.bitacora.slice(0,3))}</div>`;
+  }
+  if(p==='AUDITOR'){
+    return head('Panel de auditoría','Trazabilidad de accesos y evidencia de consentimiento.')+
+    `<div class="privacy"><div class="h">Acceso a metadatos, no a respuestas</div>
+      <div class="b">Puedes verificar quién consultó qué y cuándo, y la evidencia de consentimiento. El contenido de las encuestas no es accesible desde ningún perfil de auditoría.</div></div>
+    ${tarjetasMetricas([['5','Eventos registrados'],['1','Consulta suprimida'],['9','Consentimientos vigentes']])}
+    <div class="card"><h2>Eventos recientes</h2><p class="card-sub">Bitácora de auditoría</p>${tablaBitacora(DB.bitacora)}</div>`;
+  }
+  if(p==='COMITE_NOM035'){
+    return head('Comité NOM-035','Seguimiento institucional de factores de riesgo psicosocial.')+
+    `<div class="privacy"><div class="h">Información agregada institucional</div>
+      <div class="b">El comité revisa tendencias y el uso legítimo de la información. No accede a datos individuales, conforme a la decisión de diseño D-04.</div></div>
+    ${tarjetasMetricas([['3','Unidades evaluadas'],['1','Con riesgo medio'],['1','Sin datos suficientes']])}
+    <div class="card"><h2>Resultados por unidad</h2><p class="card-sub">Todas las campañas activas</p>${tablaAgregados()}</div>`;
+  }
+  return head('Panel de dirección','Indicadores institucionales del programa de bienestar.')+
+    tarjetasMetricas([['67%','Participación Q3'],['3.27','Índice de bienestar'],['38%','Rotación anual']])+
+    `<div class="card"><h2>Resultados por unidad</h2><p class="card-sub">Solo se muestran grupos que superan el umbral mínimo</p>${tablaAgregados()}</div>
+     <p class="note">Los indicadores no permiten identificar personas. Las unidades con menos de ${DB.parametros.k} respuestas no se despliegan.</p>`;
+};
+
+function tarjetasMetricas(arr){
+  return `<div class="grid2" style="margin-bottom:18px">`+arr.map(([v,l])=>
+    `<div class="card metric" style="margin:0"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('')+`</div>`;
+}
+
+/* ---- CONSENTIMIENTO (Colaborador) ---- */
+V.consentimiento=()=>{
+  const c=DB.consentimiento, act=c.estado==='ACEPTADO';
+  return head('Mi consentimiento','Decides tú, y puedes cambiarlo cuando quieras sin dar explicaciones.')+
+  `<div class="card">
+    <h2>Estado actual</h2><p class="card-sub">Versión ${c.version}</p>
+    <span class="tag ${act?'tag-ok':'tag-off'}">${c.estado}</span>
+    <p class="note">${act?`Otorgado el ${c.fecha}. Mientras esté vigente puedes responder las encuestas de la campaña.`
+      :'Sin consentimiento vigente no se te mostrarán encuestas. Tus respuestas anteriores no se borran, pero no se recolectan nuevas.'}</p>
+    <p style="margin-top:18px">
+      ${act?`<button class="btn btn-ghost" onclick="cambiarConsent(false)">Revocar consentimiento</button>`
+           :`<button class="btn btn-teal" onclick="cambiarConsent(true)">Otorgar consentimiento</button>`}
+    </p>
+  </div>
+  <div class="card"><h2>Historial</h2><p class="card-sub">Revocar no borra los registros anteriores</p>
+  <table><thead><tr><th>Versión</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>
+  ${c.historial.map(h=>`<tr><td class="mono">${h.v}</td><td class="mono">${h.f}</td><td><span class="tag ${h.e==='ACEPTADO'?'tag-ok':'tag-off'}">${h.e}</span></td></tr>`).join('')}
+  </tbody></table></div>`;
+};
+function cambiarConsent(dar){
+  const c=DB.consentimiento;
+  if(dar){ c.estado='ACEPTADO'; c.fecha='2026-08-30 12:00';
+    c.historial.unshift({v:c.version,f:c.fecha,e:'ACEPTADO'});
+    toast('Consentimiento otorgado');
+  }else{
+    if(!confirm('¿Revocar tu consentimiento? Dejarás de recibir encuestas. Tus respuestas anteriores no se eliminan.'))return;
+    c.estado='REVOCADO';
+    c.historial.unshift({v:c.version,f:'2026-08-30 12:00',e:'REVOCADO'});
+    toast('Consentimiento revocado');
+  }
+  render();
+}
+
+/* ---- ENCUESTA ---- */
+V.encuesta=()=>{
+  if(DB.consentimiento.estado!=='ACEPTADO')
+    return head('Responder encuesta','')+
+    `<div class="privacy blocked"><div class="h">Necesitas consentimiento vigente</div>
+    <div class="b">La encuesta no se muestra porque tu consentimiento está revocado. Puedes otorgarlo de nuevo cuando quieras.</div></div>
+    <button class="btn" onclick="VISTA='consentimiento';pintarNav();render()">Ir a mi consentimiento</button>`;
+  if(DB.respondida)
+    return head('Responder encuesta','')+
+    `<div class="privacy"><div class="h">Ya respondiste esta campaña</div>
+    <div class="b">Cada persona responde una sola vez por campaña. Tus respuestas se guardaron bajo tu seudónimo.</div></div>`;
+  return head('NOM-035 Guía III','Responde con honestidad. Nadie puede vincular estas respuestas contigo.')+
+  `<div class="privacy"><div class="h">Se guardará como ${SES.seud}</div>
+    <div class="b">Tu nombre y tu número de empleado no se envían junto con las respuestas.</div></div>
+  <div class="card"><form onsubmit="enviar(event)">
+  ${DB.reactivos.map((r,i)=>`
+    <div class="q"><div class="qt">${i+1}. ${esc(r.texto)}</div><div class="qd">Dimensión: ${r.dim}</div>
+      <div class="scale">
+      ${['Nunca','Casi nunca','A veces','Casi siempre','Siempre'].map((t,j)=>
+        `<label><input type="radio" name="${r.id}" value="${j+1}" required><span>${t}</span></label>`).join('')}
+      </div></div>`).join('')}
+  <p style="margin-top:20px"><button class="btn btn-teal">Enviar respuestas</button></p>
+  </form></div>`;
+};
+function enviar(e){
+  e.preventDefault(); DB.respondida=true;
+  DB.bitacora.unshift({act:SES.id,perf:'Colaborador',acc:'CREACION_RESPUESTA',rec:SES.seud,res:'EXITO',
+    corr:'corr-'+Math.random().toString(16).slice(2,10),ip:'10.20.4.18',f:'2026-08-30 12:04'});
+  toast('Respuestas enviadas'); VISTA='inicio'; pintarNav(); render();
+}
+
+/* ---- MIS ACCESOS (D-08) ---- */
+V.misAccesos=()=>head('Quién vio mis datos','Registro de cada consulta relacionada con tu información.')+
+  `<div class="privacy"><div class="h">Transparencia verificable</div>
+   <div class="b">Esta lista no es una promesa del aviso de privacidad: es la bitácora real del sistema.</div></div>
+  <div class="card">${tablaBitacora(DB.bitacora.filter(b=>b.rec===SES.seud))}</div>`;
+
+/* ---- AGREGADOS (elemento central) ---- */
+V.agregados=()=>{
+  const unis = SES.perfil==='LIDER_TURNO' ? [SES.unidad] : null;
+  // El desplegable solo lista campañas del ámbito del perfil
+  const camps = unis
+    ? DB.campanias.filter(c=>DB.agregados.some(a=>a.camp===c.id && unis.includes(a.unidad)))
+    : DB.campanias;
+  return head('Resultados por unidad','Un resultado solo se muestra si el grupo alcanza el umbral mínimo.')+
+  `<div class="toolbar">
+    <select id="fCamp" onchange="render()"><option value="">${camps.length>1?'Todas las campañas':'Campaña vigente'}</option>
+      ${camps.map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join('')}</select>
+    <span class="note right" style="margin:0">Umbral vigente: k = ${DB.parametros.k}</span>
+  </div>`+
+  (unis?[unis[0]]:DB.agregados.map(a=>a.unidad)).map(u=>{
+    const a=DB.agregados.find(x=>x.unidad===u); if(!a)return'';
+    const un=DB.unidades.find(x=>x.id===u);
+    if(!a.supera) return `<div class="card"><h2>${esc(un.nom)}</h2>
+      <p class="card-sub">${esc(DB.campanias.find(c=>c.id===a.camp).nom)}</p>
+      <div class="suppressed"><div class="big">Resultado suprimido</div>
+      <div class="small">Este grupo tiene ${a.n} respuestas y el umbral mínimo es ${a.k}.
+      Mostrar el promedio permitiría deducir respuestas individuales.</div></div>
+      <p class="note">La consulta quedó registrada en la bitácora con resultado <span class="mono">GRUPO_INSUFICIENTE</span>.</p></div>`;
+    setTimeout(()=>dibujarDimensiones('gdim-'+a.unidad,a.dim),30);
+    return `<div class="card"><h2>${esc(un.nom)}</h2>
+      <p class="card-sub">${esc(DB.campanias.find(c=>c.id===a.camp).nom)} · ${a.n} respuestas</p>
+      <div class="grid2" style="margin-bottom:20px">
+        <div class="metric" style="padding:0"><div class="v">${a.prom.toFixed(2)}</div><div class="l">Promedio general (escala 1–5)</div></div>
+        <div class="metric" style="padding:0"><div class="v ${a.riesgo==='MEDIO'?'amber':'teal'}">${a.riesgo}</div><div class="l">Nivel de riesgo del grupo</div></div>
+      </div>
+      <div id="gdim-${a.unidad}" class="chart"></div>
+      <p class="note">Promedios de ${a.n} personas. El sistema no expone respuestas individuales ni la lista de participantes.</p></div>`;
+  }).join('');
+};
+function dibujarDimensiones(id,dim){
+  if(typeof Highcharts==='undefined'||!document.getElementById(id))return;
+  Highcharts.chart(id,{credits:{enabled:false},title:{text:null},
+    chart:{type:'column',height:300,style:{fontFamily:'Inter,sans-serif'},backgroundColor:'transparent'},
+    xAxis:{categories:Object.keys(dim),lineColor:'#DCE1E8'},
+    yAxis:{min:0,max:5,title:{text:'Promedio (1–5)'},gridLineColor:'#EDEFF3'},
+    legend:{enabled:false},
+    series:[{name:'Promedio',data:Object.values(dim),color:'#1F3864',borderRadius:3}]});
+}
+
+function tablaAgregados(filtro){
+  const rows=DB.agregados.filter(a=>!filtro||filtro.includes(a.unidad));
+  return `<table><thead><tr><th>Unidad</th><th>Respuestas</th><th>Promedio</th><th>Estado</th></tr></thead><tbody>
+  ${rows.map(a=>{const u=DB.unidades.find(x=>x.id===a.unidad);
+    return `<tr><td>${esc(u.nom)}</td><td class="mono">${a.n}</td>
+    <td class="mono">${a.supera?a.prom.toFixed(2):'—'}</td>
+    <td>${a.supera?'<span class="tag tag-ok">Disponible</span>':'<span class="tag tag-warn">Suprimido · n &lt; '+a.k+'</span>'}</td></tr>`}).join('')}
+  </tbody></table>`;
+}
+
+/* ---- CATÁLOGO: INSTRUMENTOS ---- */
+V.instrumentos=()=>head('Instrumentos','Cuestionarios disponibles y sus versiones.')+
+  `<div class="toolbar"><input placeholder="Buscar instrumento"><button class="btn btn-sm right" onclick="toast('En el sistema final abre el formulario de alta')">Nuevo instrumento</button></div>
+  <div class="card"><table><thead><tr><th>Clave</th><th>Nombre</th><th>Tipo</th><th>Versión</th><th>Reactivos</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${DB.instrumentos.map(i=>`<tr><td class="mono">${i.id}</td><td>${esc(i.nom)}</td><td>${i.tipo}</td>
+   <td class="mono">v${i.ver}</td><td class="mono">${i.reactivos}</td>
+   <td><span class="tag ${i.activo?'tag-ok':'tag-off'}">${i.activo?'Activo':'Inactivo'}</span></td>
+   <td><button class="btn btn-ghost btn-sm" onclick="toast('Edición disponible en el sistema final')">Editar</button></td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="card"><h2>Reactivos de NOM-035 Guía III</h2><p class="card-sub">Versión 2, vigente desde enero 2026</p>
+  <table><thead><tr><th>Clave</th><th>Texto</th><th>Dimensión</th></tr></thead><tbody>
+  ${DB.reactivos.map(r=>`<tr><td class="mono">${r.id}</td><td>${esc(r.texto)}</td><td>${r.dim}</td></tr>`).join('')}
+  </tbody></table></div>`;
+
+/* ---- CATÁLOGO: UNIDADES ---- */
+V.unidades=()=>head('Unidades organizacionales','Áreas y turnos. El tamaño de plantilla alimenta la verificación del umbral.')+
+  `<div class="toolbar"><input placeholder="Buscar unidad"><button class="btn btn-sm right" onclick="toast('En el sistema final abre el formulario de alta')">Nueva unidad</button></div>
+  <div class="card"><table><thead><tr><th>Clave</th><th>Nombre</th><th>Plantilla</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${DB.unidades.map(u=>`<tr><td class="mono">${u.id}</td><td>${esc(u.nom)}</td><td class="mono">${u.plantilla}</td>
+   <td><span class="tag ${u.activa?'tag-ok':'tag-off'}">${u.activa?'Activa':'Inactiva'}</span></td>
+   <td><button class="btn btn-ghost btn-sm" onclick="toast('Edición disponible en el sistema final')">Editar</button></td></tr>`).join('')}
+  </tbody></table>
+  <p class="note">Una unidad con colaboradores activos no puede eliminarse, solo inactivarse.</p></div>`;
+
+V.campanias=()=>head('Campañas','Aplicaciones de un instrumento a una o varias unidades.')+
+  `<div class="toolbar"><button class="btn btn-sm right" onclick="toast('En el sistema final abre el formulario de alta')">Nueva campaña</button></div>
+  <div class="card">${tablaCampanias()}</div>`;
+function tablaCampanias(){
+  return `<table><thead><tr><th>Clave</th><th>Nombre</th><th>Instrumento</th><th>Periodo</th><th>Estado</th></tr></thead><tbody>
+  ${DB.campanias.map(c=>`<tr><td class="mono">${c.id}</td><td>${esc(c.nom)}</td>
+   <td class="mono">${c.inst} v${c.ver}</td><td class="mono">${c.ini} → ${c.fin}</td>
+   <td><span class="tag ${c.activa?'tag-ok':'tag-off'}">${c.activa?'Activa':'Cerrada'}</span></td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+/* ---- ADMIN: USUARIOS / PARÁMETROS ---- */
+V.usuarios=()=>head('Usuarios y perfiles','Un usuario tiene un perfil principal que define su menú y sus permisos.')+
+  `<div class="toolbar"><input placeholder="Buscar por nombre o correo"><button class="btn btn-sm right" onclick="toast('En el sistema final abre el formulario de alta')">Nuevo usuario</button></div>
+  <div class="card"><table><thead><tr><th>Clave</th><th>Nombre</th><th>Correo</th><th>Perfil</th><th></th></tr></thead><tbody>
+  ${DB.usuarios.map(u=>`<tr><td class="mono">${u.id}</td><td>${esc(u.nom)}</td><td class="mono">${u.correo}</td>
+   <td>${DB.perfiles[u.perfil]}</td>
+   <td><button class="btn btn-ghost btn-sm" onclick="toast('Cambio de perfil registrado en bitácora')">Cambiar perfil</button></td></tr>`).join('')}
+  </tbody></table><p class="note">Cada cambio de perfil se registra en la bitácora de auditoría.</p></div>`;
+
+V.parametros=()=>head('Parámetros del sistema','Configuración que afecta a toda la plataforma.')+
+  `<div class="privacy"><div class="h">El umbral k protege a los grupos pequeños</div>
+   <div class="b">Ningún resultado agregado se muestra si el grupo tiene menos de k respuestas. Bajarlo aumenta el riesgo de reidentificación.</div></div>
+  <div class="card"><h2>Umbral mínimo de grupo</h2><p class="card-sub">Clave <span class="mono">k</span> en parametro_global</p>
+  <div class="toolbar"><input id="kIn" type="number" min="2" max="20" value="${DB.parametros.k}" style="width:110px">
+  <button class="btn btn-sm" onclick="guardarK()">Guardar cambio</button></div>
+  <p class="note">Valor actual: ${DB.parametros.k}. Al guardar se registra un evento <span class="mono">CAMBIO_UMBRAL_K</span> en la bitácora.</p></div>
+  <div class="card"><h2>Versión activa del consentimiento</h2><p class="card-sub">Documento que firman los colaboradores</p>
+  <p class="mono">${DB.parametros.version_consentimiento}</p></div>`;
+function guardarK(){
+  const v=parseInt(document.getElementById('kIn').value,10);
+  if(isNaN(v)||v<2){toast('El umbral debe ser 2 o mayor');return}
+  DB.parametros.k=v; DB.agregados.forEach(a=>{a.k=v;a.supera=a.n>=v});
+  DB.bitacora.unshift({act:SES.id,perf:'Administrador del Sistema',acc:'CAMBIO_UMBRAL_K',
+    rec:'parametro_global.k',res:'EXITO',corr:'corr-'+Math.random().toString(16).slice(2,10),ip:'10.20.1.5',f:'2026-08-30 12:10'});
+  toast('Umbral actualizado a k = '+v); render();
+}
+
+/* ---- BITÁCORA ---- */
+V.bitacora=()=>head('Bitácora de auditoría','Cada acceso a información personal o agregada queda registrado.')+
+  `<div class="toolbar">
+    <select id="fAcc" onchange="render()"><option value="">Todas las acciones</option>
+      ${[...new Set(DB.bitacora.map(b=>b.acc))].map(a=>`<option>${a}</option>`).join('')}</select>
+    <input type="date" value="2026-08-01"><input type="date" value="2026-08-31">
+    <button class="btn btn-ghost btn-sm right" onclick="toast('Exportación disponible en el sistema final')">Exportar</button>
+  </div><div class="card">${tablaBitacora(DB.bitacora)}</div>`;
+
+/* El seudónimo solo se muestra a quien lo necesita: el Auditor (trazabilidad),
+   el Administrador (operación) y la propia persona. Para el resto se enmascara:
+   basta saber que hubo un acceso, no sobre qué seudónimo (refuerza D-01/D-04). */
+function verRecurso(b){
+  const esSeud = /^SEUD-/.test(b.rec);
+  if(!esSeud) return esc(b.rec);
+  const puede = ['AUDITOR','ADMIN_SISTEMA'].includes(SES.perfil) || b.rec===SES.seud;
+  return puede ? esc(b.rec) : '<span style="color:var(--ink-soft)">Seudónimo protegido</span>';
+}
+function tablaBitacora(rows){
+  if(!rows.length)return`<div class="suppressed"><div class="big">Sin registros</div>
+    <div class="small">Todavía no hay eventos que mostrar en este periodo.</div></div>`;
+  return `<table><thead><tr><th>Fecha</th><th>Actor</th><th>Perfil</th><th>Acción</th><th>Recurso</th><th>Resultado</th></tr></thead><tbody>
+  ${rows.map(b=>`<tr><td class="mono">${b.f}</td><td class="mono">${b.act}</td><td>${esc(b.perf)}</td>
+   <td class="mono">${b.acc}</td><td class="mono">${verRecurso(b)}</td>
+   <td><span class="tag ${b.res==='EXITO'?'tag-ok':b.res==='GRUPO_INSUFICIENTE'?'tag-warn':'tag-off'}">${b.res}</span></td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+/* ---- NOTIFICACIONES ---- */
+V.notificaciones=()=>{
+  const list=DB.notificaciones[SES.perfil]||[];
+  return head('Notificaciones','Avisos del sistema relacionados con tu perfil.')+
+  `<div class="toolbar"><span class="note" style="margin:0">${noLeidas()} sin leer</span>
+   ${noLeidas()?`<button class="btn btn-ghost btn-sm right" onclick="marcarLeidas()">Marcar todas como leídas</button>`:''}</div>
+  <div class="card">${
+    list.length? list.map(n=>`<div class="notif ${n.leida?'read':''}"><div class="dot"></div>
+      <div class="body"><div class="t">${esc(n.t)}</div><div class="m">${esc(n.m)}</div><div class="f">${n.f}</div></div></div>`).join('')
+    : `<div class="suppressed"><div class="big">Sin notificaciones</div><div class="small">Cuando haya algo que avisarte, aparecerá aquí.</div></div>`
+  }</div>`;
+};
+function marcarLeidas(){(DB.notificaciones[SES.perfil]||[]).forEach(n=>n.leida=true);toast('Notificaciones marcadas como leídas');pintarNav();render()}
+
+/* ---- REPORTES (con Highcharts) ---- */
+V.reportes=()=>{
+  setTimeout(dibujarGraficas,30);
+  return head('Reportes','Visualización de resultados agregados. Solo se grafican grupos que superan el umbral.')+
+  `<div class="toolbar">
+    <select><option>Campaña Q3 — Call Center</option><option>Todas las campañas</option></select>
+    <button class="btn btn-ghost btn-sm right" onclick="toast('Exportación a PDF disponible en el sistema final')">Exportar PDF</button>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>Bienestar por dimensión</h2><p class="card-sub">Call Center — Turno B · escala 1–5</p><div id="g1" class="chart"></div></div>
+    <div class="card"><h2>Participación por unidad</h2><p class="card-sub">Respuestas recibidas vs. umbral k=${DB.parametros.k}</p><div id="g2" class="chart"></div></div>
+  </div>
+  <div class="card"><h2>Tendencia de participación</h2><p class="card-sub">Últimas cuatro campañas trimestrales</p><div id="g3" class="chart-sm"></div></div>
+  <p class="note">Las gráficas se generan con Highcharts. La unidad Logística Turno A no aparece porque no alcanza el umbral mínimo.</p>`;
+};
+function dibujarGraficas(){
+  if(typeof Highcharts==='undefined')return;
+  const base={credits:{enabled:false},title:{text:null},
+    colors:['#1F3864','#0F6B62','#8A5A00'],
+    chart:{style:{fontFamily:'Inter,sans-serif'},backgroundColor:'transparent'}};
+  const a=DB.agregados.find(x=>x.supera);
+  if(document.getElementById('g1')&&a){
+    Highcharts.chart('g1',{...base,chart:{...base.chart,type:'column',height:300},
+      xAxis:{categories:Object.keys(a.dim),lineColor:'#DCE1E8'},
+      yAxis:{min:0,max:5,title:{text:null},gridLineColor:'#EDEFF3'},
+      legend:{enabled:false},
+      series:[{name:'Promedio',data:Object.values(a.dim),colorByPoint:true,borderRadius:3}]});
+  }
+  if(document.getElementById('g2')){
+    Highcharts.chart('g2',{...base,chart:{...base.chart,type:'bar',height:300},
+      xAxis:{categories:['Call Center A','Call Center B','Logística A'],lineColor:'#DCE1E8'},
+      yAxis:{min:0,title:{text:'Respuestas'},gridLineColor:'#EDEFF3',plotLines:[{value:DB.parametros.k,color:'#8A5A00',width:2,dashStyle:'Dash',label:{text:'umbral k='+DB.parametros.k,style:{color:'#8A5A00',fontSize:'11px'}}}]},
+      legend:{enabled:false},
+      series:[{name:'Respuestas',data:[0,6,2],borderRadius:3,
+        colors:['#C3CBD6','#0F6B62','#8A5A00'],colorByPoint:true}]});
+  }
+  if(document.getElementById('g3')){
+    Highcharts.chart('g3',{...base,chart:{...base.chart,type:'line',height:240},
+      xAxis:{categories:['Q4 2025','Q1 2026','Q2 2026','Q3 2026'],lineColor:'#DCE1E8'},
+      yAxis:{min:0,max:100,title:{text:'% participación'},gridLineColor:'#EDEFF3'},
+      legend:{enabled:false},
+      series:[{name:'Participación',data:[45,52,61,67],color:'#1F3864',marker:{radius:4}}]});
+  }
+}
+
+/* ---- AUDITOR: CONSENTIMIENTOS ---- */
+V.consentimientos=()=>head('Evidencia de consentimiento','Quién consintió, cuándo y bajo qué versión del aviso.')+
+  `<div class="privacy"><div class="h">Solo metadatos</div>
+   <div class="b">Se muestra la evidencia del otorgamiento, nunca el contenido de las respuestas asociadas al seudónimo.</div></div>
+  <div class="card"><table><thead><tr><th>Seudónimo</th><th>Versión</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>
+  ${[['SEUD-2026-014892','CONSENT-v3-2026-07-01','2026-08-05 09:14','ACEPTADO'],
+     ['SEUD-2026-009331','CONSENT-v3-2026-07-01','2026-08-05 10:02','ACEPTADO'],
+     ['SEUD-2026-009332','CONSENT-v3-2026-07-01','2026-08-06 08:47','ACEPTADO'],
+     ['SEUD-2026-009333','CONSENT-v3-2026-07-01','2026-08-06 14:33','ACEPTADO'],
+     ['SEUD-2026-009334','CONSENT-v3-2026-07-01','2026-08-07 11:20','ACEPTADO'],
+     ['SEUD-2026-009335','CONSENT-v3-2026-07-01','2026-08-07 16:05','ACEPTADO'],
+     ['SEUD-2026-002104','CONSENT-v2-2026-05-10','2026-08-04 07:55','ACEPTADO'],
+     ['SEUD-2026-002105','CONSENT-v3-2026-07-01','2026-08-08 12:10','ACEPTADO'],
+     ['SEUD-2026-002106','CONSENT-v3-2026-07-01','2026-08-08 13:45','REVOCADO']]
+   .map(r=>`<tr><td class="mono">${r[0]}</td><td class="mono">${r[1]}</td><td class="mono">${r[2]}</td>
+   <td><span class="tag ${r[3]==='ACEPTADO'?'tag-ok':'tag-off'}">${r[3]}</span></td></tr>`).join('')}
+  </tbody></table>
+  <p class="note">El registro revocado se conserva: revocar no elimina la evidencia histórica.</p></div>`;
+</script>
+</body>
+</html>

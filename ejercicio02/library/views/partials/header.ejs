@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> | Librería</title>
+    <link rel="stylesheet" href="<%= u('/styles.css') %>" />
+  </head>
+  <body>
+    <header class="topbar">
+      <nav class="nav container">
+        <div class="brand">
+          <a href="<%= u('/') %>">Librería Online</a>
+        </div>
+        <div class="nav-links">
+          <% if (currentUser) { %>
+            <a href="<%= u('/') %>">Inicio</a>
+            <a href="<%= u('/books') %>">Catálogo</a>
+            <% if (currentUser.role === 'admin') { %>
+              <a href="<%= u('/books/new') %>">Nuevo libro</a>
+              <a href="<%= u('/catalogs') %>">Catálogos</a>
+              <a href="<%= u('/admin/users') %>">Usuarios</a>
+            <% } %>
+            <a href="<%= u('/profile') %>">Perfil</a>
+            <form action="<%= u('/logout') %>" method="POST">
+              <button type="submit">Cerrar sesión</button>
+            </form>
+          <% } else { %>
+            <a href="<%= u('/login') %>">Iniciar sesión</a>
+            <a href="<%= u('/register') %>">Registro</a>
+          <% } %>
+        </div>
+      </nav>
+    </header>
+    <main class="container">
+      <% if (typeof notice !== 'undefined' && notice) { %>
+        <div class="notice"><%= notice %></div>
+      <% } %>
+      <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+        <div class="error"><%= errorMessage %></div>
+      <% } %>

@@ -1,0 +1,32 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <h1>Usuarios</h1>
+  <p class="lede">Cuentas de la librería. Solo una persona puede ser administradora.</p>
+  <table class="table">
+    <thead>
+      <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+      <% users.forEach((user) => { %>
+        <tr>
+          <td><%= user.full_name %></td>
+          <td><%= user.email %></td>
+          <td><%= user.role === 'admin' ? 'Administrador' : 'Lector' %></td>
+          <td>
+            <form class="inline-actions" action="<%= u('/admin/users/' + user.id + '/role') %>" method="POST">
+              <select name="role">
+                <option value="client" <%= user.role === 'client' ? 'selected' : '' %>>Lector</option>
+                <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Administrador</option>
+              </select>
+              <button class="btn" type="submit">Guardar</button>
+            </form>
+            <form action="<%= u('/admin/users/' + user.id + '/delete') %>" method="POST" onsubmit="return confirm('¿Eliminar esta cuenta?');">
+              <button class="danger-btn" type="submit">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+<%- include('../partials/footer') %>

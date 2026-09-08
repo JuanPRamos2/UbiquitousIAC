@@ -1,0 +1,11 @@
+/bin/
+/.jdk/
+*.tar.gz
+*.class
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/*.log
+sources.txt

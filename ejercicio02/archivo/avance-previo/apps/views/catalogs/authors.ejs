@@ -1,0 +1,3 @@
+<%- include('../partials/header') %>
+<section class="card"><h1>Autores</h1><form action="/catalogs/authors" method="POST"><input name="full_name" placeholder="Nuevo autor" required><button class="btn" type="submit">Agregar</button></form><% items.forEach((item) => { %><div class="inline-actions"><span><%= item.full_name %></span><form action="/catalogs/authors/<%= item.id %>/delete" method="POST"><button class="danger-btn" type="submit">Eliminar</button></form></div><% }) %><a class="btn" href="/">Volver al inicio</a></section>
+<%- include('../partials/footer') %>

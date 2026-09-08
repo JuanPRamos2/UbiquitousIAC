@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "GUI — CloudClassifierApp",
+      "request": "launch",
+      "mainClass": "CloudClassifierApp",
+      "projectName": "cloud_models_classifier"
+    },
+    {
+      "type": "java",
+      "name": "CLI — ejemplo IaaS",
+      "request": "launch",
+      "mainClass": "CloudClassifier",
+      "args": "máquinas virtuales almacenamiento redes",
+      "projectName": "cloud_models_classifier"
+    },
+    {
+      "type": "java",
+      "name": "Casos de prueba",
+      "request": "launch",
+      "mainClass": "cloudclassifier.TestRunner",
+      "projectName": "cloud_models_classifier"
+    }
+  ]
+}

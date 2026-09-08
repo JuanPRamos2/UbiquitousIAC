@@ -1,0 +1,32 @@
+{
+  "name": "library-monolith",
+  "version": "1.0.0",
+  "description": "Monolito MVC para librería en línea con PostgreSQL y renderizado del lado del servidor",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": [
+    "node",
+    "postgresql",
+    "mvc",
+    "monolith",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.1",
+    "ejs": "^3.1.1",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "method-override": "^3.0.0",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

@@ -1,0 +1,49 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <div class="toolbar">
+    <h1>Catálogo de libros</h1>
+    <% if (currentUser.role === 'admin') { %>
+      <a class="btn" href="<%= u('/books/new') %>">Nuevo libro</a>
+    <% } %>
+  </div>
+
+  <form class="search-form" action="<%= u('/books') %>" method="GET">
+    <div>
+      <label for="isbn">ISBN</label>
+      <input id="isbn" name="isbn" value="<%= isbn %>" placeholder="Buscar por ISBN" />
+    </div>
+    <div>
+      <label for="title">Título</label>
+      <input id="title" name="title" value="<%= titleQuery %>" placeholder="Buscar por título" />
+    </div>
+    <button class="btn" type="submit">Buscar</button>
+    <a class="btn secondary" href="<%= u('/books') %>">Limpiar</a>
+  </form>
+
+  <div class="book-list">
+    <% if (!books.length) { %>
+      <p>No hay libros que coincidan con la búsqueda.</p>
+    <% } %>
+    <% books.forEach((book) => { %>
+      <% const cover = (book.images || []).find((img) => img.is_cover) || (book.images || [])[0]; %>
+      <article class="book-item">
+        <img
+          src="<%= cover ? u('/uploads/' + cover.stored_name) : u('/placeholder-book.svg') %>"
+          alt="<%= (cover && cover.alt_text) || book.title %>"
+          onerror="this.onerror=null;this.src='<%= u('/placeholder-book.svg') %>';"
+        />
+        <h3><%= book.title %></h3>
+        <p><strong>ISBN:</strong> <%= book.isbn %></p>
+        <p><strong>Precio:</strong> $<%= Number(book.price).toFixed(2) %> · <strong>Stock:</strong> <%= book.stock %></p>
+        <p><%= (book.authors || []).map((a) => a.full_name).join(', ') || 'Sin autores' %></p>
+        <div class="inline-actions">
+          <a class="btn" href="<%= u('/books/' + book.id) %>">Ver</a>
+          <% if (currentUser.role === 'admin') { %>
+            <a class="btn" href="<%= u('/books/' + book.id + '/edit') %>">Editar</a>
+          <% } %>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

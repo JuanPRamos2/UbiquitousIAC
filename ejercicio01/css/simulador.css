@@ -1,0 +1,197 @@
+/* Estilos del clasificador. El cromado del sitio vive en style.css. */
+.runner {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin: 0.4rem 0 1.8rem;
+}
+
+.runner-head {
+  background: var(--forest-dark);
+  color: #fff;
+  padding: 1rem 1.2rem;
+}
+
+.runner-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  border: 0;
+  padding: 0;
+  color: #fff;
+}
+
+.runner-head p {
+  margin: 0.2rem 0 0;
+  color: #c9d4cc;
+  font-size: 0.9rem;
+}
+
+.runner-body { padding: 1.2rem; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field.full { grid-column: 1 / -1; }
+
+.field label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.field input,
+.field textarea {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.engine-row,
+.action-row,
+.example-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.9rem;
+}
+
+.chip-btn {
+  border: 1px solid var(--line);
+  background: var(--cream);
+  color: var(--forest-dark);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  font: inherit;
+}
+
+.chip-btn:hover {
+  border-color: var(--moss);
+  color: var(--forest);
+}
+
+.run-btn {
+  border: 0;
+  background: var(--forest);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1rem;
+  border-radius: 999px;
+  padding: 0.7rem 1.3rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.run-btn:hover { background: var(--forest-dark); }
+
+.clear-btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--forest-dark);
+  border-radius: 999px;
+  padding: 0.7rem 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  font: inherit;
+}
+
+.clear-btn:hover { border-color: var(--forest); }
+
+.error-box {
+  margin-top: 0.9rem;
+  background: #f4e8e4;
+  color: #6a3a32;
+  border: 1px solid #e2c8c0;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-weight: 600;
+}
+
+.result-panel {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.result-top {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.badge {
+  color: #fff;
+  border-radius: 14px;
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 64px;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.4rem 0;
+}
+
+.track {
+  height: 10px;
+  background: var(--paper);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.track > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+}
+
+.track.iaas > span { background: #4d6b8a; }
+.track.paas > span { background: var(--moss); }
+.track.saas > span { background: #8a6a4a; }
+.track.faas > span { background: #6b5a7a; }
+
+pre.explain,
+.explain {
+  white-space: pre-wrap;
+  background: var(--cream);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--sand);
+  border-radius: 12px;
+  padding: 0.95rem 1.05rem;
+  margin-top: 0.8rem;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  .form-grid,
+  .result-top { grid-template-columns: 1fr; }
+}

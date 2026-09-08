@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tarea 2a · Normalización 4FN</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../index.html"><span class="brand-mark">JR</span><span>UDEM<small>Tarea 2a</small></span></a>
+      <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false">Menú</button>
+      <nav id="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="../index.html">Inicio</a></li>
+          <li><a href="../ejercicios/index.html">Ejercicios guiados</a></li>
+          <li><a class="active" href="index.html">Tareas</a></li>
+          <li><a href="../proyecto_final/index.html">Proyecto final</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main id="contenido" class="wrap">
+    <header class="page-head">
+      <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="index.html">Tareas</a> / Tarea 2a</p>
+      <p class="kicker">Parcial 1 · Ejercicio guiado 02</p>
+      <h1>Tarea 2a: normalización hasta 4FN</h1>
+      <p class="meta">Juan Pablo Ramos Salazar · 610248 · Integración de Aplicaciones Computacionales</p>
+    </header>
+    <section class="section">
+      <h2>Cómo está armada la hoja</h2>
+      <p>El Excel es una sola hoja, de arriba hacia abajo, como en Bases de Datos Avanzadas: primero la tabla ancha y, debajo, cada forma normal con las tablas que salen de partir la anterior. Amarillo es llave primaria; verde es llave foránea. Los ejemplos son dos libros del seed: <em>Cloud Computing</em> y <em>Cien años de soledad</em>.</p>
+      <ul class="clean">
+        <li><strong>0FN (arriba):</strong> una fila por libro. Autores, géneros, imágenes y conceptos van en listas dentro de la misma celda.</li>
+        <li><strong>1FN (debajo):</strong> un valor por celda. El Cloud Computing se copia 8 veces (2 autores × 2 géneros × 2 conceptos). Ahí se ve el producto cartesiano.</li>
+        <li><strong>2FN:</strong> lo que depende solo del ISBN pasa a <code>LIBRO</code>. Lo demás sigue mezclado.</li>
+        <li><strong>3FN / BCNF:</strong> formato, categoría, autor, género, concepto e imagen se vuelven catálogos. El libro guarda foráneas.</li>
+        <li><strong>4FN (abajo del todo):</strong> un puente por cada hecho independiente: <code>book_authors</code>, <code>book_genres</code>, <code>book_images</code>, <code>book_concepts</code>. La definición, el capítulo y la página viven en el par libro–concepto.</li>
+      </ul>
+      <p><a class="btn" href="../ejercicio02/docs/NORMALIZATION_4FN.xlsx">Descargar NORMALIZATION_4FN.xlsx</a></p>
+    </section>
+    <section class="section">
+      <h2>Por qué no se dejan listas en books</h2>
+      <p>ISBN ↠ autor, ISBN ↠ género, ISBN ↠ imagen e ISBN ↠ concepto son dependencias multivaluadas independientes. Si se quedan en la misma tabla, cambiar un autor obliga a repetir todos los géneros y todos los conceptos. La definición de IaaS en el libro de Cloud Computing no es un atributo del concepto a solas: cambia de un libro a otro.</p>
+    </section>
+    <section class="section">
+      <h2>Diagrama</h2>
+      <figure>
+        <img class="shot" src="../ejercicio02/img/NORMALIZATION_PROCESS.png" alt="Diagrama de tablas 0FN, 1FN, 2FN, 3FN y 4FN">
+      </figure>
+    </section>
+    <p><a class="btn ghost" href="index.html">Volver a tareas</a> <a class="btn ghost" href="../ejercicio02/index.html">Ver ejercicio guiado 02</a></p>
+  </main>
+  <footer>
+    <div class="wrap"><strong>Tarea 2a</strong> · Juan Pablo Ramos Salazar · 610248<div class="foot-meta"><span>Última actualización: 1 de septiembre de 2026 · Versión 1.3</span></div></div>
+  </footer>
+  <script src="../js/site.js"></script>
+</body>
+</html>

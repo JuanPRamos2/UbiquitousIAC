@@ -1,0 +1,10 @@
+<%- include('../partials/header') %>
+<section class="card" style="max-width: 600px; margin: 3rem auto;">
+  <h1>Mi perfil</h1>
+  <p><strong>Nombre:</strong> <%= user.full_name %></p>
+  <p><strong>Correo:</strong> <%= user.email %></p>
+  <p><strong>Rol:</strong> <%= user.role %></p>
+  <p><strong>Registro:</strong> <%= new Date(user.created_at).toLocaleString('es-MX') %></p>
+  <a class="btn" href="/">Volver al inicio</a>
+</section>
+<%- include('../partials/footer') %>

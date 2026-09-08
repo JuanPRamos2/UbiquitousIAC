@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ejercicio guiado 03 · SOAP · Juan Pablo Ramos Salazar</title>
+  <meta name="description" content="Ejercicio guiado 03: servicio SOAP para clasificar conceptos del catálogo de la librería.">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark">JR</span>
+        <span>UDEM<small>Ejercicio guiado 03</small></span>
+      </a>
+      <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false">Menú</button>
+      <nav id="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="../index.html">Inicio</a></li>
+          <li><a class="active" href="../ejercicios/index.html">Ejercicios guiados</a></li>
+          <li><a href="../tareas/index.html">Tareas</a></li>
+          <li><a href="../proyecto_final/index.html">Proyecto final</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenido" class="wrap">
+    <header class="page-head">
+      <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="../ejercicios/index.html">Ejercicios guiados</a> / Parcial 2 / Ejercicio 03</p>
+      <p class="kicker">Universidad de Monterrey · SC3705 · Integración de Aplicaciones Computacionales</p>
+      <h1>Ejercicio guiado 03: servicio SOAP para clasificar el catálogo</h1>
+      <p class="lead">Servicio SOAP orientado a clasificar conceptos del catálogo mediante un contrato WSDL, solicitudes XML y respuestas estandarizadas.</p>
+      <p class="meta">Juan Pablo Ramos Salazar · 610248 · M/V 2:30–4:00 · 4 de septiembre de 2026 · Dr. Raúl Morales Salcedo</p>
+    </header>
+
+    <nav class="toc" aria-label="Contenido del reporte">
+      <h2>Reporte técnico</h2>
+      <ol>
+        <li><a href="#s1">Objetivo</a></li>
+        <li><a href="#s2">Arquitectura general</a></li>
+        <li><a href="#s3">Contrato WSDL y tipos XSD</a></li>
+        <li><a href="#s4">Operaciones SOAP</a></li>
+        <li><a href="#s5">Request, Response y Fault</a></li>
+        <li><a href="#s6">Aplicación de escritorio</a></li>
+        <li><a href="#s7">Interoperabilidad</a></li>
+        <li><a href="#s8">Pruebas</a></li>
+        <li><a href="#s9">Métricas SOAP vs REST</a></li>
+        <li><a href="#s10">Uso de IA</a></li>
+        <li><a href="#s11">Conclusiones</a></li>
+        <li><a href="#s12">Descargas</a></li>
+      </ol>
+      <p style="margin:0.9rem 0 0">
+        <a class="btn" href="wsdl/library-classifier.wsdl">Abrir WSDL</a>
+      </p>
+    </nav>
+
+    <section class="section" id="s1">
+      <h2><span class="num">1</span> Objetivo</h2>
+      <p>Diseñar y documentar un servicio SOAP que permita trabajar con conceptos del catálogo de la librería mediante mensajes XML y un contrato WSDL.</p>
+      <ul class="clean">
+        <li>Consultar conceptos pendientes.</li>
+        <li>Registrar clasificaciones IaaS, PaaS, SaaS y FaaS.</li>
+        <li>Consultar el progreso de clasificación.</li>
+        <li>Obtener estadísticas por modelo.</li>
+        <li>Manejar respuestas correctas y SOAP Faults.</li>
+        <li>Consumir el servicio desde más de un cliente.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="s2">
+      <h2><span class="num">2</span> Arquitectura general</h2>
+      <p>La solución separa claramente al cliente de escritorio del servicio SOAP. La comunicación se realiza mediante HTTP y mensajes XML definidos por el contrato.</p>
+      <figure>
+        <img class="shot" src="img/arquitectura-soap.svg" alt="Diagrama general del cliente y el servicio SOAP">
+        <figcaption>Flujo general de comunicación entre el cliente y el servicio SOAP.</figcaption>
+      </figure>
+      <pre>Usuario → Aplicación de escritorio → HTTP / XML → Servicio SOAP
+                                           ↓
+                                      Respuesta XML</pre>
+    </section>
+
+    <section class="section" id="s3">
+      <h2><span class="num">3</span> Contrato WSDL y tipos XSD</h2>
+      <p>El contrato del servicio se encuentra en <a href="wsdl/library-classifier.wsdl">library-classifier.wsdl</a> y define las operaciones, mensajes y tipos utilizados por los clientes.</p>
+      <p>Se utiliza el estilo <strong>document/literal wrapped</strong> y el namespace <code>http://udem.edu.mx/iac/library-classifier</code>.</p>
+      <p>Entre los tipos principales se encuentran identificadores numéricos, textos y la enumeración <code>CloudModelo</code>: IaaS, PaaS, SaaS y FaaS.</p>
+    </section>
+
+    <section class="section" id="s4">
+      <h2><span class="num">4</span> Operaciones SOAP</h2>
+      <div class="models">
+        <div class="pill iaas"><strong>ObtenerConceptosPendientes</strong> Consulta los conceptos que todavía deben ser clasificados.</div>
+        <div class="pill paas"><strong>RegistrarClasificacion</strong> Registra la categoría Cloud seleccionada para un concepto.</div>
+        <div class="pill saas"><strong>ObtenerProgresoUsuario</strong> Devuelve el avance general de clasificación.</div>
+        <div class="pill faas"><strong>ObtenerEstadisticasPorModelo</strong> Resume los registros por IaaS, PaaS, SaaS y FaaS.</div>
+      </div>
+    </section>
+
+    <section class="section" id="s5">
+      <h2><span class="num">5</span> SOAP Request, Response y Fault</h2>
+      <p>El ejercicio incluye ejemplos de solicitudes correctas, respuestas y errores controlados.</p>
+      <ul class="clean">
+        <li><a href="evidencias/request-registrar.xml">Request RegistrarClasificacion</a></li>
+        <li><a href="evidencias/response-registrar.xml">Response de registro</a></li>
+        <li><a href="evidencias/fault-409.xml">Ejemplo de SOAP Fault</a></li>
+        <li><a href="evidencias/request-stats-wssecurity.xml">Request de estadísticas</a></li>
+      </ul>
+      <pre><code>&lt;soap:Fault&gt;
+  &lt;faultcode&gt;soap:Client&lt;/faultcode&gt;
+  &lt;faultstring&gt;El concepto ya fue clasificado por este usuario&lt;/faultstring&gt;
+  &lt;detail&gt;...&lt;/detail&gt;
+&lt;/soap:Fault&gt;</code></pre>
+      <p>El SOAP Fault permite comunicar un error al cliente de forma estructurada y sin mostrar detalles internos de implementación.</p>
+    </section>
+
+    <section class="section" id="s6">
+      <h2><span class="num">6</span> Aplicación de escritorio</h2>
+      <p>La aplicación de escritorio funciona como cliente del servicio SOAP y permite completar el flujo de clasificación desde una interfaz gráfica.</p>
+      <ul class="clean">
+        <li>Captura nombre, apellidos y correo.</li>
+        <li>Consulta conceptos pendientes.</li>
+        <li>Clasifica definiciones como IaaS, PaaS, SaaS o FaaS.</li>
+        <li>Envía la clasificación mediante SOAP.</li>
+        <li>Muestra respuestas y errores de manera entendible para el usuario.</li>
+      </ul>
+      <p>Documentación del cliente: <a href="docs/README_DESKTOP.md">README_DESKTOP.md</a>.</p>
+    </section>
+
+    <section class="section" id="s7">
+      <h2><span class="num">7</span> Interoperabilidad</h2>
+      <p>El mismo servicio puede ser consumido desde clientes desarrollados en distintos lenguajes siempre que respeten el contrato WSDL.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Lenguaje</th><th>Forma de consumo</th></tr></thead>
+          <tbody>
+            <tr><td>Aplicación de escritorio</td><td>Java</td><td>Mensajes SOAP/XML</td></tr>
+            <tr><td>Cliente alterno</td><td>Python</td><td>Generado a partir del WSDL</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="s8">
+      <h2><span class="num">8</span> Pruebas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Prueba</th><th>Resultado esperado</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>P01</td><td>Consultar conceptos pendientes</td><td>Lista válida</td><td>Implementado</td></tr>
+            <tr><td>P02</td><td>Registrar IaaS–FaaS</td><td>Registro correcto</td><td>Implementado</td></tr>
+            <tr><td>N01</td><td>Clasificación duplicada</td><td>SOAP Fault</td><td>Implementado</td></tr>
+            <tr><td>N02</td><td>Concepto inexistente</td><td>SOAP Fault</td><td>Implementado</td></tr>
+            <tr><td>N03</td><td>Modelo inválido</td><td>Error de validación</td><td>Implementado</td></tr>
+            <tr><td>N04</td><td>XML inválido</td><td>SOAP Fault</td><td>Implementado</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Detalle de pruebas: <a href="docs/TEST_PLAN.md">TEST_PLAN.md</a>.</p>
+    </section>
+
+    <section class="section" id="s9">
+      <h2><span class="num">9</span> Métricas SOAP vs REST</h2>
+      <p>Como parte del análisis se comparó el tamaño de un mensaje SOAP con un payload equivalente en JSON.</p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><th>Request SOAP</th><td>623 bytes</td></tr>
+            <tr><th>Payload equivalente en JSON</th><td>164 bytes</td></tr>
+            <tr><th>Estructura XML vs datos</th><td>~74 % / ~26 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>SOAP utiliza más estructura, pero a cambio ofrece un contrato formal y mensajes estandarizados.</p>
+    </section>
+
+    <section class="section" id="s10">
+      <h2><span class="num">10</span> Uso de IA</h2>
+      <p>Se utilizó una herramienta de asistencia con IA para apoyar la revisión del código, estructurar documentación y validar la consistencia del ejercicio. Las decisiones finales del diseño y el contenido del reporte fueron revisadas manualmente.</p>
+      <p>Detalle: <a href="docs/AI_USAGE.md">AI_USAGE.md</a>.</p>
+    </section>
+
+    <section class="section" id="s11">
+      <h2><span class="num">11</span> Conclusiones</h2>
+      <p>El ejercicio permitió comprender cómo SOAP estructura la comunicación entre aplicaciones mediante XML, WSDL, tipos XSD y SOAP Faults.</p>
+      <p>La principal diferencia frente a una API más ligera es la cantidad de estructura necesaria. Aun así, el contrato formal facilita que diferentes clientes entiendan exactamente qué operaciones existen, qué datos reciben y qué respuestas deben esperar.</p>
+      <p>Respuestas de reflexión: <a href="docs/REFLEXION.md">REFLEXION.md</a>.</p>
+    </section>
+
+    <section class="section" id="s12">
+      <h2><span class="num">12</span> Descargas</h2>
+      <div class="downloads">
+        <a class="btn" href="descargas/ejercicio03.tar.gz" download>Descargar el trabajo</a>
+        <a class="btn" href="wsdl/library-classifier.wsdl">WSDL</a>
+        <a class="btn ghost" href="docs/README_SOAP.md">README</a>
+        <a class="btn ghost" href="evidencias/fault-409.xml">SOAP Fault</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <strong>Ejercicio guiado 03</strong> · Juan Pablo Ramos Salazar · 610248
+      <div class="foot-meta">
+        <span>URL del ejercicio: <a href="https://ubiquitous.udem.edu/~iac-610248/ejercicio03/">https://ubiquitous.udem.edu/~iac-610248/ejercicio03/</a></span>
+        <span>Fecha de última actualización: 4 de septiembre de 2026 · SOAP / WSDL</span>
+        <span>Versión del trabajo: 1.0</span>
+      </div>
+    </div>
+  </footer>
+  <script src="../js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <% const cover = (book.images || []).find((img) => img.is_cover) || (book.images || [])[0]; %>
+  <div class="form-row">
+    <div>
+      <img
+        src="<%= cover ? u('/uploads/' + cover.stored_name) : u('/placeholder-book.svg') %>"
+        alt="<%= (cover && cover.alt_text) || book.title %>"
+        style="max-width: 240px; max-height: 320px; object-fit: cover;"
+        onerror="this.onerror=null;this.src='<%= u('/placeholder-book.svg') %>';"
+      />
+    </div>
+    <div>
+      <h1><%= book.title %></h1>
+      <p><strong>ISBN:</strong> <%= book.isbn %></p>
+      <p><strong>Autor(es):</strong> <%= (book.authors || []).map((a) => a.full_name).join(', ') || 'Sin autores' %></p>
+      <p><strong>Géneros:</strong> <%= (book.genres || []).map((g) => g.genre_name || g.name).join(', ') || 'Sin géneros' %></p>
+      <p><strong>Formato:</strong> <%= book.format_name %> · <strong>Categoría:</strong> <%= book.category_name %></p>
+      <p><strong>Precio:</strong> $<%= Number(book.price).toFixed(2) %> · <strong>Stock:</strong> <%= book.stock %> · <strong>Año:</strong> <%= book.publication_year %></p>
+      <% if (currentUser.role === 'admin') { %>
+        <div class="inline-actions">
+          <a class="btn" href="<%= u('/books/' + book.id + '/edit') %>">Editar</a>
+          <a class="btn" href="<%= u('/books/' + book.id + '/concepts') %>">Conceptos</a>
+          <form action="<%= u('/books/' + book.id + '/delete') %>" method="POST" onsubmit="return confirm('¿Eliminar este libro?');">
+            <button class="danger-btn" type="submit">Eliminar</button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <h3>Descripción</h3>
+  <p><%= book.description || 'Sin descripción disponible.' %></p>
+
+  <h3>Conceptos y definiciones de este libro</h3>
+  <% if (book.concepts && book.concepts.length) { %>
+    <table class="table">
+      <thead><tr><th>Concepto</th><th>Definición</th><th>Capítulo</th><th>Página</th></tr></thead>
+      <tbody>
+        <% book.concepts.forEach((concept) => { %>
+          <tr>
+            <td><%= concept.concept_name || concept.name %></td>
+            <td><%= concept.definition %></td>
+            <td><%= concept.chapter || '—' %></td>
+            <td><%= concept.page_number || '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <p>No hay conceptos definidos para este libro.</p>
+  <% } %>
+
+  <h3>Imágenes</h3>
+  <div class="book-list">
+    <% if (book.images && book.images.length) { %>
+      <% book.images.forEach((image) => { %>
+        <div class="book-item">
+          <img src="<%= u('/uploads/' + image.stored_name) %>" alt="<%= image.alt_text || book.title %>" onerror="this.onerror=null;this.src='<%= u('/placeholder-book.svg') %>';" />
+          <p><%= image.is_cover ? 'Portada' : 'Imagen adicional' %></p>
+          <p class="hint"><%= image.alt_text || 'Sin texto alternativo' %></p>
+          <% if (currentUser.role === 'admin') { %>
+            <form action="<%= u('/books/' + book.id + '/images/cover') %>" method="POST">
+              <input type="hidden" name="image_id" value="<%= image.image_id || image.id %>" />
+              <label>Texto alternativo</label>
+              <input name="alt_text" value="<%= image.alt_text || '' %>" />
+              <button class="btn" type="submit">Usar como portada</button>
+            </form>
+            <form action="<%= u('/books/' + book.id + '/images/delete') %>" method="POST" onsubmit="return confirm('¿Eliminar imagen?');">
+              <input type="hidden" name="image_id" value="<%= image.image_id || image.id %>" />
+              <button class="danger-btn" type="submit">Eliminar imagen</button>
+            </form>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p>No hay imágenes cargadas.</p>
+    <% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> | Librería</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <nav class="nav container">
+        <div class="brand">
+          <a href="/">Librería Online</a>
+        </div>
+        <div class="nav-links">
+          <% if (currentUser) { %>
+            <a href="/">Inicio</a>
+            <a href="/books">Libros</a>
+            <% if (currentUser.role === 'admin') { %>
+              <a href="/admin/users">Usuarios</a>
+              <a href="/catalogs/categories">Catálogos</a>
+            <% } %>
+            <a href="/profile">Perfil</a>
+            <form action="/logout" method="POST">
+              <button type="submit">Cerrar sesión</button>
+            </form>
+          <% } else { %>
+            <a href="/login">Login</a>
+            <a href="/register">Registro</a>
+          <% } %>
+        </div>
+      </nav>
+    </header>
+    <main class="container">

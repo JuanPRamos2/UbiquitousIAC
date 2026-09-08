@@ -1,0 +1,58 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <div class="form-row">
+    <div>
+      <% if (book.images && book.images.length) { %>
+        <img src="<%= book.images[0].url %>" alt="<%= book.title %>" style="max-width: 240px; max-height: 300px; object-fit: cover;" />
+      <% } %>
+    </div>
+    <div>
+      <h1><%= book.title %></h1>
+      <p><strong>ISBN:</strong> <%= book.isbn %></p>
+      <p><strong>Autor(es):</strong> <%= (book.authors || []).map(a => a.full_name).join(', ') || 'Sin autores' %></p>
+      <p><strong>Géneros:</strong> <%= (book.genres || []).map(g => g.name).join(', ') || 'Sin géneros' %></p>
+      <p><strong>Formato:</strong> <%= book.format_name || 'Sin formato' %></p>
+      <p><strong>Precio:</strong> $<%= Number(book.price).toFixed(2) %></p>
+      <p><strong>Stock:</strong> <%= book.stock %></p>
+      <p><strong>Año:</strong> <%= book.publication_year %></p>
+      <div class="inline-actions">
+        <a class="btn" href="/books/<%= book.id %>/edit">Editar</a>
+        <form action="/books/<%= book.id %>/delete" method="POST">
+          <button class="danger-btn" type="submit">Eliminar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <h3>Descripción</h3>
+  <p><%= book.description || 'Sin descripción disponible.' %></p>
+
+  <h3>Conceptos</h3>
+  <% if (concepts && concepts.length) { %>
+    <ul>
+      <% concepts.forEach((concept) => { %>
+        <li><strong><%= concept.name %>:</strong> <%= concept.definition || 'Sin definición.' %></li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <p>No hay conceptos definidos para este libro.</p>
+  <% } %>
+
+  <h3>Imágenes</h3>
+  <div class="book-list">
+    <% if (book.images && book.images.length) { %>
+      <% book.images.forEach((image) => { %>
+        <div class="book-item">
+          <img src="<%= image.url %>" alt="Imagen del libro" />
+          <form action="/books/<%= book.id %>/images/delete" method="POST">
+            <input type="hidden" name="image_id" value="<%= image.id %>" />
+            <button class="danger-btn" type="submit">Eliminar imagen</button>
+          </form>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p>No hay imágenes cargadas.</p>
+    <% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>
