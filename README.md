@@ -1,89 +1,40 @@
-# UbiquitousIAC — monorepo
+# Librería (catálogo + microservicio Flask)
 
-Aplicaciones, servicios, datos y código compartido en un solo repositorio.
+Proyecto de la librería: catálogo de libros del Ejercicio 02 y microservicio Flask bilingüe (XML/JSON) + SOAP.
 
-## Arranque Flask (como en la terminal)
+No incluye el sitio Ubiquitous (HTML de evidencias de la materia).
 
-El comando `flask` no existe hasta activar el entorno virtual e instalar dependencias.
+## Arranque Flask
 
 ```bash
-cd UbiquitousIAC
 python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 export FLASK_APP=app.py
 flask run --host=0.0.0.0 --port=5001
 ```
 
-Luego:
-
-| URL | Respuesta |
+| URL | Qué es |
 | --- | --- |
-| http://127.0.0.1:5001/ | Interfaz SOAP |
-| http://127.0.0.1:5001/soap | WSDL (GET) / SOAP (POST) |
-| http://127.0.0.1:5001/books | Catálogo EG02 en **XML** |
-| http://127.0.0.1:5001/books?format=json | Catálogo EG02 en **JSON** |
-| http://127.0.0.1:5001/books/9780451524935?format=json | Libro *1984* en JSON |
-| http://127.0.0.1:5001/cloud-concepts?format=json | IaaS, PaaS, SaaS y FaaS + libros |
-| http://127.0.0.1:5001/books-images?format=json | Datos mínimos e imágenes |
+| http://127.0.0.1:5001/books | Catálogo XML |
+| http://127.0.0.1:5001/books?format=json | Catálogo JSON |
+| http://127.0.0.1:5001/books/9780451524935?format=json | *1984* |
+| http://127.0.0.1:5001/cloud-concepts?format=json | IaaS, PaaS, SaaS, FaaS |
+| http://127.0.0.1:5001/books-images?format=json | Libros + portadas |
+| POST/PUT/DELETE `/books` | Alta / cambio / baja (header `X-User-Role: admin`) |
+| POST http://127.0.0.1:5001/soap | Operaciones SOAP |
 
-Alta / cambio / baja del catálogo JSON (rol admin):
+## Carpetas
 
-```bash
-curl -X POST http://127.0.0.1:5001/books \
-  -H 'Content-Type: application/json' -H 'X-User-Role: admin' \
-  -d '{"isbn":"1234567890123","title":"Nuevo","category":"Prueba"}'
+- `app/services/soap/` — microservicio Flask (canónico)
+- `ejercicio02/library/` — librería Node.js (alta, baja, cambio)
+- `ejercicio03/library_soap_service/` — copia SOAP de compatibilidad
+- `apps/web-monolith/` — misma librería Node en el monorepo
 
-curl -X PUT http://127.0.0.1:5001/books/1234567890123 \
-  -H 'Content-Type: application/json' -H 'X-User-Role: admin' \
-  -d '{"title":"Nuevo título","category":"Prueba"}'
-
-curl -X DELETE http://127.0.0.1:5001/books/1234567890123 \
-  -H 'X-User-Role: admin'
-```
-
-## Estructura (Arquitectura de Monorepo)
-
-```
-UbiquitousIAC/
-  apps/
-    web-monolith/       librería Node.js (alta, baja, cambio)
-    web-frontend/       vista del catálogo JSON
-    desktop-app/        clasificador Java (EG03)
-    mobile-app/         reserva
-  services/
-    service-catalogo/   Flask: SOAP + /books?format=json (reexporta app/services/soap)
-    service-usuarios/
-    service-pedidos/
-    service-pagos/
-  data/database/        schemas, seeds, migrations
-  packages/
-    api-contracts/      WSDL + OpenAPI
-    shared-types/
-    shared-ui/
-    shared-utils/
-  docs/architecture/
-  .github/workflows/
-  ejercicio01/ …        sitio Ubiquitous (HTML)
-  app.py                FLASK_APP de la raíz (carga app/services/soap/app.py)
-  app/services/soap/    microservicio Flask bilingüe XML/JSON + SOAP
-```
-
-## Sitio Ubiquitous
-
-El HTML de evidencias sigue en la raíz (`index.html`, `ejercicio03/`) para
-`https://ubiquitous.udem.edu/~iac-610248/`. Desde ahí se abre el SOAP y el catálogo JSON.
-
-## Librería (CRUD por rol)
+## CRUD rápido
 
 ```bash
-cd apps/web-monolith   # o ejercicio02/library
-cp .env.example .env   # SESSION_SECRET y PostgreSQL
-npm install
-npm start
+curl -i -X POST 'http://127.0.0.1:5001/books?format=json' \
+  -H 'Content-Type: application/json' -H 'X-User-Role: admin' \
+  -d '{"isbn":"1234567890123","title":"Libro de prueba","category":"Prueba"}'
 ```
-
-- **admin**: Alta, Cambio y Baja de libros.
-- **lector / client**: solo consulta el catálogo.
-
-Cuentas de demostración del EG02: `mariana.solis@libreriaonline.mx` (admin) y `carlos.hernandez@gmail.com` (lector).
