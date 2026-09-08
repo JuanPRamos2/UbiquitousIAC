@@ -64,6 +64,7 @@ _lock = Lock()
 _clasificadores = {}
 _clasificaciones = []
 _clientes = {}
+_extra_books = {}
 _next_id = 1
 
 
@@ -73,7 +74,39 @@ def reset():
         _clasificadores.clear()
         _clasificaciones.clear()
         _clientes.clear()
+        _extra_books.clear()
         _next_id = 1
+
+
+def list_extra_books():
+    with _lock:
+        return [dict(book) for book in _extra_books.values()]
+
+
+def upsert_book(payload, create=True):
+    isbn = str(payload.get("isbn") or "").strip()
+    title = str(payload.get("title") or "").strip()
+    if not isbn or not title:
+        raise ValueError("isbn y title son obligatorios")
+    book = {
+        "isbn": isbn,
+        "title": title,
+        "category": payload.get("category") or "",
+        "concepts": payload.get("concepts") or [],
+    }
+    with _lock:
+        exists = isbn in _extra_books or any(item["isbn"] == isbn for item in CATALOGO)
+        if create and exists:
+            raise ValueError("El ISBN ya existe")
+        if not create and not exists:
+            return None
+        _extra_books[isbn] = book
+        return dict(book)
+
+
+def delete_book(isbn):
+    with _lock:
+        return _extra_books.pop(isbn, None) is not None
 
 
 def _correo_norm(correo):

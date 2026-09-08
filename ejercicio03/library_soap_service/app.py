@@ -6,6 +6,7 @@ from flask import Flask, Response, request, send_from_directory
 from config import settings
 from soap.envelope import body_operation, parse_envelope
 from soap.faults import SoapFault, client_fault, server_fault
+from books_api import register_books_routes
 from soap.service import handle
 
 logging.basicConfig(
@@ -15,6 +16,12 @@ logging.basicConfig(
 logger = logging.getLogger("library_soap")
 
 app = Flask(__name__)
+try:
+    from flask_cors import CORS
+
+    CORS(app)
+except ImportError:
+    pass
 WSDL_TEXT = Path(settings.WSDL_PATH).read_text(encoding="utf-8")
 EG3_DIR = Path(__file__).resolve().parent.parent
 SITE_DIR = EG3_DIR.parent
@@ -115,6 +122,9 @@ def soap_endpoint():
         logger.exception("Error no controlado en el endpoint SOAP")
         fault = server_fault()
         return Response(fault.to_xml(), status=fault.http_status, mimetype="text/xml; charset=utf-8")
+
+
+register_books_routes(app)
 
 
 if __name__ == "__main__":

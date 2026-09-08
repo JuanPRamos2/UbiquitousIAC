@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo Flask · JSON / XML · Ejercicio 03</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../index.html"><span class="brand-mark">JR</span><span>UDEM<small>Catálogo Flask</small></span></a>
+      <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false">Menú</button>
+      <nav id="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="../index.html">Inicio</a></li>
+          <li><a class="active" href="../ejercicios/index.html">Ejercicios guiados</a></li>
+          <li><a href="../tareas/index.html">Tareas</a></li>
+          <li><a href="../proyecto_final/index.html">Proyecto final</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main id="contenido" class="wrap">
+    <header class="page-head">
+      <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="index.html">Ejercicio 03</a> / Catálogo</p>
+      <h1>Catálogo del microservicio Flask</h1>
+      <p class="lead">El mismo servicio SOAP publica <code>/books</code>. Sin parámetro responde XML. Con <code>?format=json</code> responde JSON.</p>
+    </header>
+    <section class="section">
+      <h2>Arranque</h2>
+      <pre><code>cd UbiquitousIAC
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+export FLASK_APP=app.py
+flask run --host=0.0.0.0 --port=5001</code></pre>
+      <p>
+        <a class="btn" href="http://127.0.0.1:5001/books?format=json" target="_blank" rel="noopener">Abrir JSON</a>
+        <a class="btn ghost" href="http://127.0.0.1:5001/books" target="_blank" rel="noopener">Abrir XML</a>
+        <a class="btn ghost" href="probar.html">Probar SOAP</a>
+      </p>
+      <p class="note">Si Flask no está en marcha, el recuadro de abajo muestra el error de red y el ejemplo del contrato.</p>
+      <pre id="catalogo-json">Cargando http://127.0.0.1:5001/books?format=json …</pre>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap"><strong>Ejercicio guiado 03</strong> · microservicio /books</div>
+  </footer>
+  <script src="../js/site.js"></script>
+  <script>
+    fetch("http://127.0.0.1:5001/books?format=json")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        document.getElementById("catalogo-json").textContent = JSON.stringify(data, null, 2);
+      })
+      .catch(function () {
+        document.getElementById("catalogo-json").textContent =
+          "Flask no está en :5001. Arráncalo con flask run --host=0.0.0.0 --port=5001\n\n" +
+          "Ejemplo:\n" +
+          JSON.stringify({format:"json",count:1,books:[{isbn:"9780132350884",title:"Clean Code"}]}, null, 2);
+      });
+  </script>
+</body>
+</html>

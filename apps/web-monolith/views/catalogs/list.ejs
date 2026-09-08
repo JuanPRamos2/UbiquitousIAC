@@ -1,0 +1,47 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <p class="breadcrumb"><a href="<%= u('/catalogs') %>">Catálogos</a> · <%= catalog.title %></p>
+  <h1><%= catalog.title %></h1>
+  <p class="lede"><%= catalog.blurb %></p>
+
+  <form class="add-form" action="<%= u('/catalogs/' + catalog.slug) %>" method="POST">
+    <h2>Agregar</h2>
+    <label><%= catalog.field === 'full_name' ? 'Nombre completo' : 'Nombre' %></label>
+    <input name="<%= catalog.field %>" required />
+    <% if (catalog.extra) { %>
+      <label><%= catalog.extra === 'biography' ? 'Biografía' : 'Descripción' %></label>
+      <textarea name="<%= catalog.extra %>"></textarea>
+    <% } %>
+    <button class="btn" type="submit">Guardar</button>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% items.forEach((item) => { %>
+        <tr>
+          <td>
+            <form class="inline-actions" action="<%= u('/catalogs/' + catalog.slug + '/' + item.id + '/update') %>" method="POST">
+              <input name="<%= catalog.field %>" value="<%= item[catalog.field] %>" required />
+              <% if (catalog.extra) { %>
+                <input name="<%= catalog.extra %>" value="<%= item[catalog.extra] || '' %>" />
+              <% } %>
+              <button class="btn" type="submit">Guardar cambios</button>
+            </form>
+          </td>
+          <td>
+            <form action="<%= u('/catalogs/' + catalog.slug + '/' + item.id + '/delete') %>" method="POST" onsubmit="return confirm('¿Eliminar este registro?');">
+              <button class="danger-btn" type="submit">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+<%- include('../partials/footer') %>

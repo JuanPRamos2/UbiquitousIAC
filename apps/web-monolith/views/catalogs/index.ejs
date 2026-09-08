@@ -1,0 +1,15 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <h1>Catálogos</h1>
+  <p class="lede">Organiza los listados que usa la librería: autores, géneros, formatos y más. Los libros se relacionan con estos listados desde la ficha de cada título.</p>
+  <div class="catalog-grid">
+    <% catalogs.forEach((catalog) => { %>
+      <a class="catalog-card" href="<%= u('/catalogs/' + catalog.slug) %>">
+        <h2><%= catalog.title %></h2>
+        <p><%= catalog.blurb %></p>
+        <span class="catalog-card-action">Abrir</span>
+      </a>
+    <% }) %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

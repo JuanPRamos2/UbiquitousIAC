@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nrwl/nx/master/packages/nx/schemas/nx-schema.json",
+  "nx": "optional",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*"]
+  },
+  "targetDefaults": {
+    "test": {
+      "cache": true
+    }
+  },
+  "defaultBase": "main"
+}

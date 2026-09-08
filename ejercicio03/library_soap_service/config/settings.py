@@ -18,7 +18,7 @@ DB_USER = _env("DB_USER", "soap_user")
 DB_PASSWORD = _env("DB_PASSWORD", "")
 
 SOAP_HOST = _env("SOAP_HOST", "0.0.0.0")
-SOAP_PORT = int(_env("SOAP_PORT", "5000"))
+SOAP_PORT = int(_env("SOAP_PORT", "5001"))
 
 SOAP_STATS_USERNAME = _env("SOAP_STATS_USERNAME", "soap_stats")
 SOAP_STATS_PASSWORD_HASH = _env("SOAP_STATS_PASSWORD_HASH", "")

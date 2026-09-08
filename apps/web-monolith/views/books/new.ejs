@@ -1,0 +1,11 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <h1>Registrar nuevo libro</h1>
+  <% if (error) { %><div class="error"><%= error %></div><% } %>
+  <form action="<%= u('/books') %>" method="POST" enctype="multipart/form-data">
+    <%- include('./_form', { book: book || {} }) %>
+    <button class="btn" type="submit">Guardar libro</button>
+    <a class="btn secondary" href="<%= u('/books') %>">Cancelar</a>
+  </form>
+</section>
+<%- include('../partials/footer') %>

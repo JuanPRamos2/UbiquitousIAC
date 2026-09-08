@@ -1,0 +1,54 @@
+<%- include('../partials/header') %>
+<section class="card">
+  <h1>Conceptos de <%= book.title %></h1>
+  <p class="lede">Anota cómo se explica cada término en este libro. El mismo término puede tener otra explicación en un título distinto.</p>
+
+  <form action="<%= u('/books/' + book.id + '/concepts') %>" method="POST">
+    <div class="form-row">
+      <div>
+        <label for="concept_id">Concepto</label>
+        <select id="concept_id" name="concept_id" required>
+          <% concepts.forEach((concept) => { %>
+            <option value="<%= concept.id %>"><%= concept.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <label for="chapter">Capítulo</label>
+        <input id="chapter" name="chapter" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label for="page_number">Página</label>
+        <input type="number" min="1" id="page_number" name="page_number" />
+      </div>
+      <div>
+        <label for="definition">Definición en este libro</label>
+        <textarea id="definition" name="definition" required></textarea>
+      </div>
+    </div>
+    <button class="btn" type="submit">Guardar definición</button>
+  </form>
+
+  <table class="table">
+    <thead><tr><th>Concepto</th><th>Definición</th><th>Capítulo</th><th>Página</th><th></th></tr></thead>
+    <tbody>
+      <% (book.concepts || []).forEach((item) => { %>
+        <tr>
+          <td><%= item.concept_name %></td>
+          <td><%= item.definition %></td>
+          <td><%= item.chapter || '—' %></td>
+          <td><%= item.page_number || '—' %></td>
+          <td>
+            <form action="<%= u('/books/' + book.id + '/concepts/' + item.concept_id + '/delete') %>" method="POST">
+              <button class="danger-btn" type="submit">Quitar</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <p><a class="btn secondary" href="<%= u('/books/' + book.id) %>">Volver al libro</a></p>
+</section>
+<%- include('../partials/footer') %>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1680" viewBox="0 0 1500 1680">
+  <rect width="1500" height="1680" fill="#f8fafc"/>
+  <g font-family="Arial" font-size="13">
+
+    <text x="750" y="40" text-anchor="middle" font-size="22" font-weight="700">0FN</text>
+    <rect x="200" y="60" width="1100" height="110" rx="8" fill="#fef3c7" stroke="#b45309"/>
+    <text x="750" y="90" text-anchor="middle" font-weight="700">LIBRO_NN</text>
+    <text x="750" y="114" text-anchor="middle">ISBN PK, titulo, ano, precio, stock, formato, categoria</text>
+    <text x="750" y="138" text-anchor="middle">autores, generos, imagenes, conceptos, definiciones</text>
+
+    <line x1="750" y1="182" x2="750" y2="212" stroke="#6b7280" stroke-width="2"/>
+    <polygon points="750,222 744,210 756,210" fill="#6b7280"/>
+
+    <text x="750" y="258" text-anchor="middle" font-size="22" font-weight="700">1FN</text>
+    <rect x="200" y="278" width="1100" height="110" rx="8" fill="#fef3c7" stroke="#b45309"/>
+    <text x="750" y="308" text-anchor="middle" font-weight="700">LIBRO_1FN</text>
+    <text x="750" y="332" text-anchor="middle">PK (ISBN, autor, genero, imagen, concepto)</text>
+    <text x="750" y="356" text-anchor="middle">titulo, ano, precio, stock, formato, categoria, definicion, capitulo, pagina</text>
+
+    <line x1="750" y1="400" x2="750" y2="430" stroke="#6b7280" stroke-width="2"/>
+    <polygon points="750,440 744,428 756,428" fill="#6b7280"/>
+
+    <text x="750" y="476" text-anchor="middle" font-size="22" font-weight="700">2FN</text>
+    <rect x="180" y="496" width="520" height="120" rx="8" fill="#fef3c7" stroke="#b45309"/>
+    <text x="440" y="530" text-anchor="middle" font-weight="700">LIBRO</text>
+    <text x="440" y="556" text-anchor="middle">ISBN PK</text>
+    <text x="440" y="580" text-anchor="middle">titulo, ano, precio, stock, formato, categoria</text>
+    <rect x="800" y="496" width="520" height="120" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="1060" y="530" text-anchor="middle" font-weight="700">LIBRO_HECHOS</text>
+    <text x="1060" y="556" text-anchor="middle">PK (ISBN, autor, genero, imagen, concepto)</text>
+    <text x="1060" y="580" text-anchor="middle">definicion, capitulo, pagina</text>
+
+    <line x1="750" y1="628" x2="750" y2="658" stroke="#6b7280" stroke-width="2"/>
+    <polygon points="750,668 744,656 756,656" fill="#6b7280"/>
+
+    <text x="750" y="704" text-anchor="middle" font-size="22" font-weight="700">3FN / BCNF</text>
+    <rect x="40" y="724" width="180" height="80" rx="8" fill="#dbeafe" stroke="#1d4ed8"/>
+    <text x="130" y="754" text-anchor="middle" font-weight="700">FORMATO</text>
+    <text x="130" y="778" text-anchor="middle">id PK, nombre UQ</text>
+    <rect x="240" y="724" width="180" height="80" rx="8" fill="#dbeafe" stroke="#1d4ed8"/>
+    <text x="330" y="754" text-anchor="middle" font-weight="700">CATEGORIA</text>
+    <text x="330" y="778" text-anchor="middle">id PK, nombre UQ</text>
+    <rect x="440" y="724" width="180" height="80" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="530" y="754" text-anchor="middle" font-weight="700">AUTOR</text>
+    <text x="530" y="778" text-anchor="middle">id PK, nombre UQ</text>
+    <rect x="640" y="724" width="180" height="80" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="730" y="754" text-anchor="middle" font-weight="700">GENERO</text>
+    <text x="730" y="778" text-anchor="middle">id PK, nombre UQ</text>
+    <rect x="840" y="724" width="180" height="80" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="930" y="754" text-anchor="middle" font-weight="700">CONCEPTO</text>
+    <text x="930" y="778" text-anchor="middle">id PK, nombre UQ</text>
+    <rect x="1040" y="724" width="220" height="80" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="1150" y="754" text-anchor="middle" font-weight="700">IMAGEN</text>
+    <text x="1150" y="778" text-anchor="middle">id PK, archivo UQ</text>
+
+    <rect x="180" y="824" width="520" height="110" rx="8" fill="#fef3c7" stroke="#b45309"/>
+    <text x="440" y="856" text-anchor="middle" font-weight="700">LIBRO</text>
+    <text x="440" y="882" text-anchor="middle">ISBN PK</text>
+    <text x="440" y="906" text-anchor="middle">titulo, ano, precio, stock, id_formato FK, id_categoria FK</text>
+    <rect x="800" y="824" width="520" height="110" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="1060" y="856" text-anchor="middle" font-weight="700">RESIDUO</text>
+    <text x="1060" y="882" text-anchor="middle">PK (ISBN, id_autor, id_genero, id_imagen, id_concepto)</text>
+    <text x="1060" y="906" text-anchor="middle">definicion, capitulo, pagina</text>
+
+    <line x1="750" y1="946" x2="750" y2="976" stroke="#6b7280" stroke-width="2"/>
+    <polygon points="750,986 744,974 756,974" fill="#6b7280"/>
+
+    <text x="750" y="1022" text-anchor="middle" font-size="22" font-weight="700">4FN</text>
+    <rect x="40" y="1048" width="200" height="90" rx="8" fill="#dbeafe" stroke="#1d4ed8"/>
+    <text x="140" y="1083" text-anchor="middle" font-weight="700">FORMATS</text>
+    <text x="140" y="1106" text-anchor="middle">id PK, name UQ</text>
+    <rect x="40" y="1168" width="200" height="90" rx="8" fill="#dbeafe" stroke="#1d4ed8"/>
+    <text x="140" y="1203" text-anchor="middle" font-weight="700">CATEGORIES</text>
+    <text x="140" y="1226" text-anchor="middle">id PK, name UQ</text>
+    <rect x="360" y="1108" width="280" height="150" rx="8" fill="#fef3c7" stroke="#b45309"/>
+    <text x="500" y="1143" text-anchor="middle" font-weight="700">BOOKS</text>
+    <text x="500" y="1168" text-anchor="middle">id PK, isbn UQ</text>
+    <text x="500" y="1190" text-anchor="middle">title, year, price, stock</text>
+    <text x="500" y="1212" text-anchor="middle">format_id FK, category_id FK</text>
+    <rect x="760" y="1038" width="210" height="90" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="865" y="1073" text-anchor="middle" font-weight="700">AUTHORS</text>
+    <text x="865" y="1096" text-anchor="middle">id PK, full_name UQ</text>
+    <rect x="760" y="1158" width="210" height="90" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="865" y="1193" text-anchor="middle" font-weight="700">GENRES</text>
+    <text x="865" y="1216" text-anchor="middle">id PK, name UQ</text>
+    <rect x="760" y="1278" width="210" height="90" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="865" y="1313" text-anchor="middle" font-weight="700">CONCEPTS</text>
+    <text x="865" y="1336" text-anchor="middle">id PK, name UQ</text>
+    <rect x="760" y="1398" width="210" height="90" rx="8" fill="#dcfce7" stroke="#15803d"/>
+    <text x="865" y="1433" text-anchor="middle" font-weight="700">IMAGES</text>
+    <text x="865" y="1456" text-anchor="middle">stored_name UQ, mime, size</text>
+    <rect x="1040" y="1038" width="240" height="90" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="1160" y="1070" text-anchor="middle" font-weight="700">BOOK_AUTHORS</text>
+    <text x="1160" y="1093" text-anchor="middle">PK (book_id, author_id)</text>
+    <rect x="1040" y="1158" width="240" height="90" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="1160" y="1190" text-anchor="middle" font-weight="700">BOOK_GENRES</text>
+    <text x="1160" y="1213" text-anchor="middle">PK (book_id, genre_id)</text>
+    <rect x="1040" y="1278" width="240" height="90" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="1160" y="1310" text-anchor="middle" font-weight="700">BOOK_CONCEPTS</text>
+    <text x="1160" y="1333" text-anchor="middle">PK (book_id, concept_id)</text>
+    <text x="1160" y="1355" text-anchor="middle">definition, chapter, page</text>
+    <rect x="1040" y="1398" width="240" height="90" rx="8" fill="#ffe4e6" stroke="#be123c"/>
+    <text x="1160" y="1430" text-anchor="middle" font-weight="700">BOOK_IMAGES</text>
+    <text x="1160" y="1453" text-anchor="middle">PK (book_id, image_id)</text>
+    <text x="1160" y="1475" text-anchor="middle">is_cover</text>
+    <rect x="360" y="1378" width="280" height="110" rx="8" fill="#ede9fe" stroke="#6d28d9"/>
+    <text x="500" y="1412" text-anchor="middle" font-weight="700">USERS</text>
+    <text x="500" y="1436" text-anchor="middle">email UQ, password_hash</text>
+    <text x="500" y="1458" text-anchor="middle">role IN (admin, client)</text>
+
+  </g>
+</svg>

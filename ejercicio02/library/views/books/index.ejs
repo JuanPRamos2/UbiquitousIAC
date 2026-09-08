@@ -3,7 +3,9 @@
   <div class="toolbar">
     <h1>Catálogo de libros</h1>
     <% if (currentUser.role === 'admin') { %>
-      <a class="btn" href="<%= u('/books/new') %>">Nuevo libro</a>
+      <a class="btn" href="<%= u('/books/new') %>">Alta de libro</a>
+    <% } else { %>
+      <p class="hint">Rol lector: consulta el catálogo. Alta, cambio y baja son del administrador.</p>
     <% } %>
   </div>
 
@@ -39,7 +41,10 @@
         <div class="inline-actions">
           <a class="btn" href="<%= u('/books/' + book.id) %>">Ver</a>
           <% if (currentUser.role === 'admin') { %>
-            <a class="btn" href="<%= u('/books/' + book.id + '/edit') %>">Editar</a>
+            <a class="btn" href="<%= u('/books/' + book.id + '/edit') %>">Cambio</a>
+            <form action="<%= u('/books/' + book.id + '/delete') %>" method="POST" onsubmit="return confirm('¿Dar de baja este libro?');">
+              <button class="danger-btn" type="submit">Baja</button>
+            </form>
           <% } %>
         </div>
       </article>
