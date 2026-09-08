@@ -11,7 +11,8 @@ Comunicación:
 ```
 Sitio Ubiquitous (HTML)
   → ejercicio03/probar.html  → Flask POST /soap
-  → ejercicio03/catalogo.html → Flask GET /books?format=json
+  → ejercicio03/catalogo.html → Flask GET /books?format=json, /cloud-concepts, /books-images
+  → app/services/soap/app.py  → implementación Flask (XML por defecto, JSON con format=json)
 
 Librería (apps/web-monolith)
   → PostgreSQL (data/database)

@@ -1,58 +1,30 @@
 # library_soap_service
 
-Módulo SOAP independiente del monolito Node.js. Clasifica conceptos del catálogo de la librería como IaaS, PaaS, SaaS o FaaS.
+Copia de compatibilidad del microservicio Flask. La implementación canónica está en:
+
+`app/services/soap/app.py`
+
+Clasifica conceptos del catálogo de la librería del EG02 como IaaS, PaaS, SaaS o FaaS y publica el mismo catálogo en XML/JSON.
 
 SC3705 · Juan Pablo Ramos Salazar · 610248
 
-## Requisitos
-
-- Python 3.10+
-- PostgreSQL con el esquema del monolito ya aplicado (`ejercicio02/library/` + SQL del ejercicio 02)
-- El código de `ejercicio02/library/` **no se modifica**
-
-## Arranque local
+## Arranque (preferido, raíz del repo)
 
 ```bash
-cd library_soap_service
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env               # DB_PASSWORD del rol soap_user
+export FLASK_APP=app.py
+flask run --host=0.0.0.0 --port=5001
 ```
 
-Como `postgres`, una vez:
+También se puede ejecutar este directorio:
 
 ```bash
-psql -d library_db -f sql/soap_module.sql
-psql -d library_db -c "ALTER ROLE soap_user PASSWORD 'tu-clave'"
-```
-
-```bash
+cd ejercicio03/library_soap_service
 python app.py
-# WSDL:  http://localhost:5000/soap?wsdl
-# POST:  http://localhost:5000/soap
-pytest tests/ -q
 ```
 
-El `.env.example` publicado no lleva un hash reutilizable. Genera el de laboratorio o de GCP con:
+Sin `?format=` las respuestas de datos son XML. Con `?format=json` son JSON.
 
-```bash
-python -c "from soap.security import hash_password; print(hash_password('otra-clave'))"
-```
-
-## Contrato
-
-| Operación | Header | Persistencia |
-| --- | --- | --- |
-| ObtenerConceptosPendientes | no | lectura catálogo + contador de cliente |
-| RegistrarClasificacion | no | insert clasificación / Fault 409 |
-| ObtenerProgresoUsuario | no | lectura |
-| ObtenerEstadisticasPorModelo | WS-Security UsernameToken | lectura agregada |
-
-## Privilegio mínimo (`soap_user`)
-
-- SELECT: `books`, `concepts`, `book_concepts`, `categories`, `v_catalogo_conceptos`
-- INSERT/UPDATE: `clasificadores`, `clasificaciones_cloud`, `clientes_servidos`
-- Sin acceso a `users` (ni `password_hash`)
-
-Despliegue en VM/GitHub/ubiquitous: `../docs/INSTRUCCIONES_GCP_GITHUB.md`
+El código de `ejercicio02/library/` **no se modifica**.

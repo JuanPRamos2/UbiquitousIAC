@@ -14,33 +14,33 @@
       concept_id: 101,
       concept_name: "Máquinas virtuales",
       definition: "Infraestructura con máquinas virtuales, almacenamiento y redes para instalar el propio sistema operativo.",
-      isbn: "9780132350884",
-      book_title: "Clean Code",
-      category_name: "Tecnología"
+      isbn: "9780134444245",
+      book_title: "Cloud Computing: Concepts, Technology & Architecture",
+      category_name: "Computación en la nube"
     },
     {
       concept_id: 102,
       concept_name: "Plataforma de despliegue",
       definition: "Desplegar la aplicación web sin administrar directamente servidores ni sistemas operativos.",
-      isbn: "9780132350884",
-      book_title: "Clean Code",
-      category_name: "Tecnología"
+      isbn: "9780134444245",
+      book_title: "Cloud Computing: Concepts, Technology & Architecture",
+      category_name: "Computación en la nube"
     },
     {
       concept_id: 103,
       concept_name: "Correo en el navegador",
       definition: "Los empleados utilizan una aplicación de correo electrónico desde el navegador con suscripción mensual.",
-      isbn: "9780062316097",
-      book_title: "Sapiens",
-      category_name: "Ciencias sociales"
+      isbn: "9780134444245",
+      book_title: "Cloud Computing: Concepts, Technology & Architecture",
+      category_name: "Computación en la nube"
     },
     {
       concept_id: 104,
       concept_name: "Función serverless",
       definition: "Ejecutar una función automáticamente cada vez que un usuario suba una imagen al almacenamiento Cloud.",
-      isbn: "9780307474728",
-      book_title: "Cien años de soledad",
-      category_name: "Literatura"
+      isbn: "9780134444245",
+      book_title: "Cloud Computing: Concepts, Technology & Architecture",
+      category_name: "Computación en la nube"
     }
   ];
 

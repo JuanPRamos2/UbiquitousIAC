@@ -15,7 +15,8 @@ ejercicio03/
   evidencias/                Request / Response / Fault
   img/                       diagramas
   descargas/                 ejemplos sin secretos
-  library_soap_service/      módulo SOAP (WSDL + Envelope)
+  library_soap_service/      copia de compatibilidad del módulo SOAP
+  (canónico: ../app/services/soap/app.py)
   desktop_classifier/        Swing con modo SOAP
   clients/zeep/              cliente de interoperabilidad
 ```

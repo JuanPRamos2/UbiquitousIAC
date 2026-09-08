@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOAP_DIR = ROOT / "ejercicio03" / "library_soap_service"
+SOAP_DIR = ROOT / "app" / "services" / "soap"
 SOAP_APP = SOAP_DIR / "app.py"
 sys.path.insert(0, str(SOAP_DIR))
 

@@ -1,5 +1,5 @@
 # service-catalogo
 
-Microservicio Flask: SOAP (ejercicio 03) y `GET /books?format=json`.
+Microservicio Flask: SOAP (ejercicio 03) y catálogo bilingüe XML/JSON.
 
-La implementación vive en `ejercicio03/library_soap_service/`. Este paquete reexporta `app`.
+La implementación canónica vive en `app/services/soap/app.py`. Este paquete reexporta `app`.

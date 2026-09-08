@@ -25,8 +25,8 @@
   <main id="contenido" class="wrap">
     <header class="page-head">
       <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="index.html">Ejercicio 03</a> / Catálogo</p>
-      <h1>Catálogo del microservicio Flask</h1>
-      <p class="lead">El mismo servicio SOAP publica <code>/books</code>. Sin parámetro responde XML. Con <code>?format=json</code> responde JSON.</p>
+      <h1>Catálogo bilingüe del microservicio Flask</h1>
+      <p class="lead">Es el mismo catálogo de la librería del Ejercicio 02. Sin <code>format</code> responde XML. Con <code>?format=json</code> responde JSON. El código vive en <code>app/services/soap/app.py</code>.</p>
     </header>
     <section class="section">
       <h2>Arranque</h2>
@@ -37,29 +37,47 @@ pip install -r requirements.txt
 export FLASK_APP=app.py
 flask run --host=0.0.0.0 --port=5001</code></pre>
       <p>
-        <a class="btn" href="http://127.0.0.1:5001/books?format=json" target="_blank" rel="noopener">Abrir JSON</a>
-        <a class="btn ghost" href="http://127.0.0.1:5001/books" target="_blank" rel="noopener">Abrir XML</a>
+        <a class="btn" href="http://127.0.0.1:5001/books?format=json" target="_blank" rel="noopener">/books JSON</a>
+        <a class="btn ghost" href="http://127.0.0.1:5001/books" target="_blank" rel="noopener">/books XML</a>
+        <a class="btn ghost" href="http://127.0.0.1:5001/books/9780451524935?format=json" target="_blank" rel="noopener">1984 JSON</a>
+        <a class="btn ghost" href="http://127.0.0.1:5001/cloud-concepts?format=json" target="_blank" rel="noopener">IaaS–FaaS</a>
+        <a class="btn ghost" href="http://127.0.0.1:5001/books-images?format=json" target="_blank" rel="noopener">Libros + imágenes</a>
         <a class="btn ghost" href="probar.html">Probar SOAP</a>
       </p>
-      <p class="note">Si Flask no está en marcha, el recuadro de abajo muestra el error de red y el ejemplo del contrato.</p>
-      <pre id="catalogo-json">Cargando http://127.0.0.1:5001/books?format=json …</pre>
+      <p class="note">Si Flask no está en marcha, el recuadro muestra el error de red y un ejemplo del contrato.</p>
+      <pre id="catalogo-json">Cargando catálogo…</pre>
     </section>
   </main>
   <footer>
-    <div class="wrap"><strong>Ejercicio guiado 03</strong> · microservicio /books</div>
+    <div class="wrap"><strong>Ejercicio guiado 03</strong> · microservicio bilingüe XML/JSON</div>
   </footer>
   <script src="../js/site.js"></script>
   <script>
-    fetch("http://127.0.0.1:5001/books?format=json")
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        document.getElementById("catalogo-json").textContent = JSON.stringify(data, null, 2);
+    var urls = [
+      "http://127.0.0.1:5001/books?format=json",
+      "http://127.0.0.1:5001/books/9780451524935?format=json",
+      "http://127.0.0.1:5001/cloud-concepts?format=json",
+      "http://127.0.0.1:5001/books-images?format=json"
+    ];
+    Promise.all(urls.map(function (url) {
+      return fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+        return { url: url, data: data };
+      });
+    }))
+      .then(function (blocks) {
+        document.getElementById("catalogo-json").textContent = blocks.map(function (block) {
+          return block.url + "\n" + JSON.stringify(block.data, null, 2);
+        }).join("\n\n");
       })
       .catch(function () {
         document.getElementById("catalogo-json").textContent =
           "Flask no está en :5001. Arráncalo con flask run --host=0.0.0.0 --port=5001\n\n" +
-          "Ejemplo:\n" +
-          JSON.stringify({format:"json",count:1,books:[{isbn:"9780132350884",title:"Clean Code"}]}, null, 2);
+          "Ejemplos:\n" +
+          JSON.stringify({
+            format: "json",
+            count: 30,
+            books: [{ isbn: "9780451524935", title: "1984" }]
+          }, null, 2);
       });
   </script>
 </body>

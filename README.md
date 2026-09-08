@@ -21,9 +21,11 @@ Luego:
 | --- | --- |
 | http://127.0.0.1:5001/ | Interfaz SOAP |
 | http://127.0.0.1:5001/soap | WSDL (GET) / SOAP (POST) |
-| http://127.0.0.1:5001/books | Catálogo en **XML** |
-| http://127.0.0.1:5001/books?format=json | Catálogo en **JSON** |
-| http://127.0.0.1:5001/books?format-json | JSON (alias) |
+| http://127.0.0.1:5001/books | Catálogo EG02 en **XML** |
+| http://127.0.0.1:5001/books?format=json | Catálogo EG02 en **JSON** |
+| http://127.0.0.1:5001/books/9780451524935?format=json | Libro *1984* en JSON |
+| http://127.0.0.1:5001/cloud-concepts?format=json | IaaS, PaaS, SaaS y FaaS + libros |
+| http://127.0.0.1:5001/books-images?format=json | Datos mínimos e imágenes |
 
 Alta / cambio / baja del catálogo JSON (rol admin):
 
@@ -50,7 +52,7 @@ UbiquitousIAC/
     desktop-app/        clasificador Java (EG03)
     mobile-app/         reserva
   services/
-    service-catalogo/   Flask: SOAP + /books?format=json
+    service-catalogo/   Flask: SOAP + /books?format=json (reexporta app/services/soap)
     service-usuarios/
     service-pedidos/
     service-pagos/
@@ -63,7 +65,8 @@ UbiquitousIAC/
   docs/architecture/
   .github/workflows/
   ejercicio01/ …        sitio Ubiquitous (HTML)
-  app.py                FLASK_APP de la raíz
+  app.py                FLASK_APP de la raíz (carga app/services/soap/app.py)
+  app/services/soap/    microservicio Flask bilingüe XML/JSON + SOAP
 ```
 
 ## Sitio Ubiquitous
