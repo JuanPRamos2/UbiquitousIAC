@@ -30,6 +30,7 @@ def _probar_html():
     html = html.replace('href="../style.css"', 'href="/site-style.css"')
     html = html.replace('src="../js/site.js"', 'src="/site-js.js"')
     html = html.replace("../index.html", "/")
+    html = html.replace("<body>", '<body data-soap-endpoint="/soap">')
     return html
 
 
@@ -80,6 +81,16 @@ def eg3_js(filename):
 @app.get("/wsdl")
 def wsdl():
     return Response(_wsdl_for_request(), mimetype="text/xml; charset=utf-8")
+
+
+@app.post("/demo/reset")
+def demo_reset():
+    if not settings.SOAP_DEMO:
+        return Response("Not found", status=404)
+    from db.demo_store import reset
+
+    reset()
+    return {"ok": True}
 
 
 @app.post("/soap")

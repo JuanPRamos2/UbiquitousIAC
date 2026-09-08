@@ -33,6 +33,7 @@
       <p class="kicker">Universidad de Monterrey · SC3705 · SOAP · WSDL</p>
       <h1>Probar el módulo SOAP</h1>
       <p class="lead">Las mismas operaciones del contrato WSDL: consultar pendientes, registrar IaaS/PaaS/SaaS/FaaS, ver progreso, consultar estadísticas protegidas y provocar SOAP Faults.</p>
+      <p class="note" id="flask-mode" hidden>Esta página está enviando <strong>HTTP POST / XML</strong> al módulo Flask en <code>/soap</code>.</p>
     </header>
 
     <section class="section">
@@ -121,6 +122,27 @@
         };
       }
 
+      var soapEndpoint = document.body.getAttribute("data-soap-endpoint") || "";
+      if (soapEndpoint) {
+        var mode = document.getElementById("flask-mode");
+        if (mode) mode.hidden = false;
+      }
+
+      function invokeSoap(xml) {
+        if (!soapEndpoint) {
+          return Promise.resolve(SoapModulo.invoke(xml));
+        }
+        return fetch(soapEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/xml; charset=utf-8" },
+          body: xml
+        }).then(function (res) {
+          return res.text().then(function (text) {
+            return { ok: res.status < 400 && text.indexOf("Fault") === -1, xml: text };
+          });
+        });
+      }
+
       function show(requestXml, result) {
         reqEl.textContent = SoapModulo.pretty(requestXml);
         resEl.textContent = SoapModulo.pretty(result.xml);
@@ -144,7 +166,7 @@
       function renderPendientes() {
         var me = identity();
         var xml = SoapModulo.buildPendientes(me.correo, "desktop-web");
-        var result = SoapModulo.invoke(xml);
+        return invokeSoap(xml).then(function (result) {
         show(xml, result);
         conceptosEl.innerHTML = "";
         if (!result.ok) return;
@@ -176,6 +198,7 @@
             conceptosEl.appendChild(card);
           })(nodes[i]);
         }
+        });
       }
 
       document.getElementById("btn-pendientes").addEventListener("click", renderPendientes);
@@ -197,13 +220,15 @@
           modelo: document.getElementById("modelo").value,
           tipoCliente: "desktop-web"
         });
-        show(xml, SoapModulo.invoke(xml));
-        renderPendientes();
+        invokeSoap(xml).then(function (result) {
+          show(xml, result);
+          return renderPendientes();
+        });
       });
 
       document.getElementById("btn-progreso").addEventListener("click", function () {
         var xml = SoapModulo.buildProgreso(identity().correo);
-        show(xml, SoapModulo.invoke(xml));
+        invokeSoap(xml).then(function (result) { show(xml, result); });
       });
 
       document.getElementById("btn-stats").addEventListener("click", function () {
@@ -211,7 +236,7 @@
           document.getElementById("stats-user").value,
           document.getElementById("stats-pass").value
         );
-        show(xml, SoapModulo.invoke(xml));
+        invokeSoap(xml).then(function (result) { show(xml, result); });
       });
 
       document.getElementById("btn-dup").addEventListener("click", function () {
@@ -226,8 +251,9 @@
           modelo: "IaaS",
           tipoCliente: "desktop-web"
         });
-        SoapModulo.invoke(xml);
-        show(xml, SoapModulo.invoke(xml));
+        invokeSoap(xml).then(function () { return invokeSoap(xml); }).then(function (result) {
+          show(xml, result);
+        });
       });
 
       document.getElementById("btn-missing").addEventListener("click", function () {
@@ -241,7 +267,7 @@
           modelo: "IaaS",
           tipoCliente: "desktop-web"
         });
-        show(xml, SoapModulo.invoke(xml));
+        invokeSoap(xml).then(function (result) { show(xml, result); });
       });
 
       document.getElementById("btn-modelo").addEventListener("click", function () {
@@ -256,26 +282,30 @@
           modelo: "XaaS",
           tipoCliente: "desktop-web"
         });
-        show(xml, SoapModulo.invoke(xml));
+        invokeSoap(xml).then(function (result) { show(xml, result); });
       });
 
       document.getElementById("btn-xml").addEventListener("click", function () {
         var xml = "<not-xml";
-        show(xml, SoapModulo.invoke(xml));
+        invokeSoap(xml).then(function (result) { show(xml, result); });
       });
 
       document.getElementById("btn-badpass").addEventListener("click", function () {
         var xml = SoapModulo.buildEstadisticas("soap_stats", "clave-incorrecta");
-        show(xml, SoapModulo.invoke(xml));
+        invokeSoap(xml).then(function (result) { show(xml, result); });
       });
 
       document.getElementById("btn-reset").addEventListener("click", function () {
-        SoapModulo.reset();
-        selected = null;
-        conceptosEl.innerHTML = "";
-        reqEl.textContent = "Catálogo reiniciado.";
-        resEl.textContent = "Vuelve a consultar conceptos pendientes.";
-        msgEl.hidden = true;
+        var done = soapEndpoint
+          ? fetch("/demo/reset", { method: "POST" })
+          : Promise.resolve(SoapModulo.reset());
+        done.then(function () {
+          selected = null;
+          conceptosEl.innerHTML = "";
+          reqEl.textContent = "Catálogo reiniciado.";
+          resEl.textContent = "Vuelve a consultar conceptos pendientes.";
+          msgEl.hidden = true;
+        });
       });
 
       renderPendientes();

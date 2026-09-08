@@ -98,3 +98,4 @@ def test_probar_page_is_served():
     page = client.get("/")
     assert page.status_code == 200
     assert "Probar el módulo SOAP".encode("utf-8") in page.data
+    assert b'data-soap-endpoint="/soap"' in page.data
