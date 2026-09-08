@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:tns="http://udem.edu.mx/iac/library-classifier">
+  <soap:Header/>
+  <soap:Body>
+    <soap:Fault>
+      <faultcode>soap:Client</faultcode>
+      <faultstring>Credenciales WS-Security inválidas o ausentes</faultstring>
+      <detail>
+        <tns:SecurityFault>
+          <tns:codigo>401</tns:codigo>
+          <tns:mensaje>Credenciales WS-Security inválidas o ausentes</tns:mensaje>
+        </tns:SecurityFault>
+      </detail>
+    </soap:Fault>
+  </soap:Body>
+</soap:Envelope>

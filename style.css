@@ -425,6 +425,37 @@ ul.clean { margin: 0.4rem 0 0; padding-left: 1.15rem; }
   color: var(--muted);
 }
 
+.shot-pending {
+  min-height: 160px;
+  border: 1px dashed var(--sand);
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--muted);
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 0.25rem;
+  padding: 1.1rem;
+}
+.shot-pending strong {
+  color: var(--forest-dark);
+  font-size: 0.95rem;
+}
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+.decision {
+  margin: 0.85rem 0 0;
+  padding: 0.85rem 0.95rem;
+  border-left: 4px solid var(--moss);
+  background: var(--cream);
+  border-radius: 0 12px 12px 0;
+}
+.decision p { margin: 0.25rem 0; }
+
 footer {
   background: var(--forest-dark);
   color: #b7c2bb;

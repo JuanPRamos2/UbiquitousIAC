@@ -1,23 +1,23 @@
 # Ejercicio guiado 03 — módulo SOAP
 
-Reporte web del sitio personal. Abre `index.html` en el navegador o, en ubiquitous:
+Reporte web: `https://ubiquitous.udem.edu/~iac-610248/ejercicio03/`
 
-`https://ubiquitous.udem.edu/~iac-610248/ejercicio03/`
+Página para probar las operaciones: `probar.html`
 
 ```
 ejercicio03/
-  index.html                 reporte (usa ../style.css del sitio)
-  docs/                      decisiones, pruebas, GCP, reflexión
+  index.html                 reporte técnico (18 secciones + 5 tareas)
+  probar.html                módulo SOAP ejecutable en Ubiquitous
+  css/ js/                   estilos y contrato en el navegador
+  docs/                      decisiones, pruebas, reflexión
   wsdl/                      contrato publicado
   sql/                       soap_module.sql
-  evidencias/                Request / Response / Fault de ejemplo
-  img/                       diagrama + capturas de laboratorio
-  descargas/                 paquete sin secretos
-  library_soap_service/      Flask SOAP (Apache lo bloquea)
+  evidencias/                Request / Response / Fault
+  img/                       diagramas
+  descargas/                 ejemplos sin secretos
+  library_soap_service/      módulo SOAP (WSDL + Envelope)
   desktop_classifier/        Swing con modo SOAP
   clients/zeep/              cliente de interoperabilidad
 ```
 
-El monolito Node.js no se duplicó: sigue en `../ejercicio02/library/` y no se modificó.
-
-Pasos de GCP, GitHub y ubiquitous: `docs/INSTRUCCIONES_GCP_GITHUB.md`.
+Las cinco tareas están también en `../tareas/eg03-tarea-01.html` … `eg03-tarea-05.html`.

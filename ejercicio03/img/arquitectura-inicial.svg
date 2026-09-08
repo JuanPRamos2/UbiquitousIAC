@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 420" role="img" aria-labelledby="t d">
+  <title id="t">Arquitectura inicial</title>
+  <desc id="d">Antes del ejercicio 03 solo existían la aplicación de librería y las aplicaciones de escritorio locales.</desc>
+  <rect width="1100" height="420" fill="#f3efe8"/>
+  <text x="40" y="42" font-family="Georgia, serif" font-size="22" fill="#24332b">Arquitectura inicial</text>
+  <text x="40" y="68" font-family="Segoe UI, sans-serif" font-size="13" fill="#6a635a">Sin contrato SOAP: cada pieza trabaja por su cuenta</text>
+  <rect x="80" y="120" width="280" height="180" rx="16" fill="#fffcf8" stroke="#3c5344" stroke-width="2"/>
+  <text x="220" y="170" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#24332b">Escritorio</text>
+  <text x="220" y="198" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" fill="#6a635a">Clasifica texto en local</text>
+  <text x="220" y="222" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" fill="#6a635a">No habla con el catálogo</text>
+  <rect x="420" y="120" width="280" height="180" rx="16" fill="#fffcf8" stroke="#8a6a4a" stroke-width="2"/>
+  <text x="560" y="170" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#24332b">Librería en línea</text>
+  <text x="560" y="198" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" fill="#6a635a">Catálogo de libros</text>
+  <text x="560" y="222" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" fill="#6a635a">Sin clasificación Cloud</text>
+  <rect x="760" y="120" width="260" height="180" rx="16" fill="#3c5344"/>
+  <text x="890" y="170" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#fff">PostgreSQL</text>
+  <text x="890" y="198" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" fill="#e7ece9">books · concepts</text>
+  <text x="890" y="222" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" fill="#e7ece9">Sólo la librería escribe</text>
+  <line x1="700" y1="210" x2="760" y2="210" stroke="#8a6a4a" stroke-width="2"/>
+</svg>

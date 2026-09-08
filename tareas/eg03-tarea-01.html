@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tarea 1 · Estadísticas y WS-Security · EG03</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../index.html"><span class="brand-mark">JR</span><span>UDEM<small>Tarea 1 · EG03</small></span></a>
+      <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false">Menú</button>
+      <nav id="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="../index.html">Inicio</a></li>
+          <li><a href="../ejercicios/index.html">Ejercicios guiados</a></li>
+          <li><a class="active" href="index.html">Tareas</a></li>
+          <li><a href="../proyecto_final/index.html">Proyecto final</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main id="contenido" class="wrap">
+    <header class="page-head">
+      <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="index.html">Tareas</a> / Tarea 1 · EG03</p>
+      <p class="kicker">Parcial 2 · Ejercicio guiado 03</p>
+      <h1>Tarea 1: estadísticas por modelo + WS-Security</h1>
+      <p class="meta">Juan Pablo Ramos Salazar · 610248</p>
+    </header>
+
+    <section class="section">
+      <h2>Objetivo</h2>
+      <p>Extender el contrato sin romper las operaciones existentes y autenticar una operación sensible.</p>
+    </section>
+
+    <section class="section">
+      <h2>Qué se hizo</h2>
+      <ul class="clean">
+        <li>Se agregó <code>ObtenerEstadisticasPorModelo</code> al WSDL, con tipo <code>EstadisticaModelo</code>.</li>
+        <li>Las operaciones de pendientes, registro y progreso siguen igual.</li>
+        <li>La operación nueva exige <code>wsse:UsernameToken</code> en el Header.</li>
+        <li>La contraseña no aparece en las evidencias públicas: el Request usa <code>********</code>.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Decisión de seguridad</h2>
+      <div class="decision">
+        <p><strong>Necesidad.</strong> Un conteo global no debe ser anónimo.</p>
+        <p><strong>Decisión.</strong> UsernameToken sólo en estadísticas. Las otras operaciones identifican al clasificador por correo.</p>
+        <p><strong>Justificación.</strong> Extender sin romper clientes que ya llaman a las tres primeras operaciones.</p>
+        <p><strong>Ventajas.</strong> Se ve la diferencia entre Header y Body.</p>
+        <p><strong>Limitaciones.</strong> UsernameToken en claro necesita TLS en un entorno real. El correo del clasificador no es autenticación.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Evidencias</h2>
+      <ul class="clean">
+        <li>WSDL actualizado: <a href="../ejercicio03/wsdl/library-classifier.wsdl">library-classifier.wsdl</a></li>
+        <li>Solicitud autenticada: <a href="../ejercicio03/evidencias/request-stats-wssecurity.xml">request-stats-wssecurity.xml</a></li>
+        <li>Respuesta: <a href="../ejercicio03/evidencias/response-stats.xml">response-stats.xml</a></li>
+        <li>Credenciales incorrectas: <a href="../ejercicio03/evidencias/fault-wssecurity.xml">fault-wssecurity.xml</a></li>
+      </ul>
+      <div class="gallery">
+        <figure>
+          <div class="shot-pending"><strong>T1-wssecurity-ok.png</strong><span>Estadísticas con UsernameToken correcto</span></div>
+          <figcaption>Captura pendiente. Cómo tomarla: ver tabla al final del mensaje de entrega.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot-pending"><strong>T1-wssecurity-fail.png</strong><span>Fault 401 con clave incorrecta</span></div>
+          <figcaption>Captura pendiente.</figcaption>
+        </figure>
+      </div>
+      <p><a class="btn" href="../ejercicio03/probar.html">Probar en el módulo SOAP</a></p>
+    </section>
+    <p><a class="btn ghost" href="index.html">Volver a tareas</a> <a class="btn ghost" href="../ejercicio03/index.html#t1">Ver en el reporte</a></p>
+  </main>
+  <footer>
+    <div class="wrap"><strong>Tarea 1 · EG03</strong> · Juan Pablo Ramos Salazar · 610248</div>
+  </footer>
+  <script src="../js/site.js"></script>
+</body>
+</html>

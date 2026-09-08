@@ -24,7 +24,7 @@ El sitio vive en `UbiquitousIAC`. No se reorganizan `ejercicio01/`, `ejercicio02
 | App de escritorio con modo SOAP | `ejercicio03/desktop_classifier/` |
 | Cliente zeep | `ejercicio03/clients/zeep/` |
 
-Apache en ubiquitous **no ejecuta** Flask. El servicio corre en la VM; el reporte es HTML/CSS/XML/SQL.
+Apache en ubiquitous **no ejecuta** procesos largos. El módulo SOAP se prueba en el sitio con `ejercicio03/probar.html` (mismas operaciones del WSDL). En local, `python app.py` abre la misma interfaz en `http://localhost:5000/`.
 
 ---
 
@@ -176,9 +176,9 @@ No subas un hash de WS-Security que sigas usando en GCP. El ejemplo publicado es
 
 ## 4. Publicar el reporte en ubiquitous.udem.edu
 
-El servidor de evidencias **no ejecuta Flask ni PostgreSQL**. Solo Apache con HTML, CSS, XML, SQL y ZIP.
+El servidor de evidencias publica HTML, CSS, XML, SQL y la página `probar.html`, que ejecuta las operaciones del contrato SOAP.
 
-Sincroniza el sitio (o al menos `ejercicio03/` más `index.html`, `ejercicios/` y `style.css` para que el hub apunte al EG3):
+Sincroniza el sitio (o al menos `ejercicio03/` más `index.html`, `ejercicios/`, `tareas/` y `style.css`):
 
 ```bash
 cd /home/bold/Documents/UbiquitousIAC
