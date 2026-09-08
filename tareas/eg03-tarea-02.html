@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tarea 2 · SOAP Fault y experiencia de usuario · EG03</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../index.html"><span class="brand-mark">JR</span><span>UDEM<small>Tarea 2 · EG03</small></span></a>
+      <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false">Menú</button>
+      <nav id="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="../index.html">Inicio</a></li>
+          <li><a href="../ejercicios/index.html">Ejercicios guiados</a></li>
+          <li><a class="active" href="index.html">Tareas</a></li>
+          <li><a href="../proyecto_final/index.html">Proyecto final</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main id="contenido" class="wrap">
+    <header class="page-head">
+      <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="index.html">Tareas</a> / Tarea 2 · EG03</p>
+      <p class="kicker">Parcial 2 · Ejercicio guiado 03</p>
+      <h1>Tarea 2: SOAP Fault y experiencia de usuario</h1>
+      <p class="meta">Juan Pablo Ramos Salazar · 610248</p>
+    </header>
+
+    <section class="section">
+      <h2>Objetivo</h2>
+      <p>Manejar errores de forma consistente entre el servicio y el cliente. El usuario ve un mensaje útil; el detalle técnico se queda en el Envelope y en el registro interno.</p>
+    </section>
+
+    <section class="section">
+      <h2>Qué se muestra al usuario y qué no</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Caso</th><th>En la interfaz</th><th>Sólo en el Fault / registro</th></tr></thead>
+          <tbody>
+            <tr><td>Duplicado 409</td><td>«Ese concepto ya lo clasificaste. Elige otro.»</td><td>codigo 409, DuplicadoFault</td></tr>
+            <tr><td>Concepto inexistente</td><td>«Ese concepto no existe en el catálogo.»</td><td>NotFoundFault 404</td></tr>
+            <tr><td>Modelo inválido</td><td>«El modelo tiene que ser IaaS, PaaS, SaaS o FaaS.»</td><td>ValidationFault 400</td></tr>
+            <tr><td>XML inválido</td><td>«No se pudo completar la operación.»</td><td>El parser no llega a consultar el catálogo</td></tr>
+            <tr><td>Falla interna</td><td>Mensaje genérico, sin culpar al usuario</td><td>Detalle técnico en el registro, no en el XML</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Tabla de pruebas negativas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Entrada</th><th>Esperado</th><th>Envelope</th></tr></thead>
+          <tbody>
+            <tr><td>N01</td><td>Registrar el mismo concepto dos veces</td><td>Fault 409</td><td><a href="../ejercicio03/evidencias/fault-409.xml">fault-409.xml</a></td></tr>
+            <tr><td>N02</td><td>conceptId 999999</td><td>Fault de cliente</td><td><a href="../ejercicio03/evidencias/fault-inexistente.xml">fault-inexistente.xml</a></td></tr>
+            <tr><td>N03</td><td>modelo XaaS</td><td>Fault de validación</td><td><a href="../ejercicio03/evidencias/fault-modelo.xml">fault-modelo.xml</a></td></tr>
+            <tr><td>N04</td><td><code>&lt;not-xml</code></td><td>Fault; no hay registro</td><td><a href="../ejercicio03/evidencias/fault-xml.xml">fault-xml.xml</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="gallery">
+        <figure>
+          <div class="shot-pending"><strong>T2-gui-409.png</strong><span>Interfaz mostrando el duplicado</span></div>
+          <figcaption>Captura pendiente de la GUI o de probar.html.</figcaption>
+        </figure>
+      </div>
+      <p><a class="btn" href="../ejercicio03/probar.html">Provocar los Faults</a></p>
+    </section>
+    <p><a class="btn ghost" href="index.html">Volver a tareas</a> <a class="btn ghost" href="../ejercicio03/index.html#t2">Ver en el reporte</a></p>
+  </main>
+  <footer>
+    <div class="wrap"><strong>Tarea 2 · EG03</strong> · Juan Pablo Ramos Salazar · 610248</div>
+  </footer>
+  <script src="../js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:tns="http://udem.edu.mx/iac/library-classifier">
+  <soap:Header/>
+  <soap:Body>
+    <tns:ObtenerProgresoUsuario>
+      <tns:correo>juan.pablo@udem.edu</tns:correo>
+    </tns:ObtenerProgresoUsuario>
+  </soap:Body>
+</soap:Envelope>

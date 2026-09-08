@@ -25,4 +25,4 @@ Implementar el ejercicio guiado 3 (SOAP) a partir del PDF de clase y de las diap
 
 1. Analizar instrucciones + carpeta y completar el ejercicio guiado 3.
 2. No modificar el monolito; dejar instrucciones GCP/GitHub si hace falta publicar.
-3. Estructura `library_soap_service/` y reporte web con las 18 secciones.
+3. Completar el reporte del ejercicio 03, las cinco tareas en casa y la página para probar el módulo SOAP en Ubiquitous.

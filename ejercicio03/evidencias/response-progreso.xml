@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:tns="http://udem.edu.mx/iac/library-classifier">
+  <soap:Header/>
+  <soap:Body>
+    <tns:ObtenerProgresoUsuarioResponse>
+      <tns:correo>juan.pablo@udem.edu</tns:correo>
+      <tns:nombreCompleto>Juan Pablo Ramos Salazar</tns:nombreCompleto>
+      <tns:clasificados>1</tns:clasificados>
+      <tns:pendientes>3</tns:pendientes>
+      <tns:totalCatalogo>4</tns:totalCatalogo>
+    </tns:ObtenerProgresoUsuarioResponse>
+  </soap:Body>
+</soap:Envelope>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:tns="http://udem.edu.mx/iac/library-classifier">
+  <soap:Header/>
+  <soap:Body>
+    <tns:ObtenerConceptosPendientesResponse>
+      <tns:total>1</tns:total>
+      <tns:concepto>
+        <tns:conceptId>101</tns:conceptId>
+        <tns:conceptName>Máquinas virtuales</tns:conceptName>
+        <tns:definition>Infraestructura con máquinas virtuales, almacenamiento y redes para instalar el propio sistema operativo.</tns:definition>
+        <tns:isbn>9780132350884</tns:isbn>
+        <tns:bookTitle>Clean Code</tns:bookTitle>
+        <tns:categoryName>Tecnología</tns:categoryName>
+      </tns:concepto>
+    </tns:ObtenerConceptosPendientesResponse>
+  </soap:Body>
+</soap:Envelope>

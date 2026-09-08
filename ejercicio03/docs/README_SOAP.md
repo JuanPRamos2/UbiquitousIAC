@@ -12,27 +12,23 @@ SC3705 · Juan Pablo Ramos Salazar · 610248
 
 ## Arranque local
 
+Sin PostgreSQL el módulo entra en modo demostración (los mismos cuatro conceptos Cloud):
+
 ```bash
 cd ejercicio03/library_soap_service
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env               # DB_PASSWORD del rol soap_user
-```
-
-Como `postgres`, una vez:
-
-```bash
-psql -d library_db -f sql/soap_module.sql
-psql -d library_db -c "ALTER ROLE soap_user PASSWORD 'tu-clave'"
-```
-
-```bash
 python app.py
-# WSDL:  http://localhost:5000/soap?wsdl
-# POST:  http://localhost:5000/soap
+# Interfaz: http://localhost:5000/
+# WSDL:     http://localhost:5000/soap?wsdl
+# POST:     http://localhost:5000/soap
 pytest tests/ -q
 ```
+
+En Ubiquitous la misma interfaz está en `ejercicio03/probar.html`.
+
+Para usar el catálogo real de la librería, define `SOAP_DEMO=0` y las variables de `.env.example`.
 
 El `.env.example` publicado no lleva un hash reutilizable. Genera el de laboratorio o de GCP con:
 

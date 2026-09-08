@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:tns="http://udem.edu.mx/iac/library-classifier">
+  <soap:Header/>
+  <soap:Body>
+    <soap:Fault>
+      <faultcode>soap:Client</faultcode>
+      <faultstring>El modelo debe ser IaaS, PaaS, SaaS o FaaS</faultstring>
+      <detail>
+        <tns:ValidationFault>
+          <tns:codigo>400</tns:codigo>
+          <tns:mensaje>El modelo debe ser IaaS, PaaS, SaaS o FaaS</tns:mensaje>
+        </tns:ValidationFault>
+      </detail>
+    </soap:Fault>
+  </soap:Body>
+</soap:Envelope>

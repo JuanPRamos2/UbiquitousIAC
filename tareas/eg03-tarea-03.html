@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tarea 3 · Auditoría del contrato WSDL · EG03</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../index.html"><span class="brand-mark">JR</span><span>UDEM<small>Tarea 3 · EG03</small></span></a>
+      <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false">Menú</button>
+      <nav id="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="../index.html">Inicio</a></li>
+          <li><a href="../ejercicios/index.html">Ejercicios guiados</a></li>
+          <li><a class="active" href="index.html">Tareas</a></li>
+          <li><a href="../proyecto_final/index.html">Proyecto final</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main id="contenido" class="wrap">
+    <header class="page-head">
+      <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="index.html">Tareas</a> / Tarea 3 · EG03</p>
+      <p class="kicker">Parcial 2 · Ejercicio guiado 03</p>
+      <h1>Tarea 3: auditoría del contrato WSDL</h1>
+      <p class="meta">Juan Pablo Ramos Salazar · 610248</p>
+    </header>
+
+    <section class="section">
+      <h2>Regla</h2>
+      <p>El contrato expone capacidades y datos necesarios, no la estructura completa del catálogo.</p>
+    </section>
+
+    <section class="section">
+      <h2>Dato → operación → exposición → justificación</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dato</th><th>Operación</th><th>¿Se expone?</th><th>Justificación</th></tr></thead>
+          <tbody>
+            <tr><td>ISBN / título / concepto</td><td>Pendientes, Registrar</td><td>Sí</td><td>El clasificador necesita identificar qué está clasificando.</td></tr>
+            <tr><td>categoryName</td><td>Pendientes</td><td>Sí (nombre, no el id interno)</td><td>Contexto; se transforma el identificador interno a un nombre.</td></tr>
+            <tr><td>definition</td><td>Pendientes</td><td>Sí</td><td>Texto que se clasifica como IaaS–FaaS.</td></tr>
+            <tr><td>precio, existencias</td><td>ninguna</td><td>No</td><td>No hacen falta para clasificar.</td></tr>
+            <tr><td>Cuentas y credenciales de la librería</td><td>ninguna</td><td>No</td><td>Superficie de ataque. El módulo ni siquiera las consulta.</td></tr>
+            <tr><td>Credenciales de conexión</td><td>ninguna</td><td>No</td><td>Información sensible interna.</td></tr>
+            <tr><td>Campos internos de auditoría</td><td>Fault / progreso</td><td>Sólo código y mensaje</td><td>El cliente distingue 409 de 500; no ve consultas ni rutas.</td></tr>
+            <tr><td>Conteo por modelo</td><td>Estadísticas</td><td>Sí, protegido</td><td>Agregado; no lista personas. Requiere WS-Security.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Diagrama del contrato</h2>
+      <figure>
+        <img class="shot" src="../ejercicio03/img/contrato-wsdl.svg" alt="Cuatro operaciones del WSDL">
+        <figcaption>Pendientes, registrar, progreso y estadísticas.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>Tres riesgos y mitigación</h2>
+      <ol>
+        <li><strong>El WSDL público revela cómo invocar RegistrarClasificacion.</strong> Mitigación: no publicar el endpoint abierto; proteger estadísticas; en un entorno real, TLS y autenticar más operaciones.</li>
+        <li><strong>El correo se cree a ciegas.</strong> Quien conozca un correo consulta progreso. Mitigación académica: suficiente para el laboratorio. En producción haría falta token en todas las operaciones.</li>
+        <li><strong>Acoplamiento a ISBN y conceptId.</strong> Si la librería renombra ISBN, el módulo se rompe. Mitigación: el contrato usa nombres de negocio y una vista de lectura que concentra el acoplamiento.</li>
+      </ol>
+      <p><strong>Conclusión.</strong> Un contrato estricto (XSD + enum + mensajes nombrados) es más mantenible: un campo obligatorio nuevo se ve en el WSDL. También es deliberadamente estrecho. Esa estrechez es una decisión, no un olvido.</p>
+    </section>
+    <p><a class="btn ghost" href="index.html">Volver a tareas</a> <a class="btn ghost" href="../ejercicio03/index.html#t3">Ver en el reporte</a></p>
+  </main>
+  <footer>
+    <div class="wrap"><strong>Tarea 3 · EG03</strong> · Juan Pablo Ramos Salazar · 610248</div>
+  </footer>
+  <script src="../js/site.js"></script>
+</body>
+</html>

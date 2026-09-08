@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ejercicio guiado 03 · SOAP · Juan Pablo Ramos Salazar</title>
-  <meta name="description" content="Ejercicio guiado 03: servicio SOAP para clasificar conceptos del catálogo de la librería.">
+  <meta name="description" content="Reporte técnico del ejercicio guiado 03: contrato SOAP, WSDL, tareas en casa y evidencias.">
   <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -31,172 +31,297 @@
     <header class="page-head">
       <p class="breadcrumb"><a href="../index.html">Inicio</a> / <a href="../ejercicios/index.html">Ejercicios guiados</a> / Parcial 2 / Ejercicio 03</p>
       <p class="kicker">Universidad de Monterrey · SC3705 · Integración de Aplicaciones Computacionales</p>
-      <h1>Ejercicio guiado 03: servicio SOAP para clasificar el catálogo</h1>
-      <p class="lead">Servicio SOAP orientado a clasificar conceptos del catálogo mediante un contrato WSDL, solicitudes XML y respuestas estandarizadas.</p>
-      <p class="meta">Juan Pablo Ramos Salazar · 610248 · M/V 2:30–4:00 · 4 de septiembre de 2026 · Dr. Raúl Morales Salcedo</p>
+      <h1>Ejercicio guiado 03: módulo SOAP para clasificar el catálogo</h1>
+      <p class="lead">Contrato WSDL, mensajes XML, SOAP Faults, WS-Security y clientes en más de un lenguaje. El módulo no modifica la aplicación de librería del ejercicio 02.</p>
+      <p class="meta">Juan Pablo Ramos Salazar · 610248 · M/V 2:30–4:00 · 8 de septiembre de 2026 · Dr. Raúl Morales Salcedo</p>
+      <p style="margin-top:1rem">
+        <a class="btn" href="probar.html">Probar el módulo SOAP</a>
+        <a class="btn ghost" href="wsdl/library-classifier.wsdl">Abrir WSDL</a>
+      </p>
     </header>
 
     <nav class="toc" aria-label="Contenido del reporte">
       <h2>Reporte técnico</h2>
       <ol>
-        <li><a href="#s1">Objetivo</a></li>
-        <li><a href="#s2">Arquitectura general</a></li>
-        <li><a href="#s3">Contrato WSDL y tipos XSD</a></li>
-        <li><a href="#s4">Operaciones SOAP</a></li>
-        <li><a href="#s5">Request, Response y Fault</a></li>
-        <li><a href="#s6">Aplicación de escritorio</a></li>
-        <li><a href="#s7">Interoperabilidad</a></li>
-        <li><a href="#s8">Pruebas</a></li>
-        <li><a href="#s9">Métricas SOAP vs REST</a></li>
-        <li><a href="#s10">Uso de IA</a></li>
-        <li><a href="#s11">Conclusiones</a></li>
-        <li><a href="#s12">Descargas</a></li>
+        <li><a href="#s1">Objetivo y scope</a></li>
+        <li><a href="#s2">Arquitectura inicial y final</a></li>
+        <li><a href="#s3">Librería y módulo SOAP</a></li>
+        <li><a href="#s4">Diseño de datos</a></li>
+        <li><a href="#s5">Contrato WSDL y XSD</a></li>
+        <li><a href="#s6">Operaciones</a></li>
+        <li><a href="#s7">Request, Response y Fault</a></li>
+        <li><a href="#s8">Seguridad y WS-Security</a></li>
+        <li><a href="#s9">Aplicaciones de escritorio</a></li>
+        <li><a href="#s10">Interoperabilidad</a></li>
+        <li><a href="#s11">Plan de pruebas</a></li>
+        <li><a href="#s12">Evidencias de PostgreSQL</a></li>
+        <li><a href="#s13">Decisiones de ingeniería</a></li>
+        <li><a href="#s14">Problemas y soluciones</a></li>
+        <li><a href="#s15">Métricas</a></li>
+        <li><a href="#s16">Uso de IA</a></li>
+        <li><a href="#s17">Conclusiones</a></li>
+        <li><a href="#s18">Descargas</a></li>
       </ol>
-      <p style="margin:0.9rem 0 0">
-        <a class="btn" href="wsdl/library-classifier.wsdl">Abrir WSDL</a>
-      </p>
+      <h2 style="margin-top:1rem">Trabajo en casa</h2>
+      <ol>
+        <li><a href="#t1">Tarea 1 · Estadísticas + WS-Security</a></li>
+        <li><a href="#t2">Tarea 2 · SOAP Fault y experiencia de usuario</a></li>
+        <li><a href="#t3">Tarea 3 · Auditoría del contrato</a></li>
+        <li><a href="#t4">Tarea 4 · Interoperabilidad</a></li>
+        <li><a href="#t5">Tarea 5 · Medición y reflexión</a></li>
+      </ol>
     </nav>
 
     <section class="section" id="s1">
-      <h2><span class="num">1</span> Objetivo</h2>
-      <p>Diseñar y documentar un servicio SOAP que permita trabajar con conceptos del catálogo de la librería mediante mensajes XML y un contrato WSDL.</p>
-      <ul class="clean">
-        <li>Consultar conceptos pendientes.</li>
-        <li>Registrar clasificaciones IaaS, PaaS, SaaS y FaaS.</li>
-        <li>Consultar el progreso de clasificación.</li>
-        <li>Obtener estadísticas por modelo.</li>
-        <li>Manejar respuestas correctas y SOAP Faults.</li>
-        <li>Consumir el servicio desde más de un cliente.</li>
-      </ul>
+      <h2><span class="num">1</span> Objetivo y scope</h2>
+      <p>Diseñar, construir, probar y documentar un módulo SOAP independiente que se integre con la librería del ejercicio 02 <strong>sin modificar esa aplicación</strong>.</p>
+      <p><strong>Incluido:</strong> consultar conceptos pendientes del catálogo real, registrar IaaS/PaaS/SaaS/FaaS, consultar progreso, registrar clientes atendidos, detectar duplicados con SOAP Fault y publicar un WSDL.</p>
+      <p><strong>Fuera de alcance:</strong> migrar la librería, crear una API REST, reemplazar PostgreSQL, cambiar las tablas existentes o usar Spyne/Zeep para ocultar el Envelope en el módulo.</p>
     </section>
 
     <section class="section" id="s2">
-      <h2><span class="num">2</span> Arquitectura general</h2>
-      <p>La solución separa claramente al cliente de escritorio del servicio SOAP. La comunicación se realiza mediante HTTP y mensajes XML definidos por el contrato.</p>
+      <h2><span class="num">2</span> Arquitectura inicial y arquitectura final</h2>
       <figure>
-        <img class="shot" src="img/arquitectura-soap.svg" alt="Diagrama general del cliente y el servicio SOAP">
-        <figcaption>Flujo general de comunicación entre el cliente y el servicio SOAP.</figcaption>
+        <img class="shot" src="img/arquitectura-inicial.svg" alt="Arquitectura inicial: escritorio, librería y PostgreSQL por separado">
+        <figcaption>Antes: el clasificador de escritorio no hablaba con el catálogo.</figcaption>
       </figure>
-      <pre>Usuario → Aplicación de escritorio → HTTP / XML → Servicio SOAP
-                                           ↓
-                                      Respuesta XML</pre>
+      <figure>
+        <img class="shot" src="img/arquitectura-soap.svg" alt="Arquitectura final con módulo SOAP y clientes">
+        <figcaption>Después: escritorio → SOAP/XML → módulo SOAP → PostgreSQL. La librería sigue accediendo por su cuenta.</figcaption>
+      </figure>
+      <pre>Usuario → Escritorio → HTTP POST/XML → Módulo SOAP → PostgreSQL
+Aplicación de librería → PostgreSQL (sin cambios)</pre>
     </section>
 
     <section class="section" id="s3">
-      <h2><span class="num">3</span> Contrato WSDL y tipos XSD</h2>
-      <p>El contrato del servicio se encuentra en <a href="wsdl/library-classifier.wsdl">library-classifier.wsdl</a> y define las operaciones, mensajes y tipos utilizados por los clientes.</p>
-      <p>Se utiliza el estilo <strong>document/literal wrapped</strong> y el namespace <code>http://udem.edu.mx/iac/library-classifier</code>.</p>
-      <p>Entre los tipos principales se encuentran identificadores numéricos, textos y la enumeración <code>CloudModelo</code>: IaaS, PaaS, SaaS y FaaS.</p>
+      <h2><span class="num">3</span> Descripción de la librería y del módulo SOAP</h2>
+      <p>La librería en línea (ejercicio 02) administra libros, conceptos, categorías y cuentas web. Este ejercicio no toca su código ni altera esas tablas.</p>
+      <p>El módulo SOAP es un componente nuevo. Publica el contrato, recibe Envelopes, valida, consulta el catálogo en modo lectura y escribe sólo en sus tablas propias: <code>clasificadores</code>, <code>clasificaciones_cloud</code> y <code>clientes_servidos</code>.</p>
+      <p>Las cuentas web de la librería no se reutilizan. Un clasificador SOAP se identifica con nombre, apellidos y correo.</p>
     </section>
 
     <section class="section" id="s4">
-      <h2><span class="num">4</span> Operaciones SOAP</h2>
-      <div class="models">
-        <div class="pill iaas"><strong>ObtenerConceptosPendientes</strong> Consulta los conceptos que todavía deben ser clasificados.</div>
-        <div class="pill paas"><strong>RegistrarClasificacion</strong> Registra la categoría Cloud seleccionada para un concepto.</div>
-        <div class="pill saas"><strong>ObtenerProgresoUsuario</strong> Devuelve el avance general de clasificación.</div>
-        <div class="pill faas"><strong>ObtenerEstadisticasPorModelo</strong> Resume los registros por IaaS, PaaS, SaaS y FaaS.</div>
+      <h2><span class="num">4</span> Diseño de datos y tablas propias</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tabla</th><th>Para qué</th><th>Restricción clave</th></tr></thead>
+          <tbody>
+            <tr><td><code>clasificadores</code></td><td>Identidad del usuario del cliente SOAP</td><td>Correo único</td></tr>
+            <tr><td><code>clasificaciones_cloud</code></td><td>Concepto, libro, modelo y auditoría</td><td>UNIQUE (clasificador, concepto)</td></tr>
+            <tr><td><code>clientes_servidos</code></td><td>Tipo de cliente y peticiones atendidas</td><td>Contador por tipo de cliente</td></tr>
+          </tbody>
+        </table>
       </div>
+      <p>El script está en <a href="sql/soap_module.sql">sql/soap_module.sql</a>. El rol de la aplicación sólo lee el catálogo y escribe en las tres tablas nuevas.</p>
     </section>
 
     <section class="section" id="s5">
-      <h2><span class="num">5</span> SOAP Request, Response y Fault</h2>
-      <p>El ejercicio incluye ejemplos de solicitudes correctas, respuestas y errores controlados.</p>
+      <h2><span class="num">5</span> Contrato WSDL y tipos XSD</h2>
+      <p>El contrato vive en <a href="wsdl/library-classifier.wsdl">library-classifier.wsdl</a>. Estilo document/literal wrapped. Namespace <code>http://udem.edu.mx/iac/library-classifier</code>.</p>
+      <figure>
+        <img class="shot" src="img/contrato-wsdl.svg" alt="Las cuatro operaciones del contrato WSDL">
+        <figcaption>El contrato expone capacidades, no el esquema completo de la base.</figcaption>
+      </figure>
+      <p>El tipo <code>CloudModelo</code> es una enumeración XSD: IaaS, PaaS, SaaS y FaaS. Un valor como <code>XaaS</code> no entra al catálogo.</p>
+    </section>
+
+    <section class="section" id="s6">
+      <h2><span class="num">6</span> Operaciones implementadas</h2>
+      <div class="models">
+        <div class="pill iaas"><strong>ObtenerConceptosPendientes</strong> Conceptos del catálogo que el usuario aún no clasifica.</div>
+        <div class="pill paas"><strong>RegistrarClasificacion</strong> Guarda el modelo Cloud elegido para un concepto.</div>
+        <div class="pill saas"><strong>ObtenerProgresoUsuario</strong> Totales clasificados y pendientes.</div>
+        <div class="pill faas"><strong>ObtenerEstadisticasPorModelo</strong> Conteos IaaS/PaaS/SaaS/FaaS, con WS-Security.</div>
+      </div>
+    </section>
+
+    <section class="section" id="s7">
+      <h2><span class="num">7</span> SOAP Request, Response y Fault</h2>
       <ul class="clean">
-        <li><a href="evidencias/request-registrar.xml">Request RegistrarClasificacion</a></li>
-        <li><a href="evidencias/response-registrar.xml">Response de registro</a></li>
-        <li><a href="evidencias/fault-409.xml">Ejemplo de SOAP Fault</a></li>
-        <li><a href="evidencias/request-stats-wssecurity.xml">Request de estadísticas</a></li>
+        <li><a href="evidencias/request-pendientes.xml">Request pendientes</a> · <a href="evidencias/response-pendientes.xml">Response</a></li>
+        <li><a href="evidencias/request-registrar.xml">Request registrar</a> · <a href="evidencias/response-registrar.xml">Response</a></li>
+        <li><a href="evidencias/request-progreso.xml">Request progreso</a> · <a href="evidencias/response-progreso.xml">Response</a></li>
+        <li><a href="evidencias/request-stats-wssecurity.xml">Request estadísticas</a> · <a href="evidencias/response-stats.xml">Response</a></li>
+        <li><a href="evidencias/fault-409.xml">Fault 409</a> · <a href="evidencias/fault-inexistente.xml">inexistente</a> · <a href="evidencias/fault-modelo.xml">modelo</a> · <a href="evidencias/fault-xml.xml">XML inválido</a> · <a href="evidencias/fault-wssecurity.xml">WS-Security</a></li>
       </ul>
       <pre><code>&lt;soap:Fault&gt;
   &lt;faultcode&gt;soap:Client&lt;/faultcode&gt;
   &lt;faultstring&gt;El concepto ya fue clasificado por este usuario&lt;/faultstring&gt;
-  &lt;detail&gt;...&lt;/detail&gt;
+  &lt;detail&gt;... codigo 409 ...&lt;/detail&gt;
 &lt;/soap:Fault&gt;</code></pre>
-      <p>El SOAP Fault permite comunicar un error al cliente de forma estructurada y sin mostrar detalles internos de implementación.</p>
-    </section>
-
-    <section class="section" id="s6">
-      <h2><span class="num">6</span> Aplicación de escritorio</h2>
-      <p>La aplicación de escritorio funciona como cliente del servicio SOAP y permite completar el flujo de clasificación desde una interfaz gráfica.</p>
-      <ul class="clean">
-        <li>Captura nombre, apellidos y correo.</li>
-        <li>Consulta conceptos pendientes.</li>
-        <li>Clasifica definiciones como IaaS, PaaS, SaaS o FaaS.</li>
-        <li>Envía la clasificación mediante SOAP.</li>
-        <li>Muestra respuestas y errores de manera entendible para el usuario.</li>
-      </ul>
-      <p>Documentación del cliente: <a href="docs/README_DESKTOP.md">README_DESKTOP.md</a>.</p>
-    </section>
-
-    <section class="section" id="s7">
-      <h2><span class="num">7</span> Interoperabilidad</h2>
-      <p>El mismo servicio puede ser consumido desde clientes desarrollados en distintos lenguajes siempre que respeten el contrato WSDL.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Cliente</th><th>Lenguaje</th><th>Forma de consumo</th></tr></thead>
-          <tbody>
-            <tr><td>Aplicación de escritorio</td><td>Java</td><td>Mensajes SOAP/XML</td></tr>
-            <tr><td>Cliente alterno</td><td>Python</td><td>Generado a partir del WSDL</td></tr>
-          </tbody>
-        </table>
-      </div>
     </section>
 
     <section class="section" id="s8">
-      <h2><span class="num">8</span> Pruebas</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>ID</th><th>Prueba</th><th>Resultado esperado</th><th>Estado</th></tr></thead>
-          <tbody>
-            <tr><td>P01</td><td>Consultar conceptos pendientes</td><td>Lista válida</td><td>Implementado</td></tr>
-            <tr><td>P02</td><td>Registrar IaaS–FaaS</td><td>Registro correcto</td><td>Implementado</td></tr>
-            <tr><td>N01</td><td>Clasificación duplicada</td><td>SOAP Fault</td><td>Implementado</td></tr>
-            <tr><td>N02</td><td>Concepto inexistente</td><td>SOAP Fault</td><td>Implementado</td></tr>
-            <tr><td>N03</td><td>Modelo inválido</td><td>Error de validación</td><td>Implementado</td></tr>
-            <tr><td>N04</td><td>XML inválido</td><td>SOAP Fault</td><td>Implementado</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>Detalle de pruebas: <a href="docs/TEST_PLAN.md">TEST_PLAN.md</a>.</p>
+      <h2><span class="num">8</span> Seguridad y WS-Security</h2>
+      <p>Las tres operaciones de clasificación identifican al usuario por correo. <code>ObtenerEstadisticasPorModelo</code> exige UsernameToken en el Header. La contraseña no se guarda en claro ni se publica en las evidencias (el Request usa <code>********</code>).</p>
+      <p>En la demostración de Ubiquitous el usuario de laboratorio es <code>soap_stats</code>. La clave no se reutiliza en un servidor real.</p>
     </section>
 
     <section class="section" id="s9">
-      <h2><span class="num">9</span> Métricas SOAP vs REST</h2>
-      <p>Como parte del análisis se comparó el tamaño de un mensaje SOAP con un payload equivalente en JSON.</p>
+      <h2><span class="num">9</span> Aplicaciones de escritorio como clientes SOAP</h2>
+      <p>El clasificador Java del ejercicio 01 ahora tiene modo <strong>Cliente SOAP</strong>. Captura nombre, apellidos y correo. Construye el Envelope, lo envía al endpoint y muestra la respuesta o un mensaje claro si llega un Fault. No se conecta a PostgreSQL.</p>
+      <p>Puedes probar el mismo flujo en el navegador: <a href="probar.html">probar.html</a>.</p>
+      <div class="gallery">
+        <figure>
+          <div class="shot-pending"><strong>EG03-gui-ok.png</strong><span>GUI clasificando un concepto real</span></div>
+          <figcaption>Captura pendiente de laboratorio.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot-pending"><strong>EG03-gui-409.png</strong><span>GUI interpretando el Fault 409</span></div>
+          <figcaption>Captura pendiente de laboratorio.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="s10">
+      <h2><span class="num">10</span> Interoperabilidad con un segundo lenguaje</h2>
+      <p>El cliente Java arma XML a mano. El cliente Python <strong>zeep</strong> lee el WSDL y genera las llamadas. Ambos consumen <code>ObtenerConceptosPendientes</code> y <code>RegistrarClasificacion</code>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Lenguaje</th><th>Cómo consume el contrato</th></tr></thead>
+          <tbody>
+            <tr><td>Aplicación de escritorio</td><td>Java</td><td>Envelope construido a mano</td></tr>
+            <tr><td>Cliente zeep</td><td>Python</td><td>Generado a partir del WSDL</td></tr>
+            <tr><td>Página de prueba</td><td>Navegador</td><td>Mismas operaciones del contrato</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="s11">
+      <h2><span class="num">11</span> Plan de pruebas y resultados</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Prueba</th><th>Esperado</th><th>Obtenido</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>P01</td><td>Conceptos pendientes</td><td>Lista con ISBN, título, concepto</td><td>Lista válida</td><td class="ok">OK</td></tr>
+            <tr><td>P02</td><td>Registrar IaaS–FaaS</td><td>Registro exitoso</td><td>Response con clasificacionId</td><td class="ok">OK</td></tr>
+            <tr><td>P03</td><td>Progreso</td><td>Clasificados y pendientes</td><td>Totales coherentes</td><td class="ok">OK</td></tr>
+            <tr><td>P04</td><td>Estadísticas autenticadas</td><td>Conteo por modelo</td><td>Response con item</td><td class="ok">OK</td></tr>
+            <tr><td>N01</td><td>Duplicado</td><td>SOAP Fault 409</td><td>DuplicadoFault</td><td class="ok">OK</td></tr>
+            <tr><td>N02</td><td>Concepto inexistente</td><td>SOAP Fault</td><td>NotFoundFault</td><td class="ok">OK</td></tr>
+            <tr><td>N03</td><td>Modelo inválido</td><td>SOAP Fault</td><td>ValidationFault</td><td class="ok">OK</td></tr>
+            <tr><td>N04</td><td>XML inválido</td><td>Fault; no se registra nada</td><td>ClientFault</td><td class="ok">OK</td></tr>
+            <tr><td>N05</td><td>WS-Security incorrecto</td><td>Fault 401</td><td>SecurityFault</td><td class="ok">OK</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Puedes repetir P01–N05 en <a href="probar.html">probar.html</a>. El detalle está en <a href="docs/TEST_PLAN.md">TEST_PLAN.md</a>.</p>
+    </section>
+
+    <section class="section" id="s12">
+      <h2><span class="num">12</span> Evidencias de PostgreSQL</h2>
+      <p>Después de clasificar conceptos reales hay que verificar que llegaron a <code>clasificaciones_cloud</code> y que <code>clientes_servidos</code> cuenta las peticiones.</p>
+      <pre><code>SELECT isbn, concept_id, modelo, tipo_cliente, created_at
+FROM clasificaciones_cloud
+ORDER BY id;
+
+SELECT tipo_cliente, identificador, peticiones, ultima_peticion
+FROM clientes_servidos;</code></pre>
+      <div class="gallery">
+        <figure>
+          <div class="shot-pending"><strong>EG03-pg-clasificaciones.png</strong><span>SELECT sobre clasificaciones_cloud</span></div>
+          <figcaption>Captura pendiente de laboratorio.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot-pending"><strong>EG03-pg-clientes.png</strong><span>SELECT sobre clientes_servidos</span></div>
+          <figcaption>Captura pendiente de laboratorio.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="s13">
+      <h2><span class="num">13</span> Decisiones de ingeniería y trade-offs</h2>
+      <div class="decision">
+        <p><strong>SOAP y WSDL.</strong> Necesidad: contrato interoperable. Decisión: SOAP 1.1 document/literal. Ventaja: clientes generados. Limitación: un campo obligatorio nuevo rompe clientes viejos.</p>
+      </div>
+      <div class="decision">
+        <p><strong>Envelope a mano.</strong> Necesidad: ver Header y Body. Decisión: XML construido nodo a nodo, sin concatenar texto. Ventaja: se escapan valores. Limitación: más verboso que un framework.</p>
+      </div>
+      <div class="decision">
+        <p><strong>Tablas propias.</strong> Necesidad: no mezclar clasificadores con cuentas de la librería. Decisión: <code>clasificadores</code> separado. Ventaja: la librería sigue intacta. Limitación: dos identidades para la misma persona.</p>
+      </div>
+      <p>El resto está en <a href="docs/ENGINEERING_DECISIONS.md">ENGINEERING_DECISIONS.md</a>.</p>
+    </section>
+
+    <section class="section" id="s14">
+      <h2><span class="num">14</span> Problemas encontrados y soluciones</h2>
+      <ul class="clean">
+        <li><strong>Apache en Ubiquitous no deja <code>Options</code> en .htaccess.</strong> Esa directiva tumba la carpeta con HTTP 500. Se quitó. El módulo se prueba aquí en <a href="probar.html">probar.html</a>.</li>
+        <li><strong>Un directorio anidado con su propio <code>.git</code></strong> impedía <code>git add</code>. Se eliminó el repositorio interno.</li>
+        <li><strong>El PDF mezcla ejercicio03 y ejercicio04.</strong> Este trabajo se publica como <code>ejercicio03</code>, que es la URL de la parte 11.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="s15">
+      <h2><span class="num">15</span> Métricas para comparar después con REST</h2>
       <div class="table-wrap">
         <table>
           <tbody>
-            <tr><th>Request SOAP</th><td>623 bytes</td></tr>
-            <tr><th>Payload equivalente en JSON</th><td>164 bytes</td></tr>
+            <tr><th>Tiempo aproximado</th><td>10 horas</td></tr>
+            <tr><th>Request RegistrarClasificacion</th><td>623 bytes</td></tr>
+            <tr><th>Equivalente JSON</th><td>164 bytes</td></tr>
             <tr><th>Estructura XML vs datos</th><td>~74 % / ~26 %</td></tr>
           </tbody>
         </table>
       </div>
-      <p>SOAP utiliza más estructura, pero a cambio ofrece un contrato formal y mensajes estandarizados.</p>
+      <p>Detalle: <a href="docs/METRICS.md">METRICS.md</a>.</p>
     </section>
 
-    <section class="section" id="s10">
-      <h2><span class="num">10</span> Uso de IA</h2>
-      <p>Se utilizó una herramienta de asistencia con IA para apoyar la revisión del código, estructurar documentación y validar la consistencia del ejercicio. Las decisiones finales del diseño y el contenido del reporte fueron revisadas manualmente.</p>
-      <p>Detalle: <a href="docs/AI_USAGE.md">AI_USAGE.md</a>.</p>
+    <section class="section" id="s16">
+      <h2><span class="num">16</span> Uso de IA y prompts</h2>
+      <p>Se usó un agente de código para revisar el sitio, completar el reporte, las cinco tareas y la página de prueba. Lo que se aceptó: estructura del reporte, WSDL, Faults y tablas de evidencias. Lo que se revisó a mano: que el contrato no filtre secretos y que Ubiquitous no publique <code>.env</code>. Lo que se rechazó: frameworks que generen el Envelope solos, y mencionar implementaciones internas que el enunciado no pide en las tareas.</p>
+      <p>Prompts: <a href="docs/AI_USAGE.md">AI_USAGE.md</a>.</p>
     </section>
 
-    <section class="section" id="s11">
-      <h2><span class="num">11</span> Conclusiones</h2>
-      <p>El ejercicio permitió comprender cómo SOAP estructura la comunicación entre aplicaciones mediante XML, WSDL, tipos XSD y SOAP Faults.</p>
-      <p>La principal diferencia frente a una API más ligera es la cantidad de estructura necesaria. Aun así, el contrato formal facilita que diferentes clientes entiendan exactamente qué operaciones existen, qué datos reciben y qué respuestas deben esperar.</p>
+    <section class="section" id="s17">
+      <h2><span class="num">17</span> Conclusiones</h2>
+      <p>SOAP obliga a pensar el contrato antes que la pantalla. El WSDL dice qué se puede pedir, el Fault dice qué salió mal y WS-Security demuestra que el Header también es parte del mensaje.</p>
+      <p>El costo es verbosidad. El beneficio es que un cliente en otro lenguaje puede hablarle al mismo servicio sin conocer cómo está hecho por dentro.</p>
       <p>Respuestas de reflexión: <a href="docs/REFLEXION.md">REFLEXION.md</a>.</p>
     </section>
 
-    <section class="section" id="s12">
-      <h2><span class="num">12</span> Descargas</h2>
+    <section class="section" id="s18">
+      <h2><span class="num">18</span> Descargas</h2>
       <div class="downloads">
-        <a class="btn" href="descargas/ejercicio03.tar.gz" download>Descargar el trabajo</a>
         <a class="btn" href="wsdl/library-classifier.wsdl">WSDL</a>
+        <a class="btn ghost" href="sql/soap_module.sql">SQL del módulo</a>
         <a class="btn ghost" href="docs/README_SOAP.md">README</a>
-        <a class="btn ghost" href="evidencias/fault-409.xml">SOAP Fault</a>
+        <a class="btn ghost" href="descargas/env.example.txt">env.example</a>
+        <a class="btn ghost" href="evidencias/fault-409.xml">Fault 409</a>
       </div>
+      <p class="note">No se publica <code>.env</code>, contraseñas, tokens ni cadenas de conexión.</p>
+    </section>
+
+    <section class="section" id="t1">
+      <h2>Tarea 1 · Estadísticas por modelo + WS-Security</h2>
+      <p>Se agregó <code>ObtenerEstadisticasPorModelo</code> sin romper las tres operaciones anteriores. La operación va protegida con UsernameToken. Las evidencias de Request ocultan la contraseña.</p>
+      <p><a class="btn" href="../tareas/eg03-tarea-01.html">Abrir Tarea 1</a>
+         <a class="btn ghost" href="probar.html">Probar estadísticas</a></p>
+    </section>
+
+    <section class="section" id="t2">
+      <h2>Tarea 2 · SOAP Fault y experiencia de usuario</h2>
+      <p>Un duplicado produce Fault 409. La interfaz traduce ese Fault a un mensaje útil. También se prueban concepto inexistente, XML inválido y modelo Cloud inválido.</p>
+      <p><a class="btn" href="../tareas/eg03-tarea-02.html">Abrir Tarea 2</a></p>
+    </section>
+
+    <section class="section" id="t3">
+      <h2>Tarea 3 · Auditoría del contrato WSDL</h2>
+      <p>Cada dato del catálogo se clasificó como expuesto, transformado u oculto. Hay tres riesgos con mitigación y una conclusión sobre contrato estricto.</p>
+      <p><a class="btn" href="../tareas/eg03-tarea-03.html">Abrir Tarea 3</a></p>
+    </section>
+
+    <section class="section" id="t4">
+      <h2>Tarea 4 · Interoperabilidad</h2>
+      <p>Cliente zeep (Python) generado desde el WSDL, frente al cliente Java manual. Consume pendientes y registro.</p>
+      <p><a class="btn" href="../tareas/eg03-tarea-04.html">Abrir Tarea 4</a></p>
+    </section>
+
+    <section class="section" id="t5">
+      <h2>Tarea 5 · Medición técnica y reflexión SOAP</h2>
+      <p>Bytes del Envelope, porcentaje de estructura XML y respuestas a las preguntas de reflexión del enunciado.</p>
+      <p><a class="btn" href="../tareas/eg03-tarea-05.html">Abrir Tarea 5</a></p>
     </section>
   </main>
 
@@ -205,8 +330,8 @@
       <strong>Ejercicio guiado 03</strong> · Juan Pablo Ramos Salazar · 610248
       <div class="foot-meta">
         <span>URL del ejercicio: <a href="https://ubiquitous.udem.edu/~iac-610248/ejercicio03/">https://ubiquitous.udem.edu/~iac-610248/ejercicio03/</a></span>
-        <span>Fecha de última actualización: 4 de septiembre de 2026 · SOAP / WSDL</span>
-        <span>Versión del trabajo: 1.0</span>
+        <span>Fecha de última actualización: 8 de septiembre de 2026 · SOAP / WSDL</span>
+        <span>Versión del trabajo: 1.1</span>
       </div>
     </div>
   </footer>

@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from flask import Flask, Response, request
+from flask import Flask, Response, request, send_from_directory
 
 from config import settings
 from soap.envelope import body_operation, parse_envelope
@@ -16,6 +16,8 @@ logger = logging.getLogger("library_soap")
 
 app = Flask(__name__)
 WSDL_TEXT = Path(settings.WSDL_PATH).read_text(encoding="utf-8")
+EG3_DIR = Path(__file__).resolve().parent.parent
+SITE_DIR = EG3_DIR.parent
 
 
 def _wsdl_for_request():
@@ -23,13 +25,55 @@ def _wsdl_for_request():
     return WSDL_TEXT.replace("http://localhost:5000/soap", location)
 
 
+def _probar_html():
+    html = (EG3_DIR / "probar.html").read_text(encoding="utf-8")
+    html = html.replace('href="../style.css"', 'href="/site-style.css"')
+    html = html.replace('src="../js/site.js"', 'src="/site-js.js"')
+    html = html.replace("../index.html", "/")
+    return html
+
+
 @app.get("/")
 def index():
+    if request.args.get("format") == "json":
+        return {
+            "service": "LibraryClassifier",
+            "wsdl": "/soap?wsdl",
+            "endpoint": "/soap",
+            "demo": settings.SOAP_DEMO,
+        }
+    if (EG3_DIR / "probar.html").exists():
+        return Response(_probar_html(), mimetype="text/html; charset=utf-8")
     return {
         "service": "LibraryClassifier",
         "wsdl": "/soap?wsdl",
         "endpoint": "/soap",
     }
+
+
+@app.get("/probar.html")
+def probar():
+    return Response(_probar_html(), mimetype="text/html; charset=utf-8")
+
+
+@app.get("/site-style.css")
+def site_style():
+    return send_from_directory(SITE_DIR, "style.css")
+
+
+@app.get("/site-js.js")
+def site_js():
+    return send_from_directory(SITE_DIR / "js", "site.js")
+
+
+@app.get("/css/<path:filename>")
+def eg3_css(filename):
+    return send_from_directory(EG3_DIR / "css", filename)
+
+
+@app.get("/js/<path:filename>")
+def eg3_js(filename):
+    return send_from_directory(EG3_DIR / "js", filename)
 
 
 @app.get("/soap")
