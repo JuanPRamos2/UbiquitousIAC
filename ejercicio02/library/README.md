@@ -45,13 +45,13 @@ Después otorgue privilegios mínimos al usuario `library_user` (véase comentar
 
 ## Arranque local (con base de datos)
 
-Postgres se levanta con Docker y se carga el esquema automáticamente:
+Postgres se levanta con Docker en el **puerto 5433** (así no choca con un Postgres del sistema en 5432) y se carga el esquema:
 
 ```bash
 cd ejercicio02/library
-cp .env.example .env          # ya trae DB_PASSWORD=666 (demo)
+cp .env.example .env          # DB_PASSWORD=666 y DB_PORT=5433
 npm install
-npm run setup                 # docker compose up + esquema + semilla
+npm run setup
 npm start                     # http://127.0.0.1:3000/library
 ```
 

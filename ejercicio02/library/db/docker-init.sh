@@ -12,4 +12,5 @@ do
   echo "  -> $f"
   psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "/sql/$f"
 done
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "/sql/07_grants.sql"
 echo "Base library_db lista."

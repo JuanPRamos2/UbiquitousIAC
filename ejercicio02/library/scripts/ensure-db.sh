@@ -1,37 +1,37 @@
 #!/usr/bin/env bash
-# Levanta PostgreSQL (Docker) y carga el esquema si todavía no existe.
+# Levanta PostgreSQL en Docker (puerto 5433) y deja listo el esquema.
+# Usa 5433 para no chocar con un Postgres del sistema en 5432.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 DEMO_PASSWORD="666"
 DEMO_SECRET="libreria-demo-session-610248"
+DEMO_PORT="5433"
 
 if [ ! -f .env ]; then
   cp .env.example .env
   echo "Se creó .env desde .env.example"
 fi
 
-fill_env() {
+set_env() {
   local key="$1"
   local value="$2"
-  if grep -q "^${key}=$" .env 2>/dev/null || ! grep -q "^${key}=" .env 2>/dev/null; then
-    if grep -q "^${key}=" .env; then
-      sed -i "s|^${key}=.*|${key}=${value}|" .env
-    else
-      echo "${key}=${value}" >> .env
-    fi
+  if grep -q "^${key}=" .env; then
+    sed -i "s|^${key}=.*|${key}=${value}|" .env
+  else
+    echo "${key}=${value}" >> .env
   fi
 }
 
-fill_env DB_HOST 127.0.0.1
-fill_env DB_PORT 5432
-fill_env DB_NAME library_db
-fill_env DB_USER library_user
-fill_env DB_PASSWORD "$DEMO_PASSWORD"
-fill_env SESSION_SECRET "$DEMO_SECRET"
-fill_env HOST 0.0.0.0
-fill_env PORT 3000
+set_env DB_HOST 127.0.0.1
+set_env DB_PORT "$DEMO_PORT"
+set_env DB_NAME library_db
+set_env DB_USER library_user
+set_env DB_PASSWORD "$DEMO_PASSWORD"
+set_env SESSION_SECRET "$DEMO_SECRET"
+set_env HOST 0.0.0.0
+set_env PORT 3000
 
 compose() {
   if docker compose version >/dev/null 2>&1; then
@@ -47,7 +47,7 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "Levantando PostgreSQL en el puerto 5432..."
+echo "Levantando PostgreSQL en el puerto ${DEMO_PORT}..."
 compose up -d
 
 echo "Esperando a que Postgres acepte conexiones..."
@@ -81,4 +81,23 @@ else
   echo "El esquema ya está cargado."
 fi
 
-echo "Base lista. Usuario de prueba: mariana.solis@libreriaonline.mx / LibreriaAdmin26"
+echo "Otorgando permisos a library_user..."
+compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < db/07_grants.sql
+compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 <<'SQL'
+DO $$
+DECLARE
+  obj RECORD;
+BEGIN
+  FOR obj IN SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I OWNER TO library_user', obj.tablename);
+  END LOOP;
+  FOR obj IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'
+  LOOP
+    EXECUTE format('ALTER SEQUENCE public.%I OWNER TO library_user', obj.sequence_name);
+  END LOOP;
+END $$;
+SQL
+
+echo "Base lista en 127.0.0.1:${DEMO_PORT}"
+echo "Prueba: mariana.solis@libreriaonline.mx / LibreriaAdmin26"
