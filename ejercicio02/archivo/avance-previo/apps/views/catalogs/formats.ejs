@@ -1,3 +1,0 @@
-<%- include('../partials/header') %>
-<section class="card"><h1>Formatos</h1><form action="/catalogs/formats" method="POST"><input name="name" placeholder="Nuevo formato" required><button class="btn" type="submit">Agregar</button></form><% items.forEach((item) => { %><div class="inline-actions"><span><%= item.name %></span><form action="/catalogs/formats/<%= item.id %>/delete" method="POST"><button class="danger-btn" type="submit">Eliminar</button></form></div><% }) %><a class="btn" href="/">Volver al inicio</a></section>
-<%- include('../partials/footer') %>

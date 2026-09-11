@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="320" viewBox="0 0 240 320" role="img" aria-label="Portada no disponible">
-  <rect width="240" height="320" fill="#3c5344"/>
-  <rect x="24" y="32" width="192" height="256" rx="10" fill="#24332b"/>
-  <rect x="24" y="32" width="12" height="256" fill="#b9a88c"/>
-  <text x="120" y="168" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#f3efe8">Sin portada</text>
-</svg>
