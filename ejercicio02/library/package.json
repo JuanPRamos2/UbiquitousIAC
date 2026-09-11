@@ -4,7 +4,9 @@
   "description": "Aplicación web monolítica server-side para gestión de librería (Express + EJS + PostgreSQL)",
   "main": "app.js",
   "scripts": {
+    "setup": "bash scripts/ensure-db.sh",
     "start": "node app.js",
+    "start:local": "bash scripts/ensure-db.sh && node app.js",
     "dev": "nodemon app.js"
   },
   "keywords": [

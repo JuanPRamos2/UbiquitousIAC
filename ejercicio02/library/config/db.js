@@ -3,7 +3,10 @@ const { Pool } = require('pg');
 const required = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
 const missing = required.filter((name) => !process.env[name]);
 if (missing.length) {
-  throw new Error(`Faltan variables de entorno de base de datos: ${missing.join(', ')}`);
+  throw new Error(
+    `Faltan variables de entorno de base de datos: ${missing.join(', ')}. ` +
+      'Copia .env.example a .env y ejecuta npm run setup (levanta Postgres con Docker).'
+  );
 }
 
 const pool = new Pool({

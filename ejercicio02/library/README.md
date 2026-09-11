@@ -43,13 +43,34 @@ sudo -u postgres psql -d library_db -f db/06_views.sql
 
 Después otorgue privilegios mínimos al usuario `library_user` (véase comentarios en `db/00_create_database.sql`).
 
+## Arranque local (con base de datos)
+
+Postgres se levanta con Docker y se carga el esquema automáticamente:
+
+```bash
+cd ejercicio02/library
+cp .env.example .env          # ya trae DB_PASSWORD=666 (demo)
+npm install
+npm run setup                 # docker compose up + esquema + semilla
+npm start                     # http://127.0.0.1:3000/library
+```
+
+O en un paso: `npm run start:local`
+
+Si el volumen de Docker se creó vacío antes de este cambio:
+
+```bash
+docker compose down -v
+npm run setup
+```
+
 ## Aplicación en CentOS Stream 10
 
 1. Instale Node.js 20+ y clone/copie este directorio.
-2. Copie `.env.example` a `.env` y asigne secretos. **No publique `.env`.**
+2. Copie `.env.example` a `.env` (demo: `DB_PASSWORD=666`).
 3. `npm install --omit=dev`
-4. `npm start`  → escucha **solo** en `127.0.0.1:3000`
-5. Prueba local: `http://127.0.0.1:3000/library`
+4. `npm run setup`  → PostgreSQL en `:5432` y tablas de la librería
+5. `npm start`  → http://127.0.0.1:3000/library (HOST=0.0.0.0 en el .env de demo)
 6. Publique `/library` con Apache o NGINX (archivos en `docs/deploy/`).
 
 Cuentas de demostración:
