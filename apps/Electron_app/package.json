@@ -10,5 +10,8 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "electron": "^28.3.3"
+  },
+  "allowScripts": {
+    "electron@28.3.3": true
   }
 }
