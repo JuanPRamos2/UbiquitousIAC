@@ -1,0 +1,14 @@
+{
+  "name": "electron-app",
+  "version": "1.0.0",
+  "description": "Escritorio de la librería: abre Node :3000 y Flask :5001",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Juan Pablo Ramos Salazar",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^28.3.3"
+  }
+}

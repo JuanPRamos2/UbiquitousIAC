@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Librería · Electron</title>
+  <style>
+    body { font-family: sans-serif; max-width: 40rem; margin: 3rem auto; color: #1a1a1a; }
+    a { display: inline-block; margin: 0.4rem 0.4rem 0 0; padding: 0.6rem 1rem; background: #1f6f4a; color: #fff; text-decoration: none; border-radius: 6px; }
+    a.ghost { background: #eee; color: #111; }
+    code { background: #f4f4f4; padding: 0.1rem 0.3rem; }
+  </style>
+</head>
+<body>
+  <h1>Librería</h1>
+  <p>Arranca primero <code>./run-library.sh</code> (:3000) y <code>./run-flask.sh</code> (:5001) en la raíz del repo.</p>
+  <p>
+    <a href="http://127.0.0.1:3000/library">Librería en :3000</a>
+    <a class="ghost" href="http://127.0.0.1:5001/">SOAP Flask :5001</a>
+    <a class="ghost" href="http://127.0.0.1:5001/books?format=json">/books JSON</a>
+    <a class="ghost" href="http://127.0.0.1:5001/books">/books XML</a>
+  </p>
+</body>
+</html>
