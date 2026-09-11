@@ -41,9 +41,11 @@ compose() {
   fi
 }
 
+SQL_DIR="$(cd "$ROOT/../../data/database" && pwd)"
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "No está Docker. Instálalo o crea library_db a mano y pon DB_PASSWORD en .env"
-  echo "  cd ejercicio02/library && docker compose up -d"
+  echo "  cd apps/web-monolito && docker compose up -d"
   exit 1
 fi
 
@@ -68,11 +70,11 @@ has_books="$(compose exec -T postgres psql -U library_user -d library_db -tAc "S
 if [ "$has_books" != "books" ]; then
   echo "Cargando esquema y datos de demostración..."
   for f in \
-    db/01_schema.sql \
-    db/02_seed_30_per_table.sql \
-    db/04_stored_procedures.sql \
-    db/05_triggers.sql \
-    db/06_views.sql
+    "$SQL_DIR"/01_schema.sql \
+    "$SQL_DIR"/02_seed_30_per_table.sql \
+    "$SQL_DIR"/04_stored_procedures.sql \
+    "$SQL_DIR"/05_triggers.sql \
+    "$SQL_DIR"/06_views.sql
   do
     echo "  -> $f"
     compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$f"
@@ -82,7 +84,7 @@ else
 fi
 
 echo "Otorgando permisos a library_user..."
-compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < db/07_grants.sql
+compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$SQL_DIR"/07_grants.sql
 compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 <<'SQL'
 DO $$
 DECLARE

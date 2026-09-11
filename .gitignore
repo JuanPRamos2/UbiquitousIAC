@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+**/.env
+node_modules/
+*.class
+.pytest_cache/
+.coverage
+uploads/
+*.log
+.DS_Store
+dist/
+out/
