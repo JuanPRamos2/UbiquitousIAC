@@ -1,3 +1,0 @@
-# Ubiquitous no permite "Options" en .htaccess (Apache userdir).
-# Apache sirve index.html (portafolio) y web/ (interfaz Nexum).
-# El API Node no se publica aquí. No servir secretos: ver src/.htaccess.

@@ -26,73 +26,41 @@ except ImportError:
     pass
 
 SOAP_DIR = Path(__file__).resolve().parent
-
-
-def repo_root():
-    for candidate in (SOAP_DIR, *SOAP_DIR.parents):
-        if (candidate / "apps" / "web-monolito").is_dir() and (candidate / "services" / "soap").is_dir():
-            return candidate
-        if (candidate / "ejercicio02").is_dir() and (candidate / "ejercicio03").is_dir():
-            return candidate
-    return SOAP_DIR.parents[2]
-
-
-REPO_ROOT = repo_root()
-EG3_DIR = REPO_ROOT / "ejercicio03"
-SITE_DIR = REPO_ROOT
+UI_DIR = SOAP_DIR / "static" / "ui"
 COVERS_DIR = SOAP_DIR / "static" / "covers"
-COVERS_FALLBACK = REPO_ROOT / "ejercicio02" / "html" / "img" / "covers"
 WSDL_TEXT = Path(settings.WSDL_PATH).read_text(encoding="utf-8")
 
 
 def _wsdl_for_request():
     location = request.url_root.rstrip("/") + "/soap"
-    return WSDL_TEXT.replace("http://localhost:5000/soap", location)
+    return WSDL_TEXT.replace("http://localhost:5000/soap", location).replace(
+        "http://localhost:5001/soap", location
+    )
 
 
 def _probar_html():
-    html = (EG3_DIR / "probar.html").read_text(encoding="utf-8")
-    html = html.replace('href="../style.css"', 'href="/site-style.css"')
-    html = html.replace('src="../js/site.js"', 'src="/site-js.js"')
-    html = html.replace("../index.html", "/")
-    html = html.replace("<body>", '<body data-soap-endpoint="/soap">')
+    html = (UI_DIR / "probar.html").read_text(encoding="utf-8")
+    if "<body" in html and "data-soap-endpoint" not in html:
+        html = html.replace("<body>", '<body data-soap-endpoint="/soap">')
     return html
-
-
-def _covers_dir():
-    if COVERS_DIR.exists():
-        return COVERS_DIR
-    return COVERS_FALLBACK
 
 
 def _service_descriptor():
     return {
         "service": "LibraryClassifier",
-        "library": "Ejercicio guiado 02",
+        "ports": [5000, 5001],
         "wsdl": "/soap?wsdl",
         "endpoint": "/soap",
         "demo": settings.SOAP_DEMO,
         "defaultFormat": "xml",
         "jsonParameter": "format=json",
+        "library": "http://127.0.0.1:3000/library",
         "endpoints": [
-            {"path": "/books", "methods": "GET", "description": "Catálogo completo de la librería"},
-            {
-                "path": "/books/9780451524935",
-                "methods": "GET",
-                "description": "Un libro por ISBN (ejemplo: 1984)",
-            },
-            {
-                "path": "/cloud-concepts",
-                "methods": "GET",
-                "description": "IaaS, PaaS, SaaS y FaaS con los libros del catálogo",
-            },
-            {
-                "path": "/books-images",
-                "methods": "GET",
-                "description": "Datos mínimos de cada libro con su portada",
-            },
-            {"path": "/soap", "methods": "GET, POST", "description": "WSDL (GET) y operaciones SOAP (POST)"},
-            {"path": "/covers/<isbn>.svg", "methods": "GET", "description": "Imagen de portada"},
+            {"path": "/books", "methods": "GET", "description": "Catálogo XML/JSON"},
+            {"path": "/books/9780451524935", "methods": "GET", "description": "1984"},
+            {"path": "/cloud-concepts", "methods": "GET", "description": "IaaS PaaS SaaS FaaS"},
+            {"path": "/books-images", "methods": "GET", "description": "Libros e imágenes"},
+            {"path": "/soap", "methods": "GET, POST", "description": "WSDL y SOAP"},
         ],
     }
 
@@ -101,9 +69,7 @@ def _service_descriptor():
 def index():
     if wants_json() or (request.args.get("format") or "").strip().lower() == "xml":
         return respond(_service_descriptor(), root_tag="service")
-    if (EG3_DIR / "probar.html").exists():
-        return Response(_probar_html(), mimetype="text/html; charset=utf-8")
-    return respond(_service_descriptor(), root_tag="service")
+    return Response(_probar_html(), mimetype="text/html; charset=utf-8")
 
 
 @app.get("/probar.html")
@@ -111,24 +77,9 @@ def probar():
     return Response(_probar_html(), mimetype="text/html; charset=utf-8")
 
 
-@app.get("/site-style.css")
-def site_style():
-    return send_from_directory(SITE_DIR, "style.css")
-
-
-@app.get("/site-js.js")
-def site_js():
-    return send_from_directory(SITE_DIR / "js", "site.js")
-
-
-@app.get("/css/<path:filename>")
-def eg3_css(filename):
-    return send_from_directory(EG3_DIR / "css", filename)
-
-
-@app.get("/js/<path:filename>")
-def eg3_js(filename):
-    return send_from_directory(EG3_DIR / "js", filename)
+@app.get("/ui/<path:filename>")
+def ui_file(filename):
+    return send_from_directory(UI_DIR, filename)
 
 
 @app.get("/covers/<path:filename>")
@@ -136,11 +87,9 @@ def cover_file(filename):
     match = re.search(r"(\d{10,13})", filename)
     if match:
         svg_name = f"{match.group(1)}.svg"
-        directory = _covers_dir()
-        if (directory / svg_name).exists():
-            return send_from_directory(directory, svg_name)
-    directory = _covers_dir()
-    return send_from_directory(directory, filename)
+        if (COVERS_DIR / svg_name).exists():
+            return send_from_directory(COVERS_DIR, svg_name)
+    return send_from_directory(COVERS_DIR, filename)
 
 
 @app.get("/soap")
@@ -152,6 +101,7 @@ def wsdl():
                 "format": "json",
                 "wsdl": "/soap?wsdl",
                 "location": request.url_root.rstrip("/") + "/soap",
+                "ports": [5000, 5001],
                 "operations": [
                     "ObtenerConceptosPendientes",
                     "RegistrarClasificacion",

@@ -38,6 +38,10 @@ function createWindow() {
           click: () => win.loadURL(SOAP),
         },
         {
+          label: "Flask SOAP (:5000)",
+          click: () => win.loadURL("http://127.0.0.1:5000/"),
+        },
+        {
           label: "Catálogo JSON",
           click: () => win.loadURL(BOOKS_JSON),
         },

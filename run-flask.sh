@@ -7,6 +7,6 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 pip install -q -r requirements.txt
-export FLASK_APP=app.py
 export SOAP_DEMO="${SOAP_DEMO:-1}"
-exec python3 -m flask run --host=0.0.0.0 --port=5001
+export PYTHONPATH="$(pwd)/services/soap:${PYTHONPATH:-}"
+exec python3 serve.py
