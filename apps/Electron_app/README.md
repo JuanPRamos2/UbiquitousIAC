@@ -32,14 +32,20 @@ npm install
 npm start
 ```
 
-Si aparece `Electron failed to install correctly`:
+Si aparece `Electron failed to install correctly`, el paquete npm está pero falta el binario. Bájalo:
 
 ```bash
-cd apps/Electron_app
-rm -rf node_modules
-echo 'ignore-scripts=false' > .npmrc
-npm install --ignore-scripts=false
+cd ~/Documents/Libreria/apps/Electron_app
+node node_modules/electron/install.js
 npm start
+```
+
+En Arch, alternativa:
+
+```bash
+sudo pacman -S electron
+cd ~/Documents/Libreria/apps/Electron_app
+electron .
 ```
 
 ## Qué consume

@@ -38,7 +38,15 @@ chmod +x run.sh run-flask.sh run-library.sh run-electron.sh
 
 La app Electron pide `/books` en XML, muestra **imagen, título, autores, año, ISBN y precio**, y guarda el endpoint en **LocalStorage**.
 
-Si `npm` 11 bloquea Electron: `cd apps/Electron_app && npm install-scripts approve electron && npm install`.
+Si Electron falla al instalar, **no** apruebes el paquete antes de `npm install`. El binario se baja después:
+
+```bash
+cd apps/Electron_app
+node node_modules/electron/install.js
+npm start
+```
+
+En Arch, si eso falla: `sudo pacman -S electron` y luego `electron .` dentro de `apps/Electron_app`.
 
 Admin: `mariana.solis@libreriaonline.mx` / `LibreriaAdmin26`
 

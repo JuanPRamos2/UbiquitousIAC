@@ -4,8 +4,8 @@
   "description": "Escritorio Electron: consume GET /books y /books-images en XML (portada, título, autores, año, ISBN, precio).",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "postinstall": "node -e \"try{require('electron');console.log('electron ok')}catch(e){process.exit(0)}\""
+    "postinstall": "node node_modules/electron/install.js",
+    "start": "electron ."
   },
   "author": "Juan Pablo Ramos Salazar",
   "license": "UNLICENSED",
