@@ -558,6 +558,8 @@ def books_with_images(extra_books=None):
                 "isbn": isbn,
                 "title": book["title"],
                 "authors": list(book["authors"]),
+                "publicationYear": book.get("publicationYear"),
+                "price": book.get("price"),
                 "category": book["category"],
                 "coverUrl": cover_path(isbn),
                 "images": [
@@ -578,6 +580,8 @@ def books_with_images(extra_books=None):
                 "isbn": isbn,
                 "title": book.get("title") or "",
                 "authors": book.get("authors") or [],
+                "publicationYear": book.get("publicationYear"),
+                "price": book.get("price"),
                 "category": book.get("category") or "",
                 "coverUrl": book.get("coverUrl") or "",
                 "images": book.get("images") or [],

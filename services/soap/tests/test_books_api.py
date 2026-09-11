@@ -9,6 +9,9 @@ def test_books_default_is_xml():
     assert "xml" in response.mimetype
     assert b"<books>" in response.data
     assert b"<isbn>" in response.data
+    assert b"<price>" in response.data
+    assert b"<publicationYear>" in response.data
+    assert b"<coverUrl>" in response.data
     assert b"9780451524935" in response.data
     assert b"1984" in response.data
 
@@ -56,6 +59,9 @@ def test_books_isbn_json_and_xml():
     book = json_response.get_json()["book"]
     assert book["isbn"] == "9780451524935"
     assert book["title"] == "1984"
+    assert book.get("price") is not None
+    assert book.get("publicationYear") is not None
+    assert book.get("coverUrl")
 
 
 def test_accept_header_does_not_override_default_xml():
@@ -109,6 +115,8 @@ def test_books_images_json_and_xml():
     assert orwell["title"] == "1984"
     assert orwell["coverUrl"].endswith("9780451524935.svg")
     assert orwell["images"][0]["isCover"] is True
+    assert orwell.get("publicationYear") is not None
+    assert orwell.get("price") is not None
 
 
 def test_cover_image_is_served():
@@ -140,3 +148,19 @@ def test_books_crud_requires_admin():
         "/books/9999999999999?format=json", headers={"X-User-Role": "admin"}
     )
     assert deleted.status_code == 200
+
+
+def test_practice_shim_app_services_soap_loads():
+    import importlib.util
+    from pathlib import Path
+
+    shim = Path(__file__).resolve().parents[3] / "app" / "services" / "soap" / "app.py"
+    assert shim.is_file()
+    spec = importlib.util.spec_from_file_location("practice_soap_app", shim)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    client = module.app.test_client()
+    response = client.get("/books")
+    assert response.status_code == 200
+    assert b"<price>" in response.data
+    assert b"<coverUrl>" in response.data

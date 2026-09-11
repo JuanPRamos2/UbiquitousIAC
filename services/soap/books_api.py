@@ -33,6 +33,8 @@ def books_xml(books):
             ET.SubElement(node, "description").text = book["description"]
         if book.get("publicationYear") is not None:
             ET.SubElement(node, "publicationYear").text = str(book["publicationYear"])
+        if book.get("price") is not None:
+            ET.SubElement(node, "price").text = f"{float(book['price']):.2f}"
         if book.get("coverUrl"):
             ET.SubElement(node, "coverUrl").text = book["coverUrl"]
         authors = ET.SubElement(node, "authors")

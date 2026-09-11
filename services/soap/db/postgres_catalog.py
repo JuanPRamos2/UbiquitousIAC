@@ -136,7 +136,8 @@ def list_cloud_concepts():
 def list_books_images():
     rows = fetch_all(
         """
-        SELECT b.isbn, b.title, cat.name AS category,
+        SELECT b.isbn, b.title, b.publication_year AS publication_year, b.price,
+               cat.name AS category,
                i.stored_name, i.alt_text, i.mime_type, bi.is_cover
         FROM books b
         JOIN categories cat ON cat.id = b.category_id
@@ -168,6 +169,8 @@ def list_books_images():
                 "isbn": isbn,
                 "title": row["title"],
                 "authors": authors_by_isbn.get(isbn, []),
+                "publicationYear": row.get("publication_year"),
+                "price": float(row["price"]) if row.get("price") is not None else None,
                 "category": row.get("category") or "",
                 "coverUrl": library_catalog.cover_path(isbn),
                 "images": [],

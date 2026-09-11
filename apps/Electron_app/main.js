@@ -1,53 +1,51 @@
 const { app, BrowserWindow, Menu, shell } = require("electron");
+const path = require("path");
 
 const LIBRARY = process.env.LIBRARY_URL || "http://127.0.0.1:3000/library";
 const SOAP = process.env.SOAP_URL || "http://127.0.0.1:5001/";
-const BOOKS_JSON = process.env.BOOKS_JSON_URL || "http://127.0.0.1:5001/books?format=json";
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1280,
-    height: 840,
-    webPreferences: { contextIsolation: true },
+    width: 1360,
+    height: 900,
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
   });
 
-  win.loadFile("start.html");
+  win.loadFile(path.join(__dirname, "catalog.html"));
+  win.once("ready-to-show", () => win.show());
 
   const menu = Menu.buildFromTemplate([
     {
       label: "Librería",
       submenu: [
         {
-          label: "Abrir librería (:3000)",
-          click: () => win.loadURL(LIBRARY),
+          label: "Catálogo XML",
+          click: () => win.loadFile(path.join(__dirname, "catalog.html")),
         },
         {
-          label: "Inicio Electron",
-          click: () => win.loadFile("start.html"),
+          label: "Abrir librería Node (:3000)",
+          click: () => win.loadURL(LIBRARY),
         },
         { type: "separator" },
         { role: "reload" },
+        { role: "toggleDevTools" },
         { role: "quit" },
       ],
     },
     {
-      label: "SOAP / JSON",
+      label: "Microservicio",
       submenu: [
+        { label: "Flask SOAP (:5001)", click: () => win.loadURL(SOAP) },
+        { label: "Flask SOAP (:5000)", click: () => win.loadURL("http://127.0.0.1:5000/") },
+        { label: "GET /books XML", click: () => win.loadURL("http://127.0.0.1:5001/books") },
         {
-          label: "Flask SOAP (:5001)",
-          click: () => win.loadURL(SOAP),
-        },
-        {
-          label: "Flask SOAP (:5000)",
-          click: () => win.loadURL("http://127.0.0.1:5000/"),
-        },
-        {
-          label: "Catálogo JSON",
-          click: () => win.loadURL(BOOKS_JSON),
-        },
-        {
-          label: "Catálogo XML",
-          click: () => win.loadURL("http://127.0.0.1:5001/books"),
+          label: "GET /books-images XML",
+          click: () => win.loadURL("http://127.0.0.1:5001/books-images"),
         },
       ],
     },

@@ -1,10 +1,11 @@
 {
   "name": "electron-app",
   "version": "1.0.0",
-  "description": "Escritorio de la librería: abre Node :3000 y Flask :5001",
+  "description": "Escritorio Electron: consume GET /books y /books-images en XML (portada, título, autores, año, ISBN, precio).",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "postinstall": "node -e \"try{require('electron');console.log('electron ok')}catch(e){process.exit(0)}\""
   },
   "author": "Juan Pablo Ramos Salazar",
   "license": "UNLICENSED",
