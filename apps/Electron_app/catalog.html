@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http: https:; img-src 'self' data: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Librería · catálogo XML</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">Electron · consume Flask SOAP/XML</p>
+      <h1>Catálogo de libros</h1>
+      <p class="lede">Imagen, título, autores, año, ISBN y precio desde <code>/books</code> (XML). El endpoint se guarda en LocalStorage.</p>
+    </div>
+  </header>
+
+  <section class="endpoint-bar" aria-label="Endpoint del microservicio">
+    <label for="endpoint">Endpoint del microservicio Flask</label>
+    <div class="row">
+      <input id="endpoint" type="url" spellcheck="false" placeholder="http://127.0.0.1:5001" />
+      <button id="save" type="button">Guardar</button>
+      <button id="load-books" class="primary" type="button">Cargar /books</button>
+      <button id="load-images" type="button">Cargar /books-images</button>
+    </div>
+    <p id="status" class="status" role="status">Escribe el endpoint y carga el catálogo XML.</p>
+  </section>
+
+  <main id="grid" class="grid"></main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
