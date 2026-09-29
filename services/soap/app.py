@@ -54,10 +54,21 @@ def _service_descriptor():
         "demo": settings.SOAP_DEMO,
         "defaultFormat": "xml",
         "jsonParameter": "format=json",
+        "jwt": {
+            "scheme": "Bearer",
+            "issuedBy": "login",
+            "public": ["GET /books", "GET /books/{isbn}"],
+            "protected": ["POST /books", "PUT /books/{isbn}", "PATCH /books/{isbn}", "DELETE /books/{isbn}"],
+        },
         "library": "http://127.0.0.1:3000/library",
         "endpoints": [
-            {"path": "/books", "methods": "GET", "description": "Catálogo XML/JSON"},
-            {"path": "/books/9780451524935", "methods": "GET", "description": "1984"},
+            {"path": "/books", "methods": "GET", "description": "Catálogo XML/JSON (público)"},
+            {"path": "/books/9780451524935", "methods": "GET", "description": "1984 (público)"},
+            {
+                "path": "/books",
+                "methods": "POST, PUT, PATCH, DELETE",
+                "description": "Escritura con Authorization: Bearer JWT del login",
+            },
             {"path": "/cloud-concepts", "methods": "GET", "description": "IaaS PaaS SaaS FaaS"},
             {"path": "/books-images", "methods": "GET", "description": "Libros e imágenes"},
             {"path": "/soap", "methods": "GET, POST", "description": "WSDL y SOAP"},

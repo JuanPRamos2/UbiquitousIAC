@@ -5,7 +5,11 @@ from db import demo_store
 
 
 def _demo_books():
-    return library_catalog.books_with_concepts(demo_store.list_extra_books())
+    books = library_catalog.books_with_concepts(demo_store.list_extra_books())
+    hidden = set(demo_store.deleted_isbns())
+    if not hidden:
+        return books
+    return [book for book in books if book.get("isbn") not in hidden]
 
 
 def _use_postgres():

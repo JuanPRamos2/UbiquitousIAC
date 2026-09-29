@@ -129,25 +129,145 @@ def test_cover_image_is_served():
     assert mapped.status_code == 200
 
 
-def test_books_crud_requires_admin():
+def _auth_headers(minutes=30, secret=None):
+    import hashlib
+    from datetime import datetime, timedelta, timezone
+
+    import jwt
+
+    from config import settings
+
+    now = datetime.now(timezone.utc)
+    key = secret or hashlib.sha256(settings.JWT_PASSWORD.encode("utf-8")).hexdigest()
+    token = jwt.encode(
+        {
+            "sub": "1",
+            "email": "cliente@example.com",
+            "role": "client",
+            "iss": settings.JWT_ISSUER,
+            "aud": settings.JWT_AUDIENCE,
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(minutes=minutes)).timestamp()),
+        },
+        key,
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_books_crud_requires_jwt_from_login():
     from db.demo_store import reset
     from app import app
 
     reset()
     client = app.test_client()
+    headers = _auth_headers()
     denied = client.post("/books?format=json", json={"isbn": "111", "title": "X"})
-    assert denied.status_code == 403
+    assert denied.status_code == 401
+    assert denied.get_json()["code"] == "TOKEN_MISSING"
     created = client.post(
         "/books?format=json",
-        json={"isbn": "9999999999999", "title": "Libro nuevo", "category": "Prueba"},
-        headers={"X-User-Role": "admin"},
+        json={
+            "isbn": "9999999999999",
+            "title": "Libro nuevo",
+            "category": "Prueba",
+            "publicationYear": 2024,
+            "price": 12.5,
+            "authors": ["Ana Ruiz"],
+        },
+        headers=headers,
     )
     assert created.status_code == 201
-    assert created.get_json()["ok"] is True
-    deleted = client.delete(
-        "/books/9999999999999?format=json", headers={"X-User-Role": "admin"}
+    body = created.get_json()
+    assert body["ok"] is True
+    assert body["book"]["publicationYear"] == 2024
+    partial = client.patch(
+        "/books/9999999999999?format=json",
+        json={"title": "Libro editado"},
+        headers=headers,
     )
+    assert partial.status_code == 200
+    assert partial.get_json()["patched"] == ["title"]
+    listed = client.get("/books?format=json").get_json()
+    match = next(book for book in listed["books"] if book["isbn"] == "9999999999999")
+    assert match["title"] == "Libro editado"
+    assert match["publicationYear"] == 2024
+    incomplete = client.put(
+        "/books/9999999999999?format=json",
+        json={"title": "Solo título"},
+        headers=headers,
+    )
+    assert incomplete.status_code == 400
+    replaced = client.put(
+        "/books/9999999999999?format=json",
+        json={
+            "title": "Libro reemplazado",
+            "authors": ["Ana Ruiz"],
+            "category": "Prueba",
+            "publicationYear": 2024,
+            "price": 12.5,
+        },
+        headers=headers,
+    )
+    assert replaced.status_code == 200
+    duplicate = client.post(
+        "/books?format=json",
+        json={"isbn": "9999999999999", "title": "Otra vez"},
+        headers=headers,
+    )
+    assert duplicate.status_code == 409
+    missing = client.get("/books/0000000000000?format=json")
+    assert missing.status_code == 404
+    health = client.get("/health?format=json")
+    assert health.status_code in (200, 503)
+    assert health.get_json()["service"] == "books"
+    deleted = client.delete("/books/9999999999999?format=json", headers=headers)
     assert deleted.status_code == 200
+    after = client.get("/books?format=json").get_json()
+    assert all(book["isbn"] != "9999999999999" for book in after["books"])
+    edited = client.patch(
+        "/books/9780134444245?format=json",
+        json={"title": "Cloud editado"},
+        headers=headers,
+    )
+    assert edited.status_code == 200
+    cloud = client.get("/books/9780134444245?format=json").get_json()["book"]
+    assert cloud["title"] == "Cloud editado"
+    assert any(concept["name"] == "IaaS" for concept in cloud["concepts"])
+    hidden = client.delete("/books/9780451524935?format=json", headers=headers)
+    assert hidden.status_code == 200
+    after_hide = client.get("/books?format=json").get_json()
+    assert all(book["isbn"] != "9780451524935" for book in after_hide["books"])
+
+
+def test_books_rejects_bad_tokens_and_keeps_get_public():
+    from db.demo_store import reset
+    from app import app
+
+    reset()
+    client = app.test_client()
+    public = client.get("/books/9780451524935?format=json")
+    assert public.status_code == 200
+    expired = client.post(
+        "/books?format=json",
+        json={"isbn": "111", "title": "X"},
+        headers=_auth_headers(minutes=-5),
+    )
+    assert expired.status_code == 401
+    assert expired.get_json()["code"] == "TOKEN_EXPIRED"
+    foreign = client.post(
+        "/books?format=json",
+        json={"isbn": "111", "title": "X"},
+        headers=_auth_headers(secret="otra-clave-que-no-coincide-con-el-login"),
+    )
+    assert foreign.status_code == 401
+    assert foreign.get_json()["code"] == "TOKEN_INVALID"
+    malformed = client.delete(
+        "/books/9780451524935?format=json",
+        headers={"Authorization": "Token abc"},
+    )
+    assert malformed.status_code == 401
+    assert malformed.get_json()["code"] == "TOKEN_MALFORMED"
 
 
 def test_practice_shim_app_services_soap_loads():

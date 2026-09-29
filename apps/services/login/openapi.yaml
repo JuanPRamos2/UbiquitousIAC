@@ -11,6 +11,9 @@ info:
     Las respuestas incluyen hipermedia (HATEOAS, nivel 3 de Richardson).
     La sesión dura 30 minutos. `GET /session` avisa si está por expirar;
     `POST /session` la extiende. Si no hay respuesta, la sesión se cierra.
+
+    `POST /login` emite un JWT (PyJWT, HS256). `PATCH /profile` exige
+    `Authorization: Bearer <token>`. La contraseña del usuario se guarda como hash bcrypt.
 servers:
   - url: http://127.0.0.1:5000
 tags:
@@ -83,7 +86,7 @@ paths:
               $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: Sesión iniciada
+          description: Sesión iniciada. Incluye token JWT (Bearer) emitido por este servicio
         "401":
           description: Credenciales incorrectas
         "403":
@@ -235,6 +238,9 @@ components:
             remainingSeconds: { type: integer }
             expiresAt: { type: string }
             notification: { type: object, nullable: true }
+        token: { type: string, description: JWT firmado por el login }
+        tokenType: { type: string, example: Bearer }
+        tokenExpiresAt: { type: string }
         _links:
           type: object
           additionalProperties:

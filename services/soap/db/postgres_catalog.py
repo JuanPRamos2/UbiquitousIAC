@@ -55,7 +55,16 @@ def list_books():
             "description": row.get("description") or "",
             "authors": [],
             "coverUrl": library_catalog.cover_path(isbn),
+            "genre": "",
             "concepts": [],
+            "images": [
+                {
+                    "url": library_catalog.cover_path(isbn),
+                    "alt": f"Portada de {row['title']}",
+                    "mimeType": "image/svg+xml",
+                    "isCover": True,
+                }
+            ],
         }
     for raw in authors:
         row = _row(raw)
@@ -75,6 +84,23 @@ def list_books():
                     "pageNumber": row.get("page_number"),
                 }
             )
+    genres = fetch_all(
+        """
+        SELECT b.isbn, g.name
+        FROM book_genres bg
+        JOIN books b ON b.id = bg.book_id
+        JOIN genres g ON g.id = bg.genre_id
+        ORDER BY g.name
+        """
+    )
+    grouped = defaultdict(list)
+    for raw in genres:
+        row = _row(raw)
+        grouped[row["isbn"]].append(row["name"])
+    for isbn, names in grouped.items():
+        book = by_isbn.get(isbn)
+        if book:
+            book["genre"] = ", ".join(names)
     return list(by_isbn.values())
 
 

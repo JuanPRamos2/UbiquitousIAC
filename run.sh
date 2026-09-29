@@ -22,5 +22,6 @@ echo "Login     →  http://127.0.0.1:5000/docs"
 echo "Librería  →  http://127.0.0.1:3000/library"
 echo "Flask     →  http://127.0.0.1:5001/books?format=json"
 echo "Electron  →  cd apps/Electron_app && npm start"
+echo "Tk        →  ./run-tk.sh"
 echo
 wait

@@ -14,6 +14,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 import captcha
 import config
 import db
+import jwt_auth
 import mail
 from format import respond, wants_json
 from hateoas import links_for
@@ -183,7 +184,33 @@ def start_session(user):
     session["started_at"] = iso(now_utc())
     session["expires_at"] = iso(expires)
     session["notified"] = False
-    return session_payload(user, expires)
+    payload = session_payload(user, expires)
+    token, token_expires = jwt_auth.issue_token(user)
+    payload["token"] = token
+    payload["tokenType"] = "Bearer"
+    payload["tokenExpiresAt"] = iso(token_expires)
+    return payload
+
+
+def token_error_response(exc):
+    return respond(
+        {
+            "ok": False,
+            "code": exc.code,
+            "errors": [exc.message],
+            "error": exc.message,
+            "_links": links_for("self", "login", "docs"),
+        },
+        root_tag="error",
+        status=401,
+    )
+
+
+def require_token():
+    try:
+        return jwt_auth.read_bearer(request.headers.get("Authorization")), None
+    except jwt_auth.TokenError as exc:
+        return None, token_error_response(exc)
 
 
 def clear_session():
@@ -270,6 +297,12 @@ def root():
                 "defaultFormat": "xml",
                 "jsonParameter": "format=json",
                 "sessionMinutes": config.SESSION_MINUTES,
+                "jwt": {
+                    "algorithm": "HS256",
+                    "scheme": "Bearer",
+                    "expiresMinutes": config.JWT_MINUTES,
+                    "protected": ["PATCH /profile"],
+                },
                 "richardson": 3,
                 "_links": links_for(
                     "self", "register", "login", "logout", "session", "extend",
@@ -449,7 +482,9 @@ def login():
         return respond(
             {
                 "ok": False,
+                "code": "CREDENTIALS_INVALID",
                 "errors": ["Credenciales incorrectas."],
+                "error": "Credenciales incorrectas.",
                 "_links": links_for("self", "register", "docs"),
             },
             root_tag="error",
@@ -564,6 +599,8 @@ def account():
     )
 
 
+@app.get("/verify")
+@app.post("/verify")
 @app.get("/verify-email")
 @app.post("/verify-email")
 def verify_email():
@@ -648,6 +685,7 @@ def get_session():
 
 
 @app.post("/session")
+@app.post("/session/extend")
 def extend_session():
     state = session_state()
     if not state["canExtend"]:
@@ -681,6 +719,95 @@ def extend_session():
             "message": "Sesión extendida 30 minutos.",
             **started,
             "_links": links_for("self", "session", "logout", "health", "docs"),
+        },
+        root_tag="result",
+    )
+
+
+@app.patch("/profile")
+def patch_profile():
+    claims, denied = require_token()
+    if denied:
+        return denied
+    try:
+        user_id = int(claims.get("sub"))
+    except (TypeError, ValueError):
+        return token_error_response(
+            jwt_auth.TokenError(
+                "El token JWT es inválido o no fue emitido por el servicio de login.",
+                "TOKEN_INVALID",
+            )
+        )
+    current = db.find_user_by_id(user_id)
+    if not current:
+        return respond(
+            {
+                "ok": False,
+                "code": "TOKEN_INVALID",
+                "errors": ["El usuario del token ya no existe."],
+                "error": "El usuario del token ya no existe.",
+            },
+            root_tag="error",
+            status=401,
+        )
+    stored = db.find_user_by_email(current["email"])
+    payload = parse_payload()
+    changes = {}
+    nombre = field(payload, "nombre", "first_name", "firstName")
+    paterno = field(payload, "apellidoPaterno", "apellido_paterno", "paternal_surname")
+    materno = field(payload, "apellidoMaterno", "apellido_materno", "maternal_surname")
+    email = field(payload, "email", "correo").lower()
+    if nombre:
+        changes["first_name"] = nombre
+    if paterno:
+        changes["paternal_surname"] = paterno
+    if materno:
+        changes["maternal_surname"] = materno
+    if email and email != current["email"]:
+        if not valid_email(email):
+            return respond(
+                {"ok": False, "errors": ["El correo no tiene un formato válido."]},
+                root_tag="error",
+                status=400,
+            )
+        if db.find_user_by_email(email):
+            return respond(
+                {"ok": False, "errors": ["Ese correo ya está registrado."]},
+                root_tag="error",
+                status=409,
+            )
+        changes["email"] = email
+    new_password = field(payload, "newPassword", "password", "nuevaContrasena")
+    password_hash = None
+    if new_password:
+        current_password = field(payload, "currentPassword", "contrasenaActual")
+        if not stored or not check_password(current_password, stored["password_hash"]):
+            return respond(
+                {"ok": False, "errors": ["La contraseña actual no coincide."]},
+                root_tag="error",
+                status=401,
+            )
+        password_error = valid_password(new_password)
+        if password_error:
+            return respond(
+                {"ok": False, "errors": [password_error]},
+                root_tag="error",
+                status=400,
+            )
+        password_hash = hash_password(new_password)
+    if not changes and not password_hash:
+        return respond(
+            {"ok": False, "errors": ["No hay datos para actualizar."]},
+            root_tag="error",
+            status=400,
+        )
+    updated = db.update_profile(current["id"], changes, password_hash)
+    return respond(
+        {
+            "ok": True,
+            "message": "Perfil actualizado.",
+            "user": public_user(updated),
+            "_links": links_for("self", "session", "logout"),
         },
         root_tag="result",
     )

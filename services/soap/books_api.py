@@ -11,14 +11,31 @@ from xml.etree import ElementTree as ET
 
 from flask import Response, request
 
+from config import settings
 from db import catalog as catalog_store
 from db import demo_store
+from jwt_auth import TokenError, read_bearer
 from xml_format import respond, wants_json
 
 
-def _require_admin():
-    role = (request.headers.get("X-User-Role") or request.args.get("role") or "").lower()
-    return role == "admin"
+def _require_jwt():
+    """POST, PUT, PATCH y DELETE exigen un JWT emitido por el login.
+
+    GET /books y GET /books/<isbn> siguen públicos.
+    """
+    try:
+        return read_bearer(request.headers.get("Authorization")), None
+    except TokenError as exc:
+        return None, respond(
+            {
+                "ok": False,
+                "code": exc.code,
+                "error": exc.message,
+                "errors": [exc.message],
+            },
+            root_tag="error",
+            status=401,
+        )
 
 
 def books_xml(books):
@@ -96,31 +113,120 @@ def register_books_routes(app):
 
     @app.post("/books")
     def create_book():
-        if not _require_admin():
-            return respond({"error": "Se requiere usuario admin"}, root_tag="error", status=403)
+        _claims, denied = _require_jwt()
+        if denied:
+            return denied
         payload = request.get_json(silent=True) or {}
         try:
             book = demo_store.upsert_book(payload, create=True)
         except ValueError as exc:
-            return respond({"error": str(exc)}, root_tag="error", status=400)
+            text = str(exc)
+            status = 409 if "ya existe" in text.lower() else 400
+            return respond({"error": text}, root_tag="error", status=status)
         return respond({"ok": True, "book": book}, root_tag="result", status=201)
 
     @app.put("/books/<isbn>")
     def update_book(isbn):
-        if not _require_admin():
-            return respond({"error": "Se requiere usuario admin"}, root_tag="error", status=403)
+        _claims, denied = _require_jwt()
+        if denied:
+            return denied
         payload = request.get_json(silent=True) or {}
         payload["isbn"] = isbn
-        book = demo_store.upsert_book(payload, create=False)
+        missing = [
+            name
+            for name in ("title", "authors", "category", "publicationYear", "price")
+            if name not in payload or payload.get(name) in (None, "", [])
+        ]
+        if missing:
+            return respond(
+                {
+                    "error": (
+                        "PUT reemplaza el libro completo. Faltan: "
+                        + ", ".join(missing)
+                        + ". Use PATCH para cambiar solo un dato."
+                    )
+                },
+                root_tag="error",
+                status=400,
+            )
+        try:
+            book = demo_store.upsert_book(payload, create=False)
+        except ValueError as exc:
+            return respond({"error": str(exc)}, root_tag="error", status=400)
         if book is None:
             return respond({"error": "Libro no encontrado"}, root_tag="error", status=404)
         return respond({"ok": True, "book": book}, root_tag="result")
 
     @app.delete("/books/<isbn>")
     def delete_book(isbn):
-        if not _require_admin():
-            return respond({"error": "Se requiere usuario admin"}, root_tag="error", status=403)
+        _claims, denied = _require_jwt()
+        if denied:
+            return denied
         deleted = demo_store.delete_book(isbn)
         if not deleted:
             return respond({"error": "Libro no encontrado"}, root_tag="error", status=404)
         return respond({"ok": True, "isbn": isbn}, root_tag="result")
+
+    @app.patch("/books/<isbn>")
+    def patch_book(isbn):
+        _claims, denied = _require_jwt()
+        if denied:
+            return denied
+        payload = request.get_json(silent=True) or {}
+        changes = {key: value for key, value in payload.items() if key != "isbn"}
+        if not changes:
+            return respond(
+                {"error": "PATCH necesita al menos un campo para modificar."},
+                root_tag="error",
+                status=400,
+            )
+        current = catalog_store.get_book(isbn)
+        if not current:
+            return respond({"error": "Libro no encontrado", "isbn": isbn}, root_tag="error", status=404)
+        merged = {"isbn": isbn, "title": current.get("title") or ""}
+        merged.update(changes)
+        try:
+            book = demo_store.upsert_book(merged, create=False)
+        except ValueError as exc:
+            return respond({"error": str(exc)}, root_tag="error", status=400)
+        if book is None:
+            return respond({"error": "Libro no encontrado", "isbn": isbn}, root_tag="error", status=404)
+        return respond({"ok": True, "book": book, "patched": list(changes)}, root_tag="result")
+
+    @app.get("/health")
+    def books_health():
+        if settings.SOAP_DEMO:
+            return respond(
+                {
+                    "status": "ok",
+                    "service": "books",
+                    "database": "ok",
+                    "mode": "demo",
+                },
+                root_tag="health",
+            )
+        try:
+            from db.connection import fetch_one
+
+            fetch_one("SELECT 1 AS ok")
+        except Exception:
+            return respond(
+                {
+                    "status": "degraded",
+                    "service": "books",
+                    "database": "error",
+                    "mode": "postgres",
+                    "error": "El servicio responde, pero la base de datos no está disponible.",
+                },
+                root_tag="health",
+                status=503,
+            )
+        return respond(
+            {
+                "status": "ok",
+                "service": "books",
+                "database": "ok",
+                "mode": "postgres",
+            },
+            root_tag="health",
+        )

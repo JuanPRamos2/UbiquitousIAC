@@ -504,11 +504,27 @@ def soap_catalog():
     return rows
 
 
+def cover_images(title, cover):
+    if not cover:
+        return []
+    mime = "image/svg+xml" if str(cover).endswith(".svg") else ""
+    return [
+        {
+            "url": cover,
+            "alt": f"Portada de {title}",
+            "mimeType": mime,
+            "isCover": True,
+        }
+    ]
+
+
 def books_with_concepts(extra_books=None):
     by_isbn = {}
     for book in BOOKS:
         item = dict(book)
         item["coverUrl"] = cover_path(book["isbn"])
+        item["genre"] = book.get("genre") or ""
+        item["images"] = cover_images(item["title"], item["coverUrl"])
         item["concepts"] = []
         by_isbn[book["isbn"]] = item
     for isbn, name, definition, chapter, page in BOOK_CONCEPTS:
@@ -522,7 +538,11 @@ def books_with_concepts(extra_books=None):
             }
         )
     for book in extra_books or []:
-        by_isbn[book["isbn"]] = book
+        item = dict(book)
+        item.setdefault("genre", "")
+        if not item.get("images"):
+            item["images"] = cover_images(item.get("title") or "", item.get("coverUrl") or "")
+        by_isbn[item["isbn"]] = item
     return list(by_isbn.values())
 
 

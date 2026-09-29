@@ -18,6 +18,12 @@ SECRET_KEY = env("SECRET_KEY") or env("SESSION_SECRET") or "libreria-login-demo-
 SESSION_MINUTES = int(env("SESSION_MINUTES", "30"))
 SESSION_GRACE_SECONDS = int(env("SESSION_GRACE_SECONDS", "60"))
 
+# Misma contraseña en el microservicio de books. La clave HMAC es su hash SHA-256.
+JWT_PASSWORD = env("JWT_PASSWORD", "libreria-jwt-compartida")
+JWT_MINUTES = int(env("JWT_MINUTES", str(SESSION_MINUTES)))
+JWT_ISSUER = "login"
+JWT_AUDIENCE = "libreria"
+
 DB_HOST = env("DB_HOST", "127.0.0.1")
 DB_PORT = int(env("DB_PORT", "5433"))
 DB_NAME = env("DB_NAME", "library_db")

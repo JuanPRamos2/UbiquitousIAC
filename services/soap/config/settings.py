@@ -20,6 +20,11 @@ DB_PASSWORD = _env("DB_PASSWORD", "")
 SOAP_HOST = _env("SOAP_HOST", "0.0.0.0")
 SOAP_PORT = int(_env("SOAP_PORT", "5001"))
 
+# Misma contraseña que apps/services/login. Este servicio solo verifica el JWT.
+JWT_PASSWORD = _env("JWT_PASSWORD", "libreria-jwt-compartida")
+JWT_ISSUER = "login"
+JWT_AUDIENCE = "libreria"
+
 SOAP_STATS_USERNAME = _env("SOAP_STATS_USERNAME", "soap_stats")
 SOAP_STATS_PASSWORD_HASH = _env("SOAP_STATS_PASSWORD_HASH", "")
 

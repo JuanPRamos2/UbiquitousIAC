@@ -75,6 +75,34 @@ def register_user(first_name, paternal_surname, maternal_surname, email, passwor
     )
 
 
+def update_profile(user_id, changes, password_hash=None):
+    allowed = {
+        "first_name": "first_name",
+        "paternal_surname": "paternal_surname",
+        "maternal_surname": "maternal_surname",
+        "email": "email",
+    }
+    sets = []
+    params = []
+    for key, column in allowed.items():
+        if key in changes:
+            sets.append(f"{column} = %s")
+            params.append(changes[key])
+    if password_hash:
+        sets.append("password_hash = %s")
+        params.append(password_hash)
+    if not sets:
+        return find_user_by_id(user_id)
+    sets.append("updated_at = NOW()")
+    params.append(user_id)
+    query(
+        f"UPDATE users SET {', '.join(sets)} WHERE id = %s",
+        tuple(params),
+        fetch="none",
+    )
+    return find_user_by_id(user_id)
+
+
 def set_verification_token(user_id, token_hash, expires_at):
     query(
         """
