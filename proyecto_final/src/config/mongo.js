@@ -19,11 +19,7 @@ export async function conectarMongo() {
   });
   await client.connect();
   db = client.db(env.mongoDb);
-  await db.collection("respuestas_encuesta").createIndex(
-    { seudonimo_id: 1, campania_id: 1 },
-    { unique: true, name: "ux_seudonimo_campania" }
-  );
-  await db.collection("bitacora_auditoria").createIndex({ timestamp: -1 });
+  await db.collection("solicitudes_apoyo").createIndex({ fecha: -1 });
   return db;
 }
 

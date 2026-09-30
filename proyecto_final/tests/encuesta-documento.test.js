@@ -1,27 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  documentoRespuestaMongo,
-  historialConsentimientoPublico,
-} from "../src/utilidades/encuesta-documento.js";
-
-test("el documento Mongo no incluye empleado_id ni datos de identidad real", () => {
-  const doc = documentoRespuestaMongo({
-    seudonimo_id: "SEUD-2026-014892",
-    instrumento_id: "INST-NOM035-GUIA3",
-    version_instrumento: 2,
-    campania_id: "CAMP-2026-Q3-CALLCENTER",
-    unidad_organizacional_id: "UO-CALLCENTER-TURNO-B",
-    version_consentimiento: "CONSENT-v3-2026-07-01",
-    respuestas: [{ reactivo_id: "R-01", valor: 3 }],
-  });
-  assert.equal("empleado_id" in doc, false);
-  assert.equal("nombre" in doc, false);
-  assert.equal("correo" in doc, false);
-  assert.equal(doc.version_consentimiento, "CONSENT-v3-2026-07-01");
-  assert.equal(doc.version_instrumento, 2);
-  assert.deepEqual(doc.respuestas, [{ reactivo_id: "R-01", valor: 3 }]);
-});
+import { historialConsentimientoPublico } from "../src/utilidades/encuesta-documento.js";
 
 test("el historial de consentimiento no expone empleado_id aunque venga en la fila", () => {
   const out = historialConsentimientoPublico([

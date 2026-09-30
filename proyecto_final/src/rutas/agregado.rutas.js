@@ -8,30 +8,30 @@ export const agregadoRouter = Router();
 agregadoRouter.get(
   "/parametros/k",
   autenticar,
-  autorizar(PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Agregado.leerK
 );
 agregadoRouter.patch(
   "/parametros/k",
   autenticar,
-  autorizar(PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.ADMINISTRADOR),
   Agregado.cambiarK
 );
 agregadoRouter.get(
   "/parametros",
   autenticar,
-  autorizar(PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Agregado.leerParametros
 );
 agregadoRouter.patch(
   "/parametros",
   autenticar,
-  autorizar(PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.ADMINISTRADOR),
   Agregado.guardarParametros
 );
 agregadoRouter.get(
   "/:unidadId/:campaniaId",
   autenticar,
-  autorizar(PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Agregado.consultar
 );

@@ -12,7 +12,7 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./db/postgres:/docker-entrypoint-initdb.d:ro
+      - ./bienestar_nexum_v2.sql:/docker-entrypoint-initdb.d/01_bienestar_nexum_v2.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d bienestar_nexum"]
       interval: 5s

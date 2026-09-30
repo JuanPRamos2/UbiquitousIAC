@@ -29,10 +29,14 @@ export async function escritorio(actor) {
     k: 5,
     parametros: {},
   };
-  if (actor.perfil === PERFILES.ADMIN_SISTEMA || actor.perfil === PERFILES.AUDITOR) {
+  if (
+    actor.perfil === PERFILES.ADMINISTRADOR ||
+    actor.perfil === PERFILES.AUDITOR ||
+    actor.perfil === PERFILES.ESPECIALISTA
+  ) {
     out.instrumentos = await seguro(() => Catalogos.instrumentos(), []);
   }
-  if (actor.perfil !== PERFILES.COLAB) {
+  if (actor.perfil !== PERFILES.COLABORADOR) {
     out.k = await seguro(() => Catalogo.leerUmbralK(), 5);
     out.parametros = await seguro(() => Catalogo.leerParametros(), {});
   }
@@ -102,23 +106,21 @@ export async function guardarConfiguracion({ actor, k, version_activa_consentimi
     await registrarAsync({
       actor_id: actor.usuario_id,
       actor_perfil: actor.perfil,
-      accion: ACCIONES.CAMBIO_UMBRAL_K,
-      recurso: RECURSOS.PARAMETRO_GLOBAL,
+      accion: ACCIONES.PARAMETRO_MODIFICADO,
+      recurso: RECURSOS.PARAMETRO,
+      recurso_id: "k_umbral_minimo",
       resultado: RESULTADOS.EXITO,
       correlacion_id: correlacionId,
     });
   }
   if (version_activa_consentimiento) {
-    await Catalogo.actualizarParametro(
-      "version_activa_consentimiento",
-      version_activa_consentimiento,
-      actor.usuario_id
-    );
+    await Catalogo.activarAviso(version_activa_consentimiento);
     await registrarAsync({
       actor_id: actor.usuario_id,
       actor_perfil: actor.perfil,
-      accion: ACCIONES.CAMBIO_CONSENTIMIENTO,
-      recurso: RECURSOS.VERSION_CONSENTIMIENTO,
+      accion: ACCIONES.PARAMETRO_MODIFICADO,
+      recurso: RECURSOS.AVISO,
+      recurso_id: version_activa_consentimiento,
       resultado: RESULTADOS.EXITO,
       correlacion_id: correlacionId,
     });

@@ -9,23 +9,23 @@ portalRouter.use(autenticar);
 
 portalRouter.get("/escritorio", Portal.escritorio);
 
-portalRouter.get("/consentimiento", autorizar(PERFILES.COLAB), Portal.miConsentimiento);
-portalRouter.post("/consentimiento", autorizar(PERFILES.COLAB), Portal.cambiarConsentimiento);
+portalRouter.get("/consentimiento", autorizar(PERFILES.COLABORADOR), Portal.miConsentimiento);
+portalRouter.post("/consentimiento", autorizar(PERFILES.COLABORADOR), Portal.cambiarConsentimiento);
 
-portalRouter.get("/mis-evaluaciones", autorizar(PERFILES.COLAB), Portal.misEvaluaciones);
+portalRouter.get("/mis-evaluaciones", autorizar(PERFILES.COLABORADOR), Portal.misEvaluaciones);
 
-portalRouter.post("/soporte", autorizar(PERFILES.COLAB), Portal.crearSoporte);
+portalRouter.post("/soporte", autorizar(PERFILES.COLABORADOR), Portal.crearSoporte);
 portalRouter.get(
   "/soporte",
-  autorizar(PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Portal.listarSoporte
 );
 
-portalRouter.get("/cuentas", autorizar(PERFILES.ADMIN_SISTEMA), Portal.cuentas);
+portalRouter.get("/cuentas", autorizar(PERFILES.ADMINISTRADOR), Portal.cuentas);
 
 portalRouter.get(
   "/configuracion",
-  autorizar(PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Portal.configuracion
 );
-portalRouter.patch("/configuracion", autorizar(PERFILES.ADMIN_SISTEMA), Portal.guardarConfiguracion);
+portalRouter.patch("/configuracion", autorizar(PERFILES.ADMINISTRADOR), Portal.guardarConfiguracion);

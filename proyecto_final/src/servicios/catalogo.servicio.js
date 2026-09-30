@@ -3,9 +3,13 @@ import { PERFILES } from "../utilidades/catalogos-auditoria.js";
 import { HttpError } from "../utilidades/errores.js";
 import * as Usuario from "../modelos/Usuario.js";
 
+function veOrganizacion(perfil) {
+  return [PERFILES.ADMINISTRADOR, PERFILES.AUDITOR, PERFILES.ESPECIALISTA].includes(perfil);
+}
+
 export async function unidades(actor) {
   const rows = await Catalogo.listarUnidades();
-  if (actor.perfil === PERFILES.ADMIN_SISTEMA || actor.perfil === PERFILES.AUDITOR) {
+  if (veOrganizacion(actor.perfil)) {
     return rows;
   }
   const ctx = await Usuario.contextoOperativo(actor.usuario_id);
@@ -16,12 +20,14 @@ export async function unidades(actor) {
 }
 
 export async function campanias(actor) {
-  if (actor.perfil === PERFILES.ADMIN_SISTEMA || actor.perfil === PERFILES.AUDITOR) {
+  if (veOrganizacion(actor.perfil)) {
     return Catalogo.listarCampanias();
   }
   const ctx = await Usuario.contextoOperativo(actor.usuario_id);
   if (!ctx?.unidad_organizacional_id) return [];
-  return Catalogo.listarCampaniasDeUnidad(ctx.unidad_organizacional_id);
+  return Catalogo.listarCampaniasDeUnidad(ctx.unidad_organizacional_id, {
+    soloAbiertas: actor.perfil === PERFILES.COLABORADOR,
+  });
 }
 
 export async function instrumentos() {

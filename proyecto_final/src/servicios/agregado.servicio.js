@@ -1,35 +1,23 @@
 import { redis } from "../config/redis.js";
 import { env } from "../config/env.js";
 import * as Catalogo from "../modelos/Catalogo.js";
-import * as Encuesta from "../modelos/Encuesta.js";
 import * as Usuario from "../modelos/Usuario.js";
 import { registrarAsync } from "./auditoria.servicio.js";
 import { invalidarTodosLosCachesAgregado } from "./cache-agregado.js";
-import { publicarAgregado } from "../utilidades/privacidad.js";
 import { HttpError } from "../utilidades/errores.js";
 import { ACCIONES, RESULTADOS, RECURSOS, PERFILES } from "../utilidades/catalogos-auditoria.js";
 import { claveCacheAgregado, claveLockAgregado } from "../utilidades/redis-claves.js";
 
-function promedio(docs) {
-  let suma = 0;
-  let n = 0;
-  const porReactivo = {};
-  for (const doc of docs) {
-    for (const r of doc.respuestas || []) {
-      suma += r.valor;
-      n += 1;
-      if (!porReactivo[r.reactivo_id]) porReactivo[r.reactivo_id] = { suma: 0, n: 0 };
-      porReactivo[r.reactivo_id].suma += r.valor;
-      porReactivo[r.reactivo_id].n += 1;
-    }
-  }
-  const detalle = Object.fromEntries(
-    Object.entries(porReactivo).map(([id, v]) => [id, Number((v.suma / v.n).toFixed(2))])
-  );
-  return {
-    promedioGlobal: n ? Number((suma / n).toFixed(2)) : null,
-    detalle,
-  };
+function resultadoAuditoria(estado) {
+  if (estado === "PUBLICADO") return RESULTADOS.EXITO;
+  if (estado === "PRESUPUESTO_PRIVACIDAD_AGOTADO") return RESULTADOS.PRESUPUESTO_AGOTADO;
+  return RESULTADOS.GRUPO_INSUFICIENTE;
+}
+
+function accionAuditoria(estado) {
+  if (estado === "PRESUPUESTO_PRIVACIDAD_AGOTADO") return ACCIONES.PRESUPUESTO_AGOTADO;
+  if (estado === "GRUPO_INSUFICIENTE") return ACCIONES.GRUPO_INSUFICIENTE;
+  return ACCIONES.AGREGADO_CONSULTADO;
 }
 
 async function esperarCache(cacheKey) {
@@ -42,10 +30,10 @@ async function esperarCache(cacheKey) {
 }
 
 export async function consultarAgregado({ actor, unidadId, campaniaId, correlacionId }) {
-  if (actor.perfil === PERFILES.COLAB) {
+  if (actor.perfil === PERFILES.COLABORADOR) {
     throw new HttpError(403, "RBAC", "El colaborador no consulta agregados");
   }
-  if (actor.perfil === PERFILES.LIDER_TURNO) {
+  if (actor.perfil === PERFILES.LIDER) {
     const ctx = await Usuario.contextoOperativo(actor.usuario_id);
     if (ctx?.unidad_organizacional_id !== unidadId) {
       throw new HttpError(403, "RBAC", "Solo puedes ver agregados de tu unidad");
@@ -59,9 +47,10 @@ export async function consultarAgregado({ actor, unidadId, campaniaId, correlaci
     await registrarAsync({
       actor_id: actor.usuario_id,
       actor_perfil: actor.perfil,
-      accion: ACCIONES.CONSULTA_AGREGADO,
-      recurso: RECURSOS.UNIDAD_ORGANIZACIONAL,
-      resultado: parsed.visible ? RESULTADOS.EXITO : RESULTADOS.GRUPO_INSUFICIENTE,
+      accion: accionAuditoria(parsed.motivo || (parsed.visible ? "PUBLICADO" : "GRUPO_INSUFICIENTE")),
+      recurso: RECURSOS.UNIDAD,
+      recurso_id: unidadId,
+      resultado: resultadoAuditoria(parsed.motivo || (parsed.visible ? "PUBLICADO" : "GRUPO_INSUFICIENTE")),
       correlacion_id: correlacionId,
     });
     return parsed;
@@ -80,9 +69,10 @@ export async function consultarAgregado({ actor, unidadId, campaniaId, correlaci
       await registrarAsync({
         actor_id: actor.usuario_id,
         actor_perfil: actor.perfil,
-        accion: ACCIONES.CONSULTA_AGREGADO,
-        recurso: RECURSOS.UNIDAD_ORGANIZACIONAL,
-        resultado: fromWait.visible ? RESULTADOS.EXITO : RESULTADOS.GRUPO_INSUFICIENTE,
+      accion: accionAuditoria(fromWait.motivo || (fromWait.visible ? "PUBLICADO" : "GRUPO_INSUFICIENTE")),
+      recurso: RECURSOS.UNIDAD,
+      recurso_id: unidadId,
+      resultado: resultadoAuditoria(fromWait.motivo || (fromWait.visible ? "PUBLICADO" : "GRUPO_INSUFICIENTE")),
         correlacion_id: correlacionId,
       });
       return fromWait;
@@ -100,35 +90,51 @@ export async function consultarAgregado({ actor, unidadId, campaniaId, correlaci
     const campania = await Catalogo.obtenerCampania(campaniaId);
     if (!campania) throw new HttpError(404, "CAMPANIA_INVALIDA", "Campaña no encontrada");
 
-    const docs = await Encuesta.respuestasPorUnidadCampania(unidadId, campaniaId);
     const k = await Catalogo.leerUmbralK();
-    const { promedioGlobal, detalle } = promedio(docs);
-    const publico = publicarAgregado({
-      total: docs.length,
-      k,
-      promedioGlobal,
-      detalle,
+    const global = await Catalogo.calcularAgregadoProtegido({
+      campaniaId,
+      unidadId,
+      dimensionId: null,
+      actorId: actor.usuario_id,
     });
+    if (!global || global.estado === "CAMPANIA_INVALIDA") {
+      throw new HttpError(404, "CAMPANIA_INVALIDA", "Campaña no encontrada");
+    }
 
-    await Catalogo.guardarAgregadoCalculado({
-      campania_id: campaniaId,
-      unidad_organizacional_id: unidadId,
-      instrumento_id: campania.instrumento_id,
-      version_instrumento: campania.version_instrumento,
-      total_respuestas: docs.length,
-      supera_umbral_k: docs.length >= k,
-      k_umbral: k,
-      promedio_global: publico.visible ? promedioGlobal : null,
-      detalle_json: publico.visible ? detalle : {},
-    });
+    const detalle = {};
+    if (global.estado === "PUBLICADO") {
+      const dimensiones = await Catalogo.listarDimensiones();
+      for (const dimension of dimensiones) {
+        const fila = await Catalogo.calcularAgregadoProtegido({
+          campaniaId,
+          unidadId,
+          dimensionId: dimension.dimension_id,
+          actorId: actor.usuario_id,
+        });
+        if (fila?.estado === "PUBLICADO" && fila.valor_protegido != null) {
+          detalle[dimension.nombre] = Number(fila.valor_protegido);
+        }
+      }
+    }
+
+    const publico = {
+      visible: global.estado === "PUBLICADO",
+      motivo: global.estado === "PUBLICADO" ? undefined : global.estado,
+      k,
+      promedio_global: global.valor_protegido == null ? null : Number(global.valor_protegido),
+      detalle,
+      epsilon: global.epsilon == null ? null : Number(global.epsilon),
+      mensaje: global.mensaje || null,
+    };
 
     await redis.set(cacheKey, JSON.stringify(publico), "EX", env.redisTtl.cacheAgregadoSec);
     await registrarAsync({
       actor_id: actor.usuario_id,
       actor_perfil: actor.perfil,
-      accion: ACCIONES.CONSULTA_AGREGADO,
-      recurso: RECURSOS.UNIDAD_ORGANIZACIONAL,
-      resultado: publico.visible ? RESULTADOS.EXITO : RESULTADOS.GRUPO_INSUFICIENTE,
+      accion: accionAuditoria(global.estado),
+      recurso: RECURSOS.UNIDAD,
+      recurso_id: unidadId,
+      resultado: resultadoAuditoria(global.estado),
       correlacion_id: correlacionId,
     });
     return publico;
@@ -155,16 +161,13 @@ export async function guardarParametros({ actor, k, version_activa_consentimient
     await cambiarK({ actor, k, correlacionId });
   }
   if (version_activa_consentimiento) {
-    await Catalogo.actualizarParametro(
-      "version_activa_consentimiento",
-      version_activa_consentimiento,
-      actor.usuario_id
-    );
+    await Catalogo.activarAviso(version_activa_consentimiento);
     await registrarAsync({
       actor_id: actor.usuario_id,
       actor_perfil: actor.perfil,
-      accion: ACCIONES.CAMBIO_CONSENTIMIENTO,
-      recurso: RECURSOS.VERSION_CONSENTIMIENTO,
+      accion: ACCIONES.PARAMETRO_MODIFICADO,
+      recurso: RECURSOS.AVISO,
+      recurso_id: version_activa_consentimiento,
       resultado: RESULTADOS.EXITO,
       correlacion_id: correlacionId,
     });
@@ -182,8 +185,9 @@ export async function cambiarK({ actor, k, correlacionId }) {
   await registrarAsync({
     actor_id: actor.usuario_id,
     actor_perfil: actor.perfil,
-    accion: ACCIONES.CAMBIO_UMBRAL_K,
-    recurso: RECURSOS.PARAMETRO_GLOBAL,
+    accion: ACCIONES.PARAMETRO_MODIFICADO,
+    recurso: RECURSOS.PARAMETRO,
+    recurso_id: "k_umbral_minimo",
     resultado: RESULTADOS.EXITO,
     correlacion_id: correlacionId,
   });

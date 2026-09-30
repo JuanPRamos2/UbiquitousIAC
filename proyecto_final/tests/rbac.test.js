@@ -2,17 +2,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { PERFILES, RECURSOS, ACCIONES } from "../src/utilidades/catalogos-auditoria.js";
 
-test("RBAC cubre los cuatro perfiles del esquema", () => {
+test("RBAC cubre los cinco perfiles de la base v2", () => {
   assert.deepEqual(Object.values(PERFILES).sort(), [
-    "ADMIN_SISTEMA",
+    "ADMINISTRADOR",
     "AUDITOR",
-    "COLAB",
-    "LIDER_TURNO",
+    "COLABORADOR",
+    "ESPECIALISTA",
+    "LIDER",
   ]);
 });
 
-test("login y logout usan el recurso USUARIO del catálogo de auditoría", () => {
+test("login y el autoreporte usan códigos del catálogo de auditoría v2", () => {
   assert.equal(RECURSOS.USUARIO, "USUARIO");
   assert.equal(ACCIONES.LOGIN_EXITOSO, "LOGIN_EXITOSO");
-  assert.equal(ACCIONES.CONSULTA_HISTORIAL_CONSENTIMIENTO, "CONSULTA_HISTORIAL_CONSENTIMIENTO");
+  assert.equal(ACCIONES.AUTOREPORTE_ENVIADO, "AUTOREPORTE_ENVIADO");
+  assert.equal(ACCIONES.AGREGADO_CONSULTADO, "AGREGADO_CONSULTADO");
 });

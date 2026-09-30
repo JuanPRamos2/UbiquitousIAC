@@ -67,8 +67,8 @@
       <h2>Arquitectura</h2>
       <p>Un solo proceso Node/Express. Tres almacenes, sin JOIN entre Mongo y Postgres. El único puente identidad ↔ operativa es <code>consentimiento.seudonimo</code>.</p>
       <div class="models">
-        <div class="pill iaas"><strong>PostgreSQL</strong> Cuentas, catálogos, consentimiento, umbral k.</div>
-        <div class="pill paas"><strong>MongoDB</strong> Encuestas seudonimizadas y bitácora.</div>
+        <div class="pill iaas"><strong>PostgreSQL</strong> Cuentas, autoreporte, consentimiento, agregados y bitácora.</div>
+        <div class="pill paas"><strong>MongoDB</strong> Solicitudes de apoyo.</div>
         <div class="pill saas"><strong>Redis</strong> Sesión JWT, caché de agregados, candados, intentos de login.</div>
         <div class="pill faas"><strong>Express</strong> API <code>/api</code> y archivos de <code>web/</code>.</div>
       </div>
@@ -82,10 +82,11 @@
         <table>
           <thead><tr><th>Correo</th><th>Perfil</th><th>Qué ve</th></tr></thead>
           <tbody>
-            <tr><td><code>ana.perez@empresa.com</code></td><td>COLAB</td><td>Encuesta y consentimiento. Sin agregados.</td></tr>
-            <tr><td><code>lucia.hernandez@empresa.com</code></td><td>LIDER_TURNO</td><td>Agregados de su unidad, si n ≥ k.</td></tr>
-            <tr><td><code>roberto.garcia@empresa.com</code></td><td>AUDITOR</td><td>Agregados y bitácora.</td></tr>
-            <tr><td><code>carlos.ramirez@empresa.com</code></td><td>ADMIN_SISTEMA</td><td>Todo, incluido cambiar k.</td></tr>
+            <tr><td><code>ana.perez@nexum.com.mx</code></td><td>COLABORADOR</td><td>Encuesta y consentimiento. Sin agregados.</td></tr>
+            <tr><td><code>lucia.hernandez@nexum.com.mx</code></td><td>LIDER</td><td>Agregados protegidos de su unidad.</td></tr>
+            <tr><td><code>mariana.solis@nexum.com.mx</code></td><td>ESPECIALISTA</td><td>Agregados de la organización e instrumentos.</td></tr>
+            <tr><td><code>roberto.garcia@nexum.com.mx</code></td><td>AUDITOR</td><td>Bitácora y evidencia de consentimiento.</td></tr>
+            <tr><td><code>carlos.ramirez@nexum.com.mx</code></td><td>ADMINISTRADOR</td><td>Usuarios y parámetros de privacidad.</td></tr>
           </tbody>
         </table>
       </div>
@@ -99,7 +100,7 @@
           <tbody>
             <tr><td>GET</td><td><code>/api/salud</code></td><td>público</td></tr>
             <tr><td>POST</td><td><code>/api/auth/login</code></td><td>público</td></tr>
-            <tr><td>POST</td><td><code>/api/encuestas/respuestas</code></td><td>COLAB</td></tr>
+            <tr><td>POST</td><td><code>/api/encuestas/respuestas</code></td><td>COLABORADOR</td></tr>
             <tr><td>GET</td><td><code>/api/agregados/:unidad/:campania</code></td><td>líder / auditor / admin</td></tr>
             <tr><td>GET</td><td><code>/api/auditoria</code></td><td>auditor / admin</td></tr>
           </tbody>
@@ -124,7 +125,7 @@ sudo docker compose up --build -d
         <a class="btn ghost" href="docs/AUDITORIA.md">Auditoría</a>
         <a class="btn ghost" href="docs/arquitectura.md">Arquitectura</a>
         <a class="btn ghost" href="README.md">README</a>
-        <a class="btn ghost" href="db/postgres/01_schema.sql">Esquema SQL</a>
+        <a class="btn ghost" href="bienestar_nexum_v2.sql">Esquema SQL</a>
       </div>
     </section>
   </main>

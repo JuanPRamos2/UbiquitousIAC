@@ -8,32 +8,33 @@ const state = {
 };
 
 const CUENTAS_DEMO = {
-  "ana.perez@empresa.com": {
+  "ana.perez@nexum.com.mx": {
     usuario_id: "USR-00001",
-    perfil: "COLAB",
+    perfil: "COLABORADOR",
     nombre: "Ana",
-    seudonimo_id: "SEUD-2026-014892",
-    unidad_organizacional_id: "UO-CALLCENTER-TURNO-B",
+    seudonimo_id: "SEUD-001",
+    unidad_organizacional_id: "UO-CC-TURNO-B",
   },
-  "lucia.hernandez@empresa.com": {
-    usuario_id: "USR-00011",
-    perfil: "LIDER_TURNO",
+  "lucia.hernandez@nexum.com.mx": {
+    usuario_id: "USR-00005",
+    perfil: "LIDER",
     nombre: "Lucía",
-    seudonimo_id: "SEUD-2026-009331",
-    unidad_organizacional_id: "UO-CALLCENTER-TURNO-B",
+    unidad_organizacional_id: "UO-CC-TURNO-B",
   },
-  "roberto.garcia@empresa.com": {
-    usuario_id: "USR-00027",
+  "mariana.solis@nexum.com.mx": {
+    usuario_id: "USR-00003",
+    perfil: "ESPECIALISTA",
+    nombre: "Mariana",
+  },
+  "roberto.garcia@nexum.com.mx": {
+    usuario_id: "USR-00004",
     perfil: "AUDITOR",
     nombre: "Roberto",
-    seudonimo_id: "SEUD-2026-002104",
-    unidad_organizacional_id: "UO-CALLCENTER-TURNO-B",
   },
-  "carlos.ramirez@empresa.com": {
+  "carlos.ramirez@nexum.com.mx": {
     usuario_id: "USR-00002",
-    perfil: "ADMIN_SISTEMA",
+    perfil: "ADMINISTRADOR",
     nombre: "Carlos",
-    unidad_organizacional_id: "UO-CALLCENTER-TURNO-B",
   },
 };
 
@@ -79,24 +80,33 @@ const MENSAJES = {
 };
 
 const PERFIL_ETIQUETA = {
-  COLAB: "Colaborador",
-  LIDER_TURNO: "Líder de Turno",
-  AUDITOR: "Auditor de Cumplimiento",
-  ADMIN_SISTEMA: "Administrador del Sistema",
+  COLABORADOR: "Colaborador",
+  LIDER: "Líder de unidad",
+  ESPECIALISTA: "Especialista de bienestar",
+  AUDITOR: "Auditor de cumplimiento",
+  ADMINISTRADOR: "Administrador del sistema",
 };
 
 const MENU = {
-  COLAB: [
+  COLABORADOR: [
     { id: "inicio", label: "Inicio" },
     { id: "consentimiento", label: "Mi consentimiento" },
     { id: "encuesta", label: "Responder encuesta" },
     { id: "misAccesos", label: "Quién vio mis datos" },
     { id: "notificaciones", label: "Notificaciones" },
   ],
-  LIDER_TURNO: [
+  LIDER: [
     { id: "inicio", label: "Inicio" },
     { id: "agregados", label: "Resultados por unidad" },
     { id: "reportes", label: "Reportes" },
+    { id: "notificaciones", label: "Notificaciones" },
+  ],
+  ESPECIALISTA: [
+    { id: "inicio", label: "Inicio" },
+    { id: "agregados", label: "Resultados por unidad" },
+    { id: "reportes", label: "Reportes" },
+    { id: "instrumentos", label: "Instrumentos" },
+    { id: "unidades", label: "Unidades organizacionales" },
     { id: "notificaciones", label: "Notificaciones" },
   ],
   AUDITOR: [
@@ -106,7 +116,7 @@ const MENU = {
     { id: "reportes", label: "Reportes" },
     { id: "notificaciones", label: "Notificaciones" },
   ],
-  ADMIN_SISTEMA: [
+  ADMINISTRADOR: [
     { id: "inicio", label: "Inicio" },
     { id: "usuarios", label: "Usuarios y perfiles" },
     { id: "unidades", label: "Unidades organizacionales" },
@@ -118,14 +128,17 @@ const MENU = {
 };
 
 const ACCION_ETIQUETA = {
-  LOGIN_EXITOSO: "LOGIN_EXITOSO",
-  LOGIN_FALLIDO: "LOGIN_FALLIDO",
-  LOGOUT: "LOGOUT",
-  CREACION_RESPUESTA: "CREACION_RESPUESTA",
-  CONSULTA_AGREGADO: "CONSULTA_AGREGADO",
-  CONSULTA_HISTORIAL_CONSENTIMIENTO: "CONSULTA_HISTORIAL_CONSENTIMIENTO",
-  CAMBIO_UMBRAL_K: "CAMBIO_UMBRAL_K",
-  CAMBIO_CONSENTIMIENTO: "CAMBIO_CONSENTIMIENTO",
+  LOGIN_EXITOSO: "Inicio de sesión",
+  LOGIN_FALLIDO: "Intento fallido",
+  LOGOUT: "Cierre de sesión",
+  AUTOREPORTE_ENVIADO: "Autoreporte enviado",
+  AGREGADO_CONSULTADO: "Consulta de agregado",
+  CONSENT_VERIFICADO: "Verificación de consentimiento",
+  CONSENT_OTORGADO: "Consentimiento otorgado",
+  CONSENT_REVOCADO: "Consentimiento revocado",
+  PARAMETRO_MODIFICADO: "Parámetro modificado",
+  GRUPO_INSUFICIENTE: "Grupo insuficiente",
+  PRESUPUESTO_AGOTADO: "Presupuesto de privacidad agotado",
 };
 
 const ESCALA = ["Nunca", "Casi nunca", "A veces", "Casi siempre", "Siempre"];
@@ -368,7 +381,7 @@ async function notificacionesPerfil() {
   const campanias = await cargarCampanias();
   const k = await cargarK();
   const camp = campanias[0];
-  if (p === "COLAB") {
+  if (p === "COLABORADOR") {
     const cons = await cargarConsentimientoPropio();
     return [
       camp
@@ -387,7 +400,7 @@ async function notificacionesPerfil() {
       },
     ].filter(Boolean);
   }
-  if (p === "LIDER_TURNO") {
+  if (p === "LIDER") {
     return [
       {
         t: "Umbral de grupo",
@@ -495,12 +508,14 @@ async function nombresReactivos(campania) {
 
 function cardAgregado(unidad, campania, data, nombres, k) {
   if (!data?.visible) {
+    const presupuesto = data?.motivo === "PRESUPUESTO_PRIVACIDAD_AGOTADO";
     return `<div class="card"><h2>${esc(unidad.nombre)}</h2>
       <p class="card-sub">${esc(campania.nombre)}</p>
-      <div class="suppressed"><div class="big">Resultado suprimido</div>
-      <div class="small">Este grupo no alcanza el umbral mínimo de ${esc(data?.k || k)} respuestas.
-      Mostrar el promedio permitiría deducir respuestas individuales.</div></div>
-      <p class="note">La consulta quedó registrada en la bitácora con resultado <span class="mono">GRUPO_INSUFICIENTE</span>.</p></div>`;
+      <div class="suppressed"><div class="big">${presupuesto ? "Presupuesto agotado" : "Resultado suprimido"}</div>
+      <div class="small">${presupuesto
+        ? "Esta unidad ya consumió el presupuesto de privacidad de la campaña. No se publican valores nuevos."
+        : `Este grupo no alcanza el umbral mínimo de ${esc(data?.k || k)} respuestas. No se publica ningún valor.`}</div></div>
+      <p class="note">${esc(data?.mensaje || "")}</p></div>`;
   }
   const detalle = Object.entries(data.detalle || {});
   const chartId = `gdim-${unidad.unidad_organizacional_id}-${campania.campania_id}`.replace(/[^a-zA-Z0-9_-]/g, "");
@@ -509,13 +524,13 @@ function cardAgregado(unidad, campania, data, nombres, k) {
   const riesgo = riesgoDe(data.promedio_global);
   setTimeout(() => dibujarColumnas(chartId, cats, vals), 30);
   return `<div class="card"><h2>${esc(unidad.nombre)}</h2>
-    <p class="card-sub">${esc(campania.nombre)} · ${esc(data.total_respuestas)} respuestas</p>
+    <p class="card-sub">${esc(campania.nombre)} · valor protegido${data.epsilon != null ? ` · ε = ${esc(data.epsilon)}` : ""}</p>
     <div class="grid2" style="margin-bottom:20px">
       <div class="metric" style="padding:0"><div class="v">${esc(data.promedio_global)}</div><div class="l">Promedio general (escala 1–5)</div></div>
       <div class="metric" style="padding:0"><div class="v ${riesgo.cls}">${riesgo.texto}</div><div class="l">Nivel de riesgo del grupo</div></div>
     </div>
     <div id="${chartId}" class="chart"></div>
-    <p class="note">Promedios de ${esc(data.total_respuestas)} personas. El sistema no expone respuestas individuales ni la lista de participantes.</p></div>`;
+    <p class="note">${esc(data.mensaje || "Valor con ruido de Laplace. El sistema no expone respuestas individuales ni el tamaño exacto del grupo.")}</p></div>`;
 }
 
 function tablaBitacora(rows) {
@@ -523,7 +538,7 @@ function tablaBitacora(rows) {
     return `<div class="suppressed"><div class="big">Sin registros</div>
       <div class="small">Todavía no hay eventos que mostrar en este periodo.</div></div>`;
   }
-  const puedeSeud = ["AUDITOR", "ADMIN_SISTEMA", "COLAB"].includes(state.me.perfil);
+  const puedeSeud = ["AUDITOR", "ADMINISTRADOR", "COLABORADOR"].includes(state.me.perfil);
   return `<table><thead><tr><th>Fecha</th><th>Actor</th><th>Perfil</th><th>Acción</th><th>Recurso</th><th>Resultado</th></tr></thead><tbody>
   ${rows
     .map((b) => {
@@ -569,7 +584,7 @@ const V = {};
 V.inicio = async () => {
   const p = state.me.perfil;
   const k = await cargarK();
-  if (p === "COLAB") {
+  if (p === "COLABORADOR") {
     const [cons, campanias] = await Promise.all([cargarConsentimientoPropio(), cargarCampanias()]);
     const camp = campanias[0];
     let ya = false;
@@ -602,7 +617,7 @@ V.inicio = async () => {
       </div>`
     );
   }
-  if (p === "LIDER_TURNO") {
+  if (p === "LIDER") {
     const [unidades, campanias] = await Promise.all([cargarUnidades(), cargarCampanias()]);
     const htmlCards = await Promise.all(
       unidades.map(async (u) => {
@@ -746,17 +761,19 @@ V.misAccesos = async () => {
 
 V.agregados = async () => {
   const [unidades, campanias, k] = await Promise.all([cargarUnidades(), cargarCampanias(), cargarK()]);
+  const abiertas = campanias.filter((c) => c.activa !== false);
+  const lista = abiertas.length ? abiertas : campanias.slice(0, 1);
   const html = [];
   html.push(
-    head("Resultados por unidad", "Un resultado solo se muestra si el grupo alcanza el umbral mínimo.") +
+    head("Resultados por unidad", "El valor publicado incluye ruido de Laplace. No se muestra el conteo exacto del grupo.") +
       `<div class="toolbar"><span class="note right" style="margin:0">Umbral vigente: k = ${esc(k)}</span></div>`
   );
-  if (!unidades.length || !campanias.length) {
+  if (!unidades.length || !lista.length) {
     html.push(`<div class="card"><p class="note">No hay equipos o evaluaciones visibles para su perfil.</p></div>`);
     return html.join("");
   }
   for (const u of unidades) {
-    for (const c of campanias) {
+    for (const c of lista) {
       const data = await consultarAgregado(u.unidad_organizacional_id, c.campania_id);
       const nombres = await nombresReactivos(c);
       html.push(cardAgregado(u, c, data, nombres, k));
@@ -773,7 +790,14 @@ V.reportes = async () => {
     const c = campanias[0];
     if (!c) continue;
     const data = await consultarAgregado(u.unidad_organizacional_id, c.campania_id);
-    participacion.push({ nombre: u.nombre, n: data?.visible ? data.total_respuestas : 0, visible: Boolean(data?.visible), data, campania: c, unidad: u });
+    participacion.push({
+      nombre: u.nombre,
+      n: data?.visible ? Number(data.promedio_global) : null,
+      visible: Boolean(data?.visible),
+      data,
+      campania: c,
+      unidad: u,
+    });
     if (data?.visible) visible.push({ unidad: u, campania: c, data });
   }
   setTimeout(() => {
@@ -794,12 +818,12 @@ V.reportes = async () => {
         xAxis: { categories: participacion.map((x) => x.nombre), lineColor: "#DCE1E8" },
         yAxis: {
           min: 0,
-          title: { text: "Respuestas" },
+          max: 5,
+          title: { text: "Valor protegido" },
           gridLineColor: "#EDEFF3",
-          plotLines: [{ value: k, color: "#8A5A00", width: 2, dashStyle: "Dash", label: { text: "umbral k=" + k, style: { color: "#8A5A00", fontSize: "11px" } } }],
         },
         legend: { enabled: false },
-        series: [{ name: "Respuestas", data: participacion.map((x) => x.n), color: "#0F6B62", borderRadius: 3 }],
+        series: [{ name: "Valor protegido", data: participacion.map((x) => x.n), color: "#0F6B62", borderRadius: 3 }],
       });
     }
   }, 40);
@@ -807,7 +831,7 @@ V.reportes = async () => {
     head("Reportes", "Visualización de resultados agregados. Solo se grafican grupos que superan el umbral.") +
     `<div class="grid2">
       <div class="card"><h2>Bienestar por dimensión</h2><p class="card-sub">Escala 1–5 · grupos que superan k</p><div id="g1" class="chart"></div></div>
-      <div class="card"><h2>Participación por unidad</h2><p class="card-sub">Respuestas recibidas vs. umbral k=${esc(k)}</p><div id="g2" class="chart"></div></div>
+      <div class="card"><h2>Valor protegido por unidad</h2><p class="card-sub">Escala 1–5 con ruido. Umbral k=${esc(k)}. Sin conteo exacto.</p><div id="g2" class="chart"></div></div>
     </div>
     <p class="note">Las gráficas se generan con Highcharts. Las unidades que no alcanzan el umbral mínimo no exponen promedios.</p>`
   );
@@ -876,7 +900,7 @@ V.usuarios = async () => {
     head("Usuarios y perfiles", "Un usuario tiene un perfil principal que define su menú y sus permisos.") +
     `<div class="card"><h2>Perfiles</h2><p class="card-sub">Nivel de acceso institucional</p>
     <table><thead><tr><th>Perfil</th><th>Nivel</th></tr></thead><tbody>
-    ${(data.perfiles || []).map((p) => `<tr><td>${esc(p.nombre)}</td><td class="mono">${esc(p.nivel_acceso)}</td></tr>`).join("")}
+    ${(data.perfiles || []).map((p) => `<tr><td>${esc(p.nombre)}</td><td>${esc(p.descripcion || p.nivel_acceso || "—")}</td></tr>`).join("")}
     </tbody></table></div>
     <div class="card"><h2>Cuentas</h2>
     <table><thead><tr><th>Clave</th><th>Correo</th><th>Perfil</th><th>Estado</th></tr></thead><tbody>
@@ -898,12 +922,12 @@ V.parametros = async () => {
     head("Parámetros del sistema", "Configuración que afecta a toda la plataforma.") +
     `<div class="privacy"><div class="h">El umbral k protege a los grupos pequeños</div>
      <div class="b">Ningún resultado agregado se muestra si el grupo tiene menos de k respuestas. Bajarlo aumenta el riesgo de reidentificación.</div></div>
-    <div class="card"><h2>Umbral mínimo de grupo</h2><p class="card-sub">Clave <span class="mono">k</span> en parametro_global</p>
+    <div class="card"><h2>Umbral mínimo de grupo</h2><p class="card-sub">Clave <span class="mono">k_umbral_minimo</span> en parametro_privacidad</p>
     <form id="fk" class="toolbar">
       <input id="kIn" name="k" type="number" min="2" max="50" value="${esc(cfg.k)}" style="width:110px">
       <button class="btn btn-sm" type="submit">Guardar cambio</button>
     </form>
-    <p class="note">Valor actual: ${esc(cfg.k)}. Al guardar se registra un evento <span class="mono">CAMBIO_UMBRAL_K</span> en la bitácora.</p></div>
+    <p class="note">Valor actual: ${esc(cfg.k)}. Al guardar se registra un evento <span class="mono">PARAMETRO_MODIFICADO</span> en la bitácora.</p></div>
     <div class="card"><h2>Versión activa del consentimiento</h2><p class="card-sub">Documento que firman los colaboradores</p>
     <form id="fver">
       <select id="ver" name="version">${(cfg.versiones || [])

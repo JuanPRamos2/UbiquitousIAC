@@ -18,8 +18,9 @@ export async function historialPorSeudonimo({ actor, seudonimoId, correlacionId 
   await registrarAsync({
     actor_id: actor.usuario_id,
     actor_perfil: actor.perfil,
-    accion: ACCIONES.CONSULTA_HISTORIAL_CONSENTIMIENTO,
-    recurso: RECURSOS.VERSION_CONSENTIMIENTO,
+    accion: ACCIONES.CONSENT_VERIFICADO,
+    recurso: RECURSOS.CONSENTIMIENTO,
+    recurso_id: seudonimoId,
     resultado: RESULTADOS.EXITO,
     correlacion_id: correlacionId,
   });
@@ -62,8 +63,9 @@ export async function cambiarMio({ actor, aceptar, correlacionId }) {
   await registrarAsync({
     actor_id: actor.usuario_id,
     actor_perfil: actor.perfil,
-    accion: ACCIONES.CAMBIO_CONSENTIMIENTO,
-    recurso: RECURSOS.VERSION_CONSENTIMIENTO,
+    accion: aceptar ? ACCIONES.CONSENT_OTORGADO : ACCIONES.CONSENT_REVOCADO,
+    recurso: RECURSOS.CONSENTIMIENTO,
+    recurso_id: ctx.seudonimo_id,
     resultado: RESULTADOS.EXITO,
     correlacion_id: correlacionId,
   });

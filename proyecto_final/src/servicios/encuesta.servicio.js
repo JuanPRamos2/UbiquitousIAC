@@ -6,7 +6,6 @@ import { registrarAsync } from "./auditoria.servicio.js";
 import { invalidarCacheAgregado } from "./cache-agregado.js";
 import { HttpError } from "../utilidades/errores.js";
 import { ACCIONES, RESULTADOS, RECURSOS, PERFILES } from "../utilidades/catalogos-auditoria.js";
-import { documentoRespuestaMongo } from "../utilidades/encuesta-documento.js";
 
 export async function guardarAutoreporte({ actor, body, correlacionId }) {
   const { seudonimo_id, campania_id, respuestas } = body || {};
@@ -19,7 +18,7 @@ export async function guardarAutoreporte({ actor, body, correlacionId }) {
     throw new HttpError(400, "SEUDONIMO_INVALIDO", "El seudónimo no existe o no está activo");
   }
 
-  if (actor.perfil === PERFILES.COLAB && seudonimo.usuario_id !== actor.usuario_id) {
+  if (actor.perfil === PERFILES.COLABORADOR && seudonimo.usuario_id !== actor.usuario_id) {
     throw new HttpError(403, "SEUDONIMO_AJENO", "No puedes reportar con un seudónimo que no te corresponde");
   }
 
@@ -68,35 +67,32 @@ export async function guardarAutoreporte({ actor, body, correlacionId }) {
     }
   }
 
-  const doc = documentoRespuestaMongo({
+  const guardado = await Encuesta.insertarRespuesta({
     seudonimo_id,
-    instrumento_id: campania.instrumento_id,
-    version_instrumento: campania.version_instrumento,
     campania_id,
     unidad_organizacional_id: seudonimo.unidad_organizacional_id,
-    version_consentimiento: consentimiento.version_consentimiento_id,
+    aviso_id: consentimiento.version_consentimiento_id,
     respuestas: arreglo,
   });
-
-  const guardado = await Encuesta.insertarRespuesta(doc);
   await invalidarCacheAgregado(seudonimo.unidad_organizacional_id, campania_id);
 
   registrarAsync({
     actor_id: actor.usuario_id,
     actor_perfil: actor.perfil,
-    accion: ACCIONES.CREACION_RESPUESTA,
-    recurso: RECURSOS.RESPUESTA_ENCUESTA,
+    accion: ACCIONES.AUTOREPORTE_ENVIADO,
+    recurso: RECURSOS.CAMPANIA,
+    recurso_id: campania_id,
     resultado: RESULTADOS.EXITO,
     correlacion_id: correlacionId,
   });
 
   return {
-    id: String(guardado._id),
+    id: String(guardado.respuesta_id),
     campania_id,
-    instrumento_id: doc.instrumento_id,
-    version_instrumento: doc.version_instrumento,
-    version_consentimiento: doc.version_consentimiento,
-    fecha_respuesta: doc.fecha_respuesta,
+    instrumento_id: campania.instrumento_id,
+    version_instrumento: campania.version_instrumento,
+    version_consentimiento: consentimiento.version_consentimiento_id,
+    fecha_respuesta: guardado.fecha_respuesta,
   };
 }
 
@@ -107,20 +103,15 @@ export async function mias(actor) {
   }
   const docs = await Encuesta.respuestasDeSeudonimo(ctx.seudonimo_id);
   return {
-    data: docs.map((d) => {
-      const valores = (d.respuestas || []).map((x) => x.valor);
-      const n = valores.length;
-      return {
-        campania_id: d.campania_id,
-        fecha_respuesta: d.fecha_respuesta,
-        promedio: n ? Number((valores.reduce((a, b) => a + b, 0) / n).toFixed(2)) : null,
-      };
-    }),
+    data: docs.map((d) => ({
+      campania_id: d.campania_id,
+      fecha_respuesta: d.fecha_respuesta,
+    })),
   };
 }
 
 export async function misAccesos(actor) {
-  const rows = await Bitacora.listarBitacoraDeActor(actor.usuario_id);
+  const rows = await Bitacora.listarAccesosPropios(actor.usuario_id);
   return {
     data: rows.map((row) => ({
       actor_id: row.actor_id,

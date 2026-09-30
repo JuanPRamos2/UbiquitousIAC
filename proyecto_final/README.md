@@ -57,16 +57,21 @@ sudo docker compose up --build
 
 Si 3000 sigue ocupado, en `.env` pon `API_HOST_PORT=3001` y abre http://127.0.0.1:3001. Lo mismo existe para `MONGO_HOST_PORT` y `REDIS_HOST_PORT`.
 
-Si el volumen de Postgres ya existía **antes** de añadir
-`db/postgres/03_recurso_usuario.sql`, recréalo con `down -v` o el recurso
-`USUARIO` no estará en el catálogo de auditoría.
+La base que carga el contenedor es `bienestar_nexum_v2.sql`. Si el volumen
+de Postgres ya existía con el esquema anterior, recréalo:
+
+```bash
+sudo docker compose down -v
+sudo docker compose up --build -d
+```
 
 | Correo | Perfil | Clave |
 | --- | --- | --- |
-| ana.perez@empresa.com | COLAB | demo123 |
-| lucia.hernandez@empresa.com | LIDER_TURNO | demo123 |
-| roberto.garcia@empresa.com | AUDITOR | demo123 |
-| carlos.ramirez@empresa.com | ADMIN_SISTEMA | demo123 |
+| ana.perez@nexum.com.mx | COLABORADOR | demo123 |
+| lucia.hernandez@nexum.com.mx | LIDER | demo123 |
+| mariana.solis@nexum.com.mx | ESPECIALISTA | demo123 |
+| roberto.garcia@nexum.com.mx | AUDITOR | demo123 |
+| carlos.ramirez@nexum.com.mx | ADMINISTRADOR | demo123 |
 
 Las contraseñas se verifican en PostgreSQL con `pgcrypto` (`crypt` + Blowfish).
 
@@ -81,10 +86,10 @@ Las contraseñas se verifican en PostgreSQL con `pgcrypto` (`crypt` + Blowfish).
 | GET | `/api/catalogos/unidades` | autenticado |
 | GET | `/api/catalogos/campanias` | autenticado |
 | GET | `/api/catalogos/instrumentos` | autenticado |
-| GET | `/api/encuestas/estado` | COLAB |
-| POST | `/api/encuestas/respuestas` | COLAB |
-| GET | `/api/agregados/parametros/k` | LIDER / AUDITOR / ADMIN |
-| GET | `/api/agregados/:unidad/:campania` | LIDER / AUDITOR / ADMIN |
+| GET | `/api/encuestas/estado` | COLABORADOR |
+| POST | `/api/encuestas/respuestas` | COLABORADOR |
+| GET | `/api/agregados/parametros/k` | LIDER / ESPECIALISTA / AUDITOR / ADMIN |
+| GET | `/api/agregados/:unidad/:campania` | LIDER / ESPECIALISTA / AUDITOR / ADMIN |
 | PATCH | `/api/agregados/parametros/k` | ADMIN |
 | GET | `/api/auditoria` | AUDITOR / ADMIN |
 | GET | `/api/auditoria/consentimientos/:seudonimoId` | AUDITOR / ADMIN |
@@ -92,9 +97,9 @@ Las contraseñas se verifican en PostgreSQL con `pgcrypto` (`crypt` + Blowfish).
 POST encuesta:
 
 1. Valida `seudonimo_id`, campaña, consentimiento y reactivos en PostgreSQL.
-2. Inserta en MongoDB `respuestas_encuesta` (sin `empleado_id`, con `version_consentimiento`).
+2. Inserta en `autoreporte.respuesta` y `autoreporte.respuesta_detalle`.
 3. Invalida `cache:agregado:{unidad}:{campania}`.
-4. Escribe `CREACION_RESPUESTA` en `bitacora_auditoria`.
+4. Escribe `AUTOREPORTE_ENVIADO` en `auditoria.bitacora`.
 
 Si hay menos de **k** respuestas (k=5), el agregado responde `GRUPO_INSUFICIENTE`
 sin totales ni promedios.

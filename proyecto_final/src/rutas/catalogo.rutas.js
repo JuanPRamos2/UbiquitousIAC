@@ -9,27 +9,27 @@ catalogoRouter.use(autenticar);
 
 catalogoRouter.get(
   "/unidades",
-  autorizar(PERFILES.COLAB, PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.COLABORADOR, PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Catalogo.unidades
 );
 catalogoRouter.get(
   "/campanias",
-  autorizar(PERFILES.COLAB, PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.COLABORADOR, PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Catalogo.campanias
 );
 catalogoRouter.get(
   "/instrumentos",
-  autorizar(PERFILES.COLAB, PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.COLABORADOR, PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Catalogo.instrumentos
 );
 catalogoRouter.get(
   "/instrumentos/:instrumento_id/versiones/:version/reactivos",
-  autorizar(PERFILES.COLAB, PERFILES.LIDER_TURNO, PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.COLABORADOR, PERFILES.LIDER, PERFILES.ESPECIALISTA, PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Catalogo.reactivos
 );
 catalogoRouter.get(
   "/versiones-consentimiento",
-  autorizar(PERFILES.AUDITOR, PERFILES.ADMIN_SISTEMA),
+  autorizar(PERFILES.AUDITOR, PERFILES.ADMINISTRADOR),
   Catalogo.versionesConsentimiento
 );
-catalogoRouter.get("/cuentas", autorizar(PERFILES.ADMIN_SISTEMA), Catalogo.cuentas);
+catalogoRouter.get("/cuentas", autorizar(PERFILES.ADMINISTRADOR), Catalogo.cuentas);
