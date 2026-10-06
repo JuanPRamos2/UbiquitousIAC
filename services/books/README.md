@@ -1,12 +1,12 @@
 # Microservicio SOAP + XML/JSON
 
-Código canónico: `services/soap/`. La práctica también pide `app/services/soap/app.py`; ese archivo **carga este mismo Flask**.
+Código canónico: `services/books/`. La práctica también pide `app/services/soap/app.py`; ese archivo carga este mismo Flask.
 
 ```bash
 # desde la raíz del monorepo
 ./run-flask.sh
 # o:
-SOAP_DEMO=1 PYTHONPATH=services/soap python3 app/services/soap/app.py
+SOAP_DEMO=1 PYTHONPATH=services/books python3 app/services/soap/app.py
 ```
 
 Sin `format` → XML. Con `?format=json` → JSON.

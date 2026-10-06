@@ -12,7 +12,7 @@ XML por defecto. JSON sólo con `?format=json`. Swagger en `/docs`.
 O:
 
 ```bash
-cd apps/services/login
+cd services/login
 cp .env.example .env
 python3 -m venv .venv
 source .venv/bin/activate

@@ -5,7 +5,7 @@ from pathlib import Path
 from werkzeug.serving import make_server
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT / "services" / "soap"))
+sys.path.insert(0, str(ROOT / "services" / "books"))
 from app import app  # noqa: E402
 
 

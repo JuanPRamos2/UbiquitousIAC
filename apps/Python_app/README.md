@@ -4,11 +4,11 @@ Aplicación en `apps/Python_app`. Consume los microservicios por HTTP y no abre 
 
 | Pieza | Dónde está | Puerto |
 | --- | --- | --- |
-| Login | `apps/services/login` | 5000 |
-| Books | `services/soap` (rutas `/books` y `/health`) | 5001 |
+| Login | `services/login` | 5000 |
+| Books | `services/books` | 5001 |
 | Esta app | `apps/Python_app` | no escucha; es el cliente |
 
-En este repositorio el catálogo no vive en una carpeta `services/books`. El microservicio de libros es `services/soap`.
+Login, books, users, authors, pedidos y pagos están en `services/`.
 
 ## Versión de Python
 

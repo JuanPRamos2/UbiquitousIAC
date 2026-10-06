@@ -3,14 +3,14 @@
 Solo el software de la librería. El sitio HTML de Ubiquitous permanece en `main`.
 
 ```
-app/services/soap/app.py   Flask (ruta de la práctica; carga services/soap)
+app/services/soap/app.py   ruta de la práctica; carga services/books
 apps/web-monolito/         Node :3000 (sigue hablando directo con PostgreSQL)
-apps/services/login/       Flask login :5000 (XML/JSON + Swagger + Redis)
 apps/Electron_app/         escritorio: catálogo XML + portadas
 apps/Python_app/           escritorio Python Tk: CRUD de todos los microservicios
 apps/desktop-classifier/   cliente Java SOAP
 services/shared/           Redis, JWT y CORS compartidos
-services/soap/             catálogo :5001 (código canónico de books)
+services/login/            login :5000
+services/books/            catálogo :5001
 services/users/            usuarios :5002
 services/authors/          autores :5003
 services/pedidos/          pedidos :5004
@@ -22,25 +22,23 @@ entrega/                   .tar.gz / .zip del monorepo
 
 ## Arranque
 
-```bash
-chmod +x run.sh run-flask.sh run-library.sh run-electron.sh run-login.sh run-tk.sh
-./run-flask.sh       # http://127.0.0.1:5001
-./run-login.sh       # http://127.0.0.1:5000/docs
-./run-users.sh       # http://127.0.0.1:5002
-./run-authors.sh     # http://127.0.0.1:5003
-./run-pedidos.sh     # http://127.0.0.1:5004
-./run-pagos.sh       # http://127.0.0.1:5005
-./run-library.sh     # http://127.0.0.1:3000/library
-./run-electron.sh    # catálogo XML con imágenes
-./run-tk.sh          # apps/Python_app : CRUD y semáforos
-
-Redis (misma URL en los seis microservicios):
+Hace falta Docker, Python 3.10 o superior y, para la app de escritorio, Tk (`python3-tk`).
 
 ```bash
-docker compose -f apps/web-monolito/docker-compose.yml up -d redis
-# REDIS_URL=redis://:libreria-redis@127.0.0.1:6379/0
+docker compose -f apps/web-monolito/docker-compose.yml up -d postgres redis
+cd services
+./run-all.sh
 ```
+
+Eso crea el entorno de Python si no existe, copia cada `.env.example` a `.env` y levanta los seis microservicios. En otra terminal, desde la raíz:
+
+```bash
+./run-tk.sh
 ```
+
+Admin: `mariana.solis@libreriaonline.mx` / `LibreriaAdmin26`
+
+Para arrancar uno solo, desde la raíz: `./run-login.sh`, `./run-flask.sh`, `./run-users.sh`, `./run-authors.sh`, `./run-pedidos.sh` o `./run-pagos.sh`. El monolito Node es `./run-library.sh` y Electron es `./run-electron.sh`. Redis usa `redis://:libreria-redis@127.0.0.1:6379/0`.
 
 | Puerto | Servicio |
 | --- | --- |
@@ -54,7 +52,7 @@ docker compose -f apps/web-monolito/docker-compose.yml up -d redis
 | 5433 | PostgreSQL Docker |
 | 6379 | Redis |
 
-Reflexión: `docs/REFLEXION_REDIS.md`. Animación: `docs/animacion/index.html`. Evidencia curl: `docs/EVIDENCIAS_REDIS.md`.
+Animación: `docs/animacion/index.html`. Evidencia curl: `docs/EVIDENCIAS_REDIS.md`.
 
 - Login Swagger: http://127.0.0.1:5000/docs
 - Login UI (JSON): http://127.0.0.1:5000/ui

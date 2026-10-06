@@ -7,7 +7,7 @@ Necesitas **un solo collection** y **un environment**.
 | `Libreria-monorepo.postman_collection.json` | Las 20 peticiones de evidencia (login + SOAP + Node) |
 | `Libreria-local.postman_environment.json` | URLs locales `:5000` `:5001` `:3000` |
 
-El login **no** está en `services/soap`. Está en `apps/services/login` (puerto 5000). El catálogo SOAP está en `services/soap` (puerto 5001).
+El login está en `services/login` (puerto 5000). El catálogo está en `services/books` (puerto 5001).
 
 ## 1. Levantar servicios (3 terminales)
 
@@ -37,7 +37,7 @@ curl -s 'http://127.0.0.1:3000/library/health'
 
 Corre **en este orden**. En cada una: pestaña **Body → Pretty**, captura URL + status + JSON.
 
-### Carpeta 1 · Login JSON :5000 (`apps/services/login`)
+### Carpeta 1 · Login JSON :5000 (`services/login`)
 
 | # | Petición | Status | Qué demuestra |
 | --- | --- | --- | --- |
@@ -62,7 +62,7 @@ Admin:
 { "email": "mariana.solis@libreriaonline.mx", "password": "LibreriaAdmin26" }
 ```
 
-### Carpeta 2 · Catálogo SOAP JSON :5001 (`services/soap`)
+### Carpeta 2 · Catálogo SOAP JSON :5001 (`services/books`)
 
 | # | Petición | Status |
 | --- | --- | --- |

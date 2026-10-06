@@ -20,7 +20,7 @@
   "item": [
     {
       "name": "1. Login JSON :5000",
-      "description": "Microservicio apps/services/login. Sesión de 30 min, captcha, verificación de correo, HATEOAS.",
+      "description": "Microservicio services/login. Sesión de 30 min, captcha, verificación de correo, HATEOAS.",
       "item": [
         {
           "name": "01 GET / índice HATEOAS",
@@ -469,7 +469,7 @@
     },
     {
       "name": "2. Catálogo SOAP JSON :5001",
-      "description": "services/soap. Catálogo bilingüe. JSON sólo con ?format=json.",
+      "description": "services/books. Catálogo bilingüe. JSON sólo con ?format=json.",
       "item": [
         {
           "name": "01 GET / índice JSON",

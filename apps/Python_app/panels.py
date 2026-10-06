@@ -145,11 +145,17 @@ class Panels:
             if payload:
                 reload()
 
+        def with_role(body):
+            role = fields["rol"].get().strip()
+            if role:
+                body["role"] = role
+            return body
+
         def replace():
             user_id = selected_id()
             if not user_id:
                 return
-            payload = self._run(lambda: self.app.users.replace(user_id, names()), "Usuarios")
+            payload = self._run(lambda: self.app.users.replace(user_id, with_role(names())), "Usuarios")
             if payload:
                 reload()
 
@@ -158,7 +164,7 @@ class Panels:
             if not user_id:
                 return
             body = {key: value for key, value in names().items() if value}
-            payload = self._run(lambda: self.app.users.patch(user_id, body), "Usuarios")
+            payload = self._run(lambda: self.app.users.patch(user_id, with_role(body)), "Usuarios")
             if payload:
                 reload()
 
@@ -224,7 +230,12 @@ class Panels:
             tk.Entry(form, textvariable=var, width=18).grid(row=0, column=index * 2 + 1, padx=(4, 10))
 
         def reload():
-            payload = self.app.authors.list_authors()
+            try:
+                payload = self.app.authors.list_authors()
+            except ApiError as exc:
+                self.app._note_http()
+                messagebox.showerror("Autores", str(exc), parent=self.app)
+                return
             self.app._note_http()
             self._fill(
                 tree,
@@ -293,11 +304,7 @@ class Panels:
                 reload()
 
         def public_reload():
-            try:
-                reload()
-            except ApiError as exc:
-                self.app._note_http()
-                messagebox.showerror("Autores", str(exc), parent=self.app)
+            reload()
 
         buttons = tk.Frame(box, bg=CARD)
         buttons.pack(anchor="w")

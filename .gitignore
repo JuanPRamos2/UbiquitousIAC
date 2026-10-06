@@ -10,6 +10,7 @@ node_modules/
 .coverage
 uploads/
 *.log
+services/.run/
 .DS_Store
 dist/
 out/

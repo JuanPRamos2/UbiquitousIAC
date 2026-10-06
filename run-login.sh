@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-APP="$ROOT/apps/services/login"
+APP="$ROOT/services/login"
 cd "$APP"
 if [ ! -f .env ]; then
   cp .env.example .env

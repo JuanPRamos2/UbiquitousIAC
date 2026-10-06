@@ -7,7 +7,7 @@ Actúa como un Ingeniero de Software Senior especializado en Electron, Node.js, 
 Trabajo en el repositorio `/home/bold/Documents/Libreria`, una solución académica para la gestión de una librería. El repositorio ya contiene:
 
 - Una aplicación web monolítica Node.js/Express/EJS en `apps/web-monolito/`, disponible normalmente en `http://127.0.0.1:3000/library`.
-- Un servicio Flask para el catálogo y las operaciones SOAP en `services/soap/`, disponible normalmente en `http://127.0.0.1:5001/`.
+- Un servicio Flask para el catálogo y las operaciones SOAP en `services/books/`, disponible normalmente en `http://127.0.0.1:5001/`.
 - Un cliente de escritorio Electron en `apps/Electron_app/`.
 - Scripts de arranque en la raíz: `run-library.sh`, `run-flask.sh`, `run-electron.sh` y `run.sh`.
 
@@ -19,7 +19,7 @@ Analiza y mejora el módulo `apps/Electron_app/` para convertirlo en un cliente 
 
 ## Instrucciones de trabajo
 
-1. Inspecciona primero `apps/Electron_app/`, los scripts de arranque de la raíz y la documentación de `apps/web-monolito/` y `services/soap/`.
+1. Inspecciona primero `apps/Electron_app/`, los scripts de arranque de la raíz y la documentación de `apps/web-monolito/` y `services/books/`.
 2. Identifica qué funcionalidades ya están implementadas y qué cambios son necesarios. No inventes endpoints: usa únicamente los endpoints existentes o documenta cualquier endpoint nuevo que sea estrictamente indispensable.
 3. Mantén separadas las responsabilidades:
    - `main.js`: ciclo de vida de Electron, ventanas, menús, navegación y configuración.
