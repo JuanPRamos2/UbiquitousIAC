@@ -9,7 +9,8 @@ for f in \
   09_email_verified.sql \
   04_stored_procedures.sql \
   05_triggers.sql \
-  06_views.sql
+  06_views.sql \
+  10_orders_payments.sql
 do
   echo "  -> $f"
   psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f "/sql/$f"

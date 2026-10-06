@@ -10,5 +10,5 @@ if [ -f .venv/bin/activate ]; then
 fi
 python3 -m pip install -q -r requirements.txt
 export SOAP_DEMO="${SOAP_DEMO:-1}"
-export PYTHONPATH="$(pwd)/services/soap:${PYTHONPATH:-}"
+export PYTHONPATH="$(pwd)/services/shared:$(pwd)/services/soap:${PYTHONPATH:-}"
 exec python3 serve.py

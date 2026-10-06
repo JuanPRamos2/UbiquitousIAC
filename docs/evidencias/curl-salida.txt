@@ -1,0 +1,1343 @@
+[
+  {
+    "label": "health login",
+    "request": "GET http://127.0.0.1:5000/health?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "_links": {
+        "docs": {
+          "href": "http://127.0.0.1:5000/docs",
+          "method": "GET"
+        },
+        "login": {
+          "href": "http://127.0.0.1:5000/login?format=json",
+          "method": "GET"
+        },
+        "register": {
+          "href": "http://127.0.0.1:5000/register?format=json",
+          "method": "GET"
+        },
+        "self": {
+          "href": "http://127.0.0.1:5000/health?format=json",
+          "method": "GET"
+        },
+        "session": {
+          "href": "http://127.0.0.1:5000/session?format=json",
+          "method": "GET"
+        }
+      },
+      "format": "json",
+      "postgres": "ok",
+      "redis": "ok",
+      "service": "login",
+      "status": "ok"
+    }
+  },
+  {
+    "label": "health books",
+    "request": "GET http://127.0.0.1:5001/health?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "database": "ok",
+      "format": "json",
+      "mode": "demo",
+      "redis": "ok",
+      "service": "books",
+      "status": "ok"
+    }
+  },
+  {
+    "label": "health users",
+    "request": "GET http://127.0.0.1:5002/health",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "postgres": "ok",
+      "redis": "ok",
+      "service": "users",
+      "status": "ok"
+    }
+  },
+  {
+    "label": "health authors",
+    "request": "GET http://127.0.0.1:5003/health",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "postgres": "ok",
+      "redis": "ok",
+      "service": "authors",
+      "status": "ok"
+    }
+  },
+  {
+    "label": "health pedidos",
+    "request": "GET http://127.0.0.1:5004/health",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "postgres": "ok",
+      "redis": "ok",
+      "service": "pedidos",
+      "status": "ok"
+    }
+  },
+  {
+    "label": "health pagos",
+    "request": "GET http://127.0.0.1:5005/health",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "postgres": "ok",
+      "redis": "ok",
+      "service": "pagos",
+      "status": "ok"
+    }
+  },
+  {
+    "label": "users sin JWT",
+    "request": "GET http://127.0.0.1:5002/users",
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "TOKEN_MISSING",
+      "error": "Falta el encabezado Authorization. Envía Authorization: Bearer <token>.",
+      "errors": [
+        "Falta el encabezado Authorization. Envía Authorization: Bearer <token>."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "books cache primera lectura",
+    "request": "GET http://127.0.0.1:5001/books?format=json",
+    "status": 200,
+    "headers": {
+      "X-Cache": "MISS",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "books": [
+        {
+          "authors": [
+            "Thomas Erl",
+            "Rajkumar Buyya"
+          ],
+          "category": "Computación en la nube",
+          "concepts": [
+            {
+              "chapter": "3",
+              "conceptId": 1,
+              "definition": "Infraestructura de cómputo, almacenamiento y red entregada como servicio medible.",
+              "name": "IaaS",
+              "pageNumber": 45
+            },
+            {
+              "chapter": "3",
+              "conceptId": 2,
+              "definition": "Plataforma administrada para desarrollar y operar aplicaciones sin gestionar el sistema operativo.",
+              "name": "PaaS",
+              "pageNumber": 52
+            },
+            {
+              "_omitidos": 8
+            }
+          ],
+          "coverUrl": "/covers/9780134444245.svg",
+          "description": "Modelos, tecnologías y arquitectura de la computación en la nube.",
+          "format": "Tapa dura",
+          "genre": "",
+          "images": [
+            {
+              "alt": "Portada de Cloud Computing: Concepts, Technology & Architecture",
+              "isCover": true,
+              "mimeType": "image/svg+xml",
+              "url": "/covers/9780134444245.svg"
+            }
+          ],
+          "isbn": "9780134444245",
+          "price": 54.9,
+          "publicationYear": 2013,
+          "stock": 15,
+          "title": "Cloud Computing: Concepts, Technology & Architecture"
+        },
+        {
+          "authors": [
+            "Gabriel García Márquez"
+          ],
+          "category": "Literatura",
+          "concepts": [
+            {
+              "chapter": "1",
+              "conceptId": 11,
+              "definition": "La memoria colectiva de Macondo conserva el pasado familiar y social.",
+              "name": "Memoria",
+              "pageNumber": 12
+            }
+          ],
+          "coverUrl": "/covers/9780307474728.svg",
+          "description": "La saga de los Buendía en el pueblo de Macondo.",
+          "format": "Tapa blanda",
+          "genre": "",
+          "images": [
+            {
+              "alt": "Portada de Cien años de soledad",
+              "isCover": true,
+              "mimeType": "image/svg+xml",
+              "url": "/covers/9780307474728.svg"
+            }
+          ],
+          "isbn": "9780307474728",
+          "price": 24.9,
+          "publicationYear": 1967,
+          "stock": 12,
+          "title": "Cien años de soledad"
+        },
+        {
+          "_omitidos": 28
+        }
+      ],
+      "count": 30,
+      "format": "json"
+    }
+  },
+  {
+    "label": "books cache segunda lectura",
+    "request": "GET http://127.0.0.1:5001/books?format=json",
+    "status": 200,
+    "headers": {
+      "X-Cache": "HIT",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "books": [
+        {
+          "authors": [
+            "Thomas Erl",
+            "Rajkumar Buyya"
+          ],
+          "category": "Computación en la nube",
+          "concepts": [
+            {
+              "chapter": "3",
+              "conceptId": 1,
+              "definition": "Infraestructura de cómputo, almacenamiento y red entregada como servicio medible.",
+              "name": "IaaS",
+              "pageNumber": 45
+            },
+            {
+              "chapter": "3",
+              "conceptId": 2,
+              "definition": "Plataforma administrada para desarrollar y operar aplicaciones sin gestionar el sistema operativo.",
+              "name": "PaaS",
+              "pageNumber": 52
+            },
+            {
+              "_omitidos": 8
+            }
+          ],
+          "coverUrl": "/covers/9780134444245.svg",
+          "description": "Modelos, tecnologías y arquitectura de la computación en la nube.",
+          "format": "Tapa dura",
+          "genre": "",
+          "images": [
+            {
+              "alt": "Portada de Cloud Computing: Concepts, Technology & Architecture",
+              "isCover": true,
+              "mimeType": "image/svg+xml",
+              "url": "/covers/9780134444245.svg"
+            }
+          ],
+          "isbn": "9780134444245",
+          "price": 54.9,
+          "publicationYear": 2013,
+          "stock": 15,
+          "title": "Cloud Computing: Concepts, Technology & Architecture"
+        },
+        {
+          "authors": [
+            "Gabriel García Márquez"
+          ],
+          "category": "Literatura",
+          "concepts": [
+            {
+              "chapter": "1",
+              "conceptId": 11,
+              "definition": "La memoria colectiva de Macondo conserva el pasado familiar y social.",
+              "name": "Memoria",
+              "pageNumber": 12
+            }
+          ],
+          "coverUrl": "/covers/9780307474728.svg",
+          "description": "La saga de los Buendía en el pueblo de Macondo.",
+          "format": "Tapa blanda",
+          "genre": "",
+          "images": [
+            {
+              "alt": "Portada de Cien años de soledad",
+              "isCover": true,
+              "mimeType": "image/svg+xml",
+              "url": "/covers/9780307474728.svg"
+            }
+          ],
+          "isbn": "9780307474728",
+          "price": 24.9,
+          "publicationYear": 1967,
+          "stock": 12,
+          "title": "Cien años de soledad"
+        },
+        {
+          "_omitidos": 28
+        }
+      ],
+      "count": 30,
+      "format": "json"
+    }
+  },
+  {
+    "label": "book por isbn MISS",
+    "request": "GET http://127.0.0.1:5001/books/9788420412146?format=json",
+    "status": 200,
+    "headers": {
+      "X-Cache": "MISS",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "book": {
+        "authors": [
+          "Miguel de Cervantes"
+        ],
+        "category": "Literatura",
+        "concepts": [],
+        "coverUrl": "/covers/9788420412146.svg",
+        "description": "Las andanzas de Alonso Quijano y Sancho Panza.",
+        "format": "Edición de lujo",
+        "genre": "",
+        "images": [
+          {
+            "alt": "Portada de Don Quijote de la Mancha",
+            "isCover": true,
+            "mimeType": "image/svg+xml",
+            "url": "/covers/9788420412146.svg"
+          }
+        ],
+        "isbn": "9788420412146",
+        "price": 19.9,
+        "publicationYear": 1605,
+        "stock": 20,
+        "title": "Don Quijote de la Mancha"
+      },
+      "format": "json"
+    }
+  },
+  {
+    "label": "book por isbn HIT",
+    "request": "GET http://127.0.0.1:5001/books/9788420412146?format=json",
+    "status": 200,
+    "headers": {
+      "X-Cache": "HIT",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "book": {
+        "authors": [
+          "Miguel de Cervantes"
+        ],
+        "category": "Literatura",
+        "concepts": [],
+        "coverUrl": "/covers/9788420412146.svg",
+        "description": "Las andanzas de Alonso Quijano y Sancho Panza.",
+        "format": "Edición de lujo",
+        "genre": "",
+        "images": [
+          {
+            "alt": "Portada de Don Quijote de la Mancha",
+            "isCover": true,
+            "mimeType": "image/svg+xml",
+            "url": "/covers/9788420412146.svg"
+          }
+        ],
+        "isbn": "9788420412146",
+        "price": 19.9,
+        "publicationYear": 1605,
+        "stock": 20,
+        "title": "Don Quijote de la Mancha"
+      },
+      "format": "json"
+    }
+  },
+  {
+    "label": "books POST sin JWT",
+    "request": "POST http://127.0.0.1:5001/books",
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/xml; charset=utf-8"
+    },
+    "body": "<?xml version='1.0' encoding='utf-8'?>\n<error><ok>false</ok><code>TOKEN_MISSING</code><error>Falta el encabezado Authorization. Envía Authorization: Bearer &lt;token&gt;.</error><errors><error>Falta el encabezado Authorization. Envía Authorization: Bearer &lt;token&gt;.</error></errors></error>"
+  },
+  {
+    "label": "authors publico",
+    "request": "GET http://127.0.0.1:5003/authors",
+    "status": 200,
+    "headers": {
+      "X-Cache": "MISS",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "authors": [
+        {
+          "biography": "Autor de Operating System Concepts y Database System Concepts.",
+          "book_count": 2,
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "full_name": "Abraham Silberschatz",
+          "id": 29
+        },
+        {
+          "biography": "Coautor de The Pragmatic Programmer.",
+          "book_count": 1,
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "full_name": "Andrew Hunt",
+          "id": 10
+        },
+        {
+          "_omitidos": 28
+        }
+      ],
+      "count": 30,
+      "ok": true
+    }
+  },
+  {
+    "label": "login admin",
+    "request": "POST http://127.0.0.1:5000/login?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "_links": {
+        "docs": {
+          "href": "http://127.0.0.1:5000/docs",
+          "method": "GET"
+        },
+        "extend": {
+          "href": "http://127.0.0.1:5000/session?format=json",
+          "method": "POST"
+        },
+        "health": {
+          "href": "http://127.0.0.1:5000/health?format=json",
+          "method": "GET"
+        },
+        "logout": {
+          "href": "http://127.0.0.1:5000/logout?format=json",
+          "method": "GET"
+        },
+        "self": {
+          "href": "http://127.0.0.1:5000/login?format=json",
+          "method": "POST"
+        },
+        "session": {
+          "href": "http://127.0.0.1:5000/session?format=json",
+          "method": "GET"
+        }
+      },
+      "emailVerified": true,
+      "format": "json",
+      "message": "Sesión iniciada. El usuario existe y el correo está verificado.",
+      "notification": {
+        "channel": "json",
+        "code": "SESSION_STARTED",
+        "emailVerified": true,
+        "message": "Sesión iniciada. El usuario existe y el correo está verificado.",
+        "userExists": true
+      },
+      "ok": true,
+      "refreshExpiresMinutes": 1440,
+      "refreshToken": "<redactado>",
+      "session": {
+        "authenticated": true,
+        "canExtend": true,
+        "expired": false,
+        "expiresAt": "2026-10-06T21:43:42.389071+00:00",
+        "idleTimeoutMinutes": 30,
+        "notification": null,
+        "remainingSeconds": 1799
+      },
+      "token": "<redactado>",
+      "tokenExpiresAt": "2026-10-06T21:33:42.389097+00:00",
+      "tokenType": "Bearer",
+      "user": {
+        "email": "mariana.solis@libreriaonline.mx",
+        "emailVerified": true,
+        "first_name": "Mariana",
+        "full_name": "Mariana Solís Solis",
+        "id": 1,
+        "maternal_surname": "Solis",
+        "paternal_surname": "Solís",
+        "role": "admin",
+        "role_id": 1
+      },
+      "userExists": true
+    }
+  },
+  {
+    "label": "metricas login",
+    "request": "GET http://127.0.0.1:5000/metrics?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "_links": {
+        "health": {
+          "href": "http://127.0.0.1:5000/health?format=json",
+          "method": "GET"
+        },
+        "self": {
+          "href": "http://127.0.0.1:5000/metrics?format=json",
+          "method": "GET"
+        }
+      },
+      "format": "json",
+      "redis": {
+        "cacheHits": 8,
+        "cacheMisses": 12,
+        "connected": true,
+        "errors": 0,
+        "status": "ok"
+      },
+      "service": "login"
+    }
+  },
+  {
+    "label": "users con JWT admin",
+    "request": "GET http://127.0.0.1:5002/users",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "count": 41,
+      "ok": true,
+      "users": [
+        {
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "email": "mariana.solis@libreriaonline.mx",
+          "email_verified": true,
+          "first_name": "Mariana",
+          "full_name": "Mariana Solís Solis",
+          "id": 1,
+          "maternal_surname": "Solis",
+          "paternal_surname": "Solís",
+          "role": "admin",
+          "role_id": 1,
+          "updated_at": "2026-10-06T21:13:26.962541+00:00"
+        },
+        {
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "email": "carlos.hernandez@gmail.com",
+          "email_verified": true,
+          "first_name": "Carlos",
+          "full_name": "Carlos Hernández",
+          "id": 2,
+          "maternal_surname": "",
+          "paternal_surname": "Hernández",
+          "role": "client",
+          "role_id": 2,
+          "updated_at": "2026-09-18T21:16:02.442183+00:00"
+        },
+        {
+          "_omitidos": 39
+        }
+      ]
+    }
+  },
+  {
+    "label": "alta de libro invalida cache",
+    "request": "POST http://127.0.0.1:5001/books?format=json",
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "book": {
+        "authors": [],
+        "category": "",
+        "concepts": [],
+        "coverUrl": "/covers/9780000000999.svg",
+        "description": "",
+        "format": "",
+        "genre": "",
+        "images": [
+          {
+            "alt": "Portada de Libro evidencia cache",
+            "isCover": true,
+            "mimeType": "image/svg+xml",
+            "url": "/covers/9780000000999.svg"
+          }
+        ],
+        "isbn": "9780000000999",
+        "title": "Libro evidencia cache"
+      },
+      "format": "json",
+      "ok": true
+    }
+  },
+  {
+    "label": "books cache despues de alta",
+    "request": "GET http://127.0.0.1:5001/books?format=json",
+    "status": 200,
+    "headers": {
+      "X-Cache": "MISS",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "books": [
+        {
+          "authors": [
+            "Thomas Erl",
+            "Rajkumar Buyya"
+          ],
+          "category": "Computación en la nube",
+          "concepts": [
+            {
+              "chapter": "3",
+              "conceptId": 1,
+              "definition": "Infraestructura de cómputo, almacenamiento y red entregada como servicio medible.",
+              "name": "IaaS",
+              "pageNumber": 45
+            },
+            {
+              "chapter": "3",
+              "conceptId": 2,
+              "definition": "Plataforma administrada para desarrollar y operar aplicaciones sin gestionar el sistema operativo.",
+              "name": "PaaS",
+              "pageNumber": 52
+            },
+            {
+              "_omitidos": 8
+            }
+          ],
+          "coverUrl": "/covers/9780134444245.svg",
+          "description": "Modelos, tecnologías y arquitectura de la computación en la nube.",
+          "format": "Tapa dura",
+          "genre": "",
+          "images": [
+            {
+              "alt": "Portada de Cloud Computing: Concepts, Technology & Architecture",
+              "isCover": true,
+              "mimeType": "image/svg+xml",
+              "url": "/covers/9780134444245.svg"
+            }
+          ],
+          "isbn": "9780134444245",
+          "price": 54.9,
+          "publicationYear": 2013,
+          "stock": 15,
+          "title": "Cloud Computing: Concepts, Technology & Architecture"
+        },
+        {
+          "authors": [
+            "Gabriel García Márquez"
+          ],
+          "category": "Literatura",
+          "concepts": [
+            {
+              "chapter": "1",
+              "conceptId": 11,
+              "definition": "La memoria colectiva de Macondo conserva el pasado familiar y social.",
+              "name": "Memoria",
+              "pageNumber": 12
+            }
+          ],
+          "coverUrl": "/covers/9780307474728.svg",
+          "description": "La saga de los Buendía en el pueblo de Macondo.",
+          "format": "Tapa blanda",
+          "genre": "",
+          "images": [
+            {
+              "alt": "Portada de Cien años de soledad",
+              "isCover": true,
+              "mimeType": "image/svg+xml",
+              "url": "/covers/9780307474728.svg"
+            }
+          ],
+          "isbn": "9780307474728",
+          "price": 24.9,
+          "publicationYear": 1967,
+          "stock": 12,
+          "title": "Cien años de soledad"
+        },
+        {
+          "_omitidos": 29
+        }
+      ],
+      "count": 31,
+      "format": "json"
+    }
+  },
+  {
+    "label": "baja del libro de evidencia",
+    "request": "DELETE http://127.0.0.1:5001/books/9780000000999?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "format": "json",
+      "isbn": "9780000000999",
+      "ok": true
+    }
+  },
+  {
+    "label": "rechazo cambio de correo",
+    "request": "PATCH http://127.0.0.1:5002/users/1",
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "INVALID",
+      "error": "El correo electrónico identifica la cuenta y no se puede cambiar.",
+      "errors": [
+        "El correo electrónico identifica la cuenta y no se puede cambiar."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "password confirmacion distinta",
+    "request": "POST http://127.0.0.1:5002/users/1/password",
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "INVALID",
+      "error": "La confirmación no coincide con la contraseña nueva.",
+      "errors": [
+        "La confirmación no coincide con la contraseña nueva."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "PATCH nombre permitido",
+    "request": "PATCH http://127.0.0.1:5002/users/1",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ok": true,
+      "user": {
+        "created_at": "2026-09-11T21:31:44.247900+00:00",
+        "email": "mariana.solis@libreriaonline.mx",
+        "email_verified": true,
+        "first_name": "Mariana",
+        "full_name": "Mariana Solís Solis",
+        "id": 1,
+        "maternal_surname": "Solis",
+        "paternal_surname": "Solís",
+        "role": "admin",
+        "role_id": 1,
+        "updated_at": "2026-10-06T21:13:42.446923+00:00"
+      }
+    }
+  },
+  {
+    "label": "alta de usuario cliente",
+    "request": "POST http://127.0.0.1:5002/users",
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ok": true,
+      "user": {
+        "created_at": "2026-10-06T21:13:42.795787+00:00",
+        "email": "evidencia.redis@libreriaonline.mx",
+        "email_verified": true,
+        "first_name": "Evidencia",
+        "full_name": "Evidencia Redis Jwt",
+        "id": 44,
+        "maternal_surname": "Jwt",
+        "paternal_surname": "Redis",
+        "role": "client",
+        "role_id": 2,
+        "updated_at": "2026-10-06T21:13:42.795787+00:00"
+      }
+    }
+  },
+  {
+    "label": "login cliente",
+    "request": "POST http://127.0.0.1:5000/login?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "_links": {
+        "docs": {
+          "href": "http://127.0.0.1:5000/docs",
+          "method": "GET"
+        },
+        "extend": {
+          "href": "http://127.0.0.1:5000/session?format=json",
+          "method": "POST"
+        },
+        "health": {
+          "href": "http://127.0.0.1:5000/health?format=json",
+          "method": "GET"
+        },
+        "logout": {
+          "href": "http://127.0.0.1:5000/logout?format=json",
+          "method": "GET"
+        },
+        "self": {
+          "href": "http://127.0.0.1:5000/login?format=json",
+          "method": "POST"
+        },
+        "session": {
+          "href": "http://127.0.0.1:5000/session?format=json",
+          "method": "GET"
+        }
+      },
+      "emailVerified": true,
+      "format": "json",
+      "message": "Sesión iniciada. El usuario existe y el correo está verificado.",
+      "notification": {
+        "channel": "json",
+        "code": "SESSION_STARTED",
+        "emailVerified": true,
+        "message": "Sesión iniciada. El usuario existe y el correo está verificado.",
+        "userExists": true
+      },
+      "ok": true,
+      "refreshExpiresMinutes": 1440,
+      "refreshToken": "<redactado>",
+      "session": {
+        "authenticated": true,
+        "canExtend": true,
+        "expired": false,
+        "expiresAt": "2026-10-06T21:43:43.125619+00:00",
+        "idleTimeoutMinutes": 30,
+        "notification": null,
+        "remainingSeconds": 1799
+      },
+      "token": "<redactado>",
+      "tokenExpiresAt": "2026-10-06T21:33:43.125637+00:00",
+      "tokenType": "Bearer",
+      "user": {
+        "email": "evidencia.redis@libreriaonline.mx",
+        "emailVerified": true,
+        "first_name": "Evidencia",
+        "full_name": "Evidencia Redis Jwt",
+        "id": 44,
+        "maternal_surname": "Jwt",
+        "paternal_surname": "Redis",
+        "role": "client",
+        "role_id": 2
+      },
+      "userExists": true
+    }
+  },
+  {
+    "label": "cliente sin permiso de alta",
+    "request": "POST http://127.0.0.1:5003/authors",
+    "status": 403,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "FORBIDDEN",
+      "error": "Rol insuficiente para esta operación.",
+      "errors": [
+        "Rol insuficiente para esta operación."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "alta de autor",
+    "request": "POST http://127.0.0.1:5003/authors",
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "author": {
+        "biography": "Creado para la evidencia.",
+        "created_at": "2026-10-06T21:13:43.142474+00:00",
+        "full_name": "Autor Evidencia Redis",
+        "id": 33
+      },
+      "ok": true
+    }
+  },
+  {
+    "label": "authors cache primera",
+    "request": "GET http://127.0.0.1:5003/authors",
+    "status": 200,
+    "headers": {
+      "X-Cache": "MISS",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "authors": [
+        {
+          "biography": "Autor de Operating System Concepts y Database System Concepts.",
+          "book_count": 2,
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "full_name": "Abraham Silberschatz",
+          "id": 29
+        },
+        {
+          "biography": "Coautor de The Pragmatic Programmer.",
+          "book_count": 1,
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "full_name": "Andrew Hunt",
+          "id": 10
+        },
+        {
+          "_omitidos": 29
+        }
+      ],
+      "count": 31,
+      "ok": true
+    }
+  },
+  {
+    "label": "authors cache segunda",
+    "request": "GET http://127.0.0.1:5003/authors",
+    "status": 200,
+    "headers": {
+      "X-Cache": "HIT",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "authors": [
+        {
+          "biography": "Autor de Operating System Concepts y Database System Concepts.",
+          "book_count": 2,
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "full_name": "Abraham Silberschatz",
+          "id": 29
+        },
+        {
+          "biography": "Coautor de The Pragmatic Programmer.",
+          "book_count": 1,
+          "created_at": "2026-09-11T21:31:44.247900+00:00",
+          "full_name": "Andrew Hunt",
+          "id": 10
+        },
+        {
+          "_omitidos": 29
+        }
+      ],
+      "count": 31,
+      "ok": true
+    }
+  },
+  {
+    "label": "PATCH autor",
+    "request": "PATCH http://127.0.0.1:5003/authors/33",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "author": {
+        "biography": "Biografia actualizada.",
+        "books": [],
+        "created_at": "2026-10-06T21:13:43.142474+00:00",
+        "full_name": "Autor Evidencia Redis",
+        "id": 33
+      },
+      "ok": true
+    }
+  },
+  {
+    "label": "DELETE autor",
+    "request": "DELETE http://127.0.0.1:5003/authors/33",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "author": {
+        "biography": "Biografia actualizada.",
+        "books": [],
+        "created_at": "2026-10-06T21:13:43.142474+00:00",
+        "full_name": "Autor Evidencia Redis",
+        "id": 33
+      },
+      "ok": true
+    }
+  },
+  {
+    "label": "pedidos sin JWT",
+    "request": "GET http://127.0.0.1:5004/pedidos",
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "TOKEN_MISSING",
+      "error": "Falta el encabezado Authorization. Envía Authorization: Bearer <token>.",
+      "errors": [
+        "Falta el encabezado Authorization. Envía Authorization: Bearer <token>."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "crear pedido",
+    "request": "POST http://127.0.0.1:5004/pedidos",
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ok": true,
+      "pedido": {
+        "created_at": "2026-10-06T21:13:43.294432+00:00",
+        "id": 3,
+        "lines": [
+          {
+            "book_id": 2,
+            "id": 3,
+            "isbn": "9788420412146",
+            "quantity": 1,
+            "title": "Don Quijote de la Mancha",
+            "unit_price": 19.9
+          }
+        ],
+        "status": "pendiente",
+        "total": 19.9,
+        "updated_at": "2026-10-06T21:13:43.294432+00:00",
+        "user_email": "mariana.solis@libreriaonline.mx",
+        "user_id": 1
+      }
+    }
+  },
+  {
+    "label": "pagos admin",
+    "request": "GET http://127.0.0.1:5005/pagos",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "count": 0,
+      "ok": true,
+      "pagos": []
+    }
+  },
+  {
+    "label": "pago con monto incorrecto",
+    "request": "POST http://127.0.0.1:5005/pagos",
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "INVALID",
+      "error": "El monto debe ser igual al total del pedido (19.90).",
+      "errors": [
+        "El monto debe ser igual al total del pedido (19.90)."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "pago correcto",
+    "request": "POST http://127.0.0.1:5005/pagos",
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ok": true,
+      "pago": {
+        "amount": 19.9,
+        "created_at": "2026-10-06T21:13:43.388755+00:00",
+        "id": 3,
+        "method": "transferencia",
+        "order_id": 3,
+        "reference": "EVIDENCIA-REDIS",
+        "status": "registrado",
+        "updated_at": "2026-10-06T21:13:43.388755+00:00",
+        "user_id": 1
+      }
+    }
+  },
+  {
+    "label": "cancelar pedido ya pagado",
+    "request": "PATCH http://127.0.0.1:5004/pedidos/3",
+    "status": 409,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "CONFLICT",
+      "error": "El pedido está pagado. Elimina el pago antes de cancelarlo.",
+      "errors": [
+        "El pedido está pagado. Elimina el pago antes de cancelarlo."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "eliminar pago",
+    "request": "DELETE http://127.0.0.1:5005/pagos/3",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ok": true,
+      "pago": {
+        "id": 3,
+        "order_id": 3,
+        "status": "eliminado"
+      }
+    }
+  },
+  {
+    "label": "cancelar pedido pendiente",
+    "request": "DELETE http://127.0.0.1:5004/pedidos/3",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ok": true,
+      "pedido": {
+        "created_at": "2026-10-06T21:13:43.294432+00:00",
+        "id": 3,
+        "lines": [],
+        "status": "cancelado",
+        "total": 0,
+        "updated_at": "2026-10-06T21:13:43.529635+00:00",
+        "user_email": "mariana.solis@libreriaonline.mx",
+        "user_id": 1
+      }
+    }
+  },
+  {
+    "label": "renovar JWT",
+    "request": "POST http://127.0.0.1:5000/token/refresh?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "_links": {
+        "docs": {
+          "href": "http://127.0.0.1:5000/docs",
+          "method": "GET"
+        },
+        "logout": {
+          "href": "http://127.0.0.1:5000/logout?format=json",
+          "method": "GET"
+        },
+        "self": {
+          "href": "http://127.0.0.1:5000/token/refresh?format=json",
+          "method": "POST"
+        },
+        "session": {
+          "href": "http://127.0.0.1:5000/session?format=json",
+          "method": "GET"
+        }
+      },
+      "format": "json",
+      "message": "Token de acceso renovado.",
+      "ok": true,
+      "refreshExpiresMinutes": 1440,
+      "refreshToken": "<redactado>",
+      "session": {
+        "authenticated": true,
+        "canExtend": true,
+        "expired": false,
+        "expiresAt": "2026-10-06T21:43:43.634797+00:00",
+        "idleTimeoutMinutes": 30,
+        "notification": null,
+        "remainingSeconds": 1799
+      },
+      "token": "<redactado>",
+      "tokenExpiresAt": "2026-10-06T21:33:43.634824+00:00",
+      "tokenType": "Bearer",
+      "user": {
+        "email": "mariana.solis@libreriaonline.mx",
+        "emailVerified": true,
+        "first_name": "Mariana",
+        "full_name": "Mariana Solís Solis",
+        "id": 1,
+        "maternal_surname": "Solis",
+        "paternal_surname": "Solís",
+        "role": "admin",
+        "role_id": 1
+      }
+    }
+  },
+  {
+    "label": "JWT anterior revocado al renovar",
+    "request": "GET http://127.0.0.1:5002/users",
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "TOKEN_REVOKED",
+      "error": "El token fue revocado. Vuelve a iniciar sesión.",
+      "errors": [
+        "El token fue revocado. Vuelve a iniciar sesión."
+      ],
+      "ok": false
+    }
+  },
+  {
+    "label": "token renovado contra pedidos",
+    "request": "GET http://127.0.0.1:5004/pedidos",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "count": 3,
+      "ok": true,
+      "pedidos": [
+        {
+          "created_at": "2026-10-06T21:13:43.294432+00:00",
+          "id": 3,
+          "lines": [],
+          "status": "cancelado",
+          "total": 0,
+          "updated_at": "2026-10-06T21:13:43.529635+00:00",
+          "user_email": "mariana.solis@libreriaonline.mx",
+          "user_id": 1
+        },
+        {
+          "created_at": "2026-10-06T21:13:27.455404+00:00",
+          "id": 2,
+          "lines": [],
+          "status": "cancelado",
+          "total": 0,
+          "updated_at": "2026-10-06T21:13:27.704886+00:00",
+          "user_email": "mariana.solis@libreriaonline.mx",
+          "user_id": 1
+        },
+        {
+          "created_at": "2026-10-06T21:12:15.221780+00:00",
+          "id": 1,
+          "lines": [],
+          "status": "cancelado",
+          "total": 0,
+          "updated_at": "2026-10-06T21:12:15.585591+00:00",
+          "user_email": "mariana.solis@libreriaonline.mx",
+          "user_id": 1
+        }
+      ]
+    }
+  },
+  {
+    "label": "baja del usuario de evidencia",
+    "request": "DELETE http://127.0.0.1:5002/users/44",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ok": true,
+      "user": {
+        "created_at": "2026-10-06T21:13:42.795787+00:00",
+        "email": "evidencia.redis@libreriaonline.mx",
+        "email_verified": true,
+        "first_name": "Evidencia",
+        "full_name": "Evidencia Redis Jwt",
+        "id": 44,
+        "maternal_surname": "Jwt",
+        "paternal_surname": "Redis",
+        "role": "client",
+        "role_id": 2,
+        "updated_at": "2026-10-06T21:13:42.795787+00:00"
+      }
+    }
+  },
+  {
+    "label": "logout",
+    "request": "POST http://127.0.0.1:5000/logout?format=json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "_links": {
+        "docs": {
+          "href": "http://127.0.0.1:5000/docs",
+          "method": "GET"
+        },
+        "health": {
+          "href": "http://127.0.0.1:5000/health?format=json",
+          "method": "GET"
+        },
+        "login": {
+          "href": "http://127.0.0.1:5000/login?format=json",
+          "method": "GET"
+        },
+        "register": {
+          "href": "http://127.0.0.1:5000/register?format=json",
+          "method": "GET"
+        },
+        "self": {
+          "href": "http://127.0.0.1:5000/logout?format=json",
+          "method": "POST"
+        }
+      },
+      "format": "json",
+      "message": "Sesión cerrada.",
+      "ok": true,
+      "session": {
+        "authenticated": false,
+        "canExtend": false,
+        "expired": false,
+        "idleTimeoutMinutes": 30,
+        "notification": null,
+        "remainingSeconds": 0
+      }
+    }
+  },
+  {
+    "label": "JWT revocado despues de logout",
+    "request": "GET http://127.0.0.1:5002/users",
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "code": "TOKEN_REVOKED",
+      "error": "El token fue revocado. Vuelve a iniciar sesión.",
+      "errors": [
+        "El token fue revocado. Vuelve a iniciar sesión."
+      ],
+      "ok": false
+    }
+  }
+]

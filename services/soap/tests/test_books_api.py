@@ -129,21 +129,25 @@ def test_cover_image_is_served():
     assert mapped.status_code == 200
 
 
-def _auth_headers(minutes=30, secret=None):
-    import hashlib
+def _auth_headers(minutes=20, secret=None):
+    import uuid
     from datetime import datetime, timedelta, timezone
 
     import jwt
 
     from config import settings
+    from jwt_auth import signing_key
 
     now = datetime.now(timezone.utc)
-    key = secret or hashlib.sha256(settings.JWT_PASSWORD.encode("utf-8")).hexdigest()
+    key = secret or signing_key()
     token = jwt.encode(
         {
             "sub": "1",
-            "email": "cliente@example.com",
-            "role": "client",
+            "user_id": 1,
+            "email": "admin@example.com",
+            "role": "admin",
+            "role_id": 1,
+            "jti": str(uuid.uuid4()),
             "iss": settings.JWT_ISSUER,
             "aud": settings.JWT_AUDIENCE,
             "iat": int(now.timestamp()),

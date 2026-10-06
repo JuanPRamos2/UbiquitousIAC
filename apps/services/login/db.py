@@ -13,8 +13,10 @@ def pool():
             conninfo=DSN,
             min_size=1,
             max_size=8,
+            timeout=5,
+            reconnect_timeout=5,
             open=True,
-            kwargs={"row_factory": dict_row},
+            kwargs={"row_factory": dict_row, "connect_timeout": 5},
         )
     return _pool
 

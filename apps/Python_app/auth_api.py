@@ -102,6 +102,20 @@ class AuthApi:
             return False
         return bool((payload.get("session") or {}).get("authenticated") and self.user)
 
+    def refresh(self):
+        if not self.http.refresh_token:
+            raise ApiError("No hay refresh token para renovar el JWT.", 401)
+        payload = self.http.request(
+            "POST",
+            self.http.login_url,
+            self._json("/token/refresh"),
+            {"refreshToken": self.http.refresh_token},
+        )
+        if payload.get("user"):
+            self.user = payload["user"]
+        self.http.save_cookies()
+        return payload
+
     def extend(self):
         payload = self.http.request(
             "POST",

@@ -1,4 +1,8 @@
-from app import app
+import os
+
+os.environ["REDIS_URL"] = "memory://"
+
+from app import app  # noqa: E402
 
 
 def client():

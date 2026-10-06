@@ -15,7 +15,10 @@ def classify(status, payload):
     """up, degraded o down."""
     if not status:
         return "down"
+    redis_state = str((payload or {}).get("redis") or "").lower()
     if status == 200 and dependency_ok(payload):
+        if redis_state and redis_state != "ok":
+            return "degraded"
         return "up"
     return "degraded"
 

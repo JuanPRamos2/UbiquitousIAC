@@ -11,6 +11,10 @@ from urllib import error, parse, request
 from config_store import cookie_path, normalize_url, token_path
 
 
+def refresh_path():
+    return token_path().with_name("refresh.txt")
+
+
 class ApiError(Exception):
     def __init__(self, message, status=0):
         super().__init__(message)
@@ -35,8 +39,13 @@ SECRET_KEYS = {
     "contraseña",
     "currentpassword",
     "newpassword",
+    "confirmpassword",
+    "confirmarcontrasena",
     "nuevacontrasena",
     "password_hash",
+    "token",
+    "refreshtoken",
+    "refresh_token",
 }
 
 
@@ -62,32 +71,42 @@ def authorization_value(token, use_token):
     return "Bearer " + token
 
 
-def format_exchange(method, url, headers, body, status, payload, note):
-    request_body = "(sin cuerpo)"
-    if body is not None:
-        request_body = json.dumps(mask_secrets(body), ensure_ascii=False, indent=2)
-    if payload == "":
-        response_body = "(sin cuerpo)"
+def _evidence_fields(headers, body, payload):
+    fields = []
+    authorization = ""
+    if isinstance(headers, dict):
+        authorization = str(headers.get("Authorization") or "")
+    if authorization.lower().startswith("bearer "):
+        fields.append("Authorization: Bearer ***")
+    elif authorization:
+        fields.append("Authorization: ***")
     else:
-        response_body = json.dumps(mask_secrets(payload), ensure_ascii=False, indent=2)
-    if len(response_body) > 3500:
-        response_body = response_body[:3500] + "\n... (el resto de la respuesta se omitió en consola)"
-    header_lines = "\n".join(f"    {key}: {value}" for key, value in headers.items()) or "    (ninguno)"
+        fields.append("sin Authorization")
+    if isinstance(body, dict):
+        for key, value in body.items():
+            if str(key).lower() in SECRET_KEYS:
+                fields.append(f"{key}=***")
+            elif key in ("email", "isbn", "title", "nombre"):
+                fields.append(f"{key}={value}")
+    if isinstance(payload, dict):
+        if payload.get("code"):
+            fields.append(f"code={payload['code']}")
+        if payload.get("tokenType"):
+            fields.append(f"tokenType={payload['tokenType']}")
+        if payload.get("token") or payload.get("refreshToken"):
+            fields.append("token=***")
+        if "ok" in payload:
+            fields.append(f"ok={payload['ok']}")
+        message = _server_message(payload)
+        if message and not payload.get("token"):
+            fields.append(message)
+    return " | ".join(fields)
+
+
+def format_exchange(method, url, headers, body, status, payload, note):
     return (
-        "\n======== petición HTTP ========\n"
-        "El cliente Python forma la petición así:\n"
-        f"  método: {method}\n"
-        f"  url: {url}\n"
-        f"  {note}\n"
-        "  encabezados:\n"
-        f"{header_lines}\n"
-        "  cuerpo:\n"
-        f"{request_body}\n"
-        "======== respuesta del microservicio ========\n"
-        f"  estado HTTP: {status}\n"
-        "  cuerpo:\n"
-        f"{response_body}\n"
-        "================================\n"
+        f"evidencia | {method} {url} | {note} | "
+        f"{_evidence_fields(headers, body, payload)} | HTTP {status}\n"
     )
 
 
@@ -109,9 +128,13 @@ def friendly_message(status, payload, method, path):
 
 
 class HttpClient:
-    def __init__(self, login_url, books_url):
+    def __init__(self, login_url, books_url, users_url=None, authors_url=None, pedidos_url=None, pagos_url=None):
         self.login_url = normalize_url(login_url, "http://localhost:5000")
         self.books_url = normalize_url(books_url, "http://localhost:5001")
+        self.users_url = normalize_url(users_url or "http://localhost:5002", "http://localhost:5002")
+        self.authors_url = normalize_url(authors_url or "http://localhost:5003", "http://localhost:5003")
+        self.pedidos_url = normalize_url(pedidos_url or "http://localhost:5004", "http://localhost:5004")
+        self.pagos_url = normalize_url(pagos_url or "http://localhost:5005", "http://localhost:5005")
         self.cookie_file = cookie_path()
         self.cookie_file.parent.mkdir(parents=True, exist_ok=True)
         self.jar = MozillaCookieJar(str(self.cookie_file))
@@ -123,42 +146,68 @@ class HttpClient:
         self.opener = request.build_opener(request.HTTPCookieProcessor(self.jar))
         self.last_exchange = ""
         self.token = ""
+        self.refresh_token = ""
+        self.token_expires_at = ""
         stored_token = token_path()
         if stored_token.is_file():
             try:
                 self.token = stored_token.read_text(encoding="utf-8").strip()
             except OSError:
                 self.token = ""
+        stored_refresh = refresh_path()
+        if stored_refresh.is_file():
+            try:
+                self.refresh_token = stored_refresh.read_text(encoding="utf-8").strip()
+            except OSError:
+                self.refresh_token = ""
 
-    def set_token(self, token):
-        token = (token or "").strip()
-        if not token or token == self.token:
-            return
-        self.token = token
-        path = token_path()
+    def _write_secret(self, path, value):
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(token + "\n", encoding="utf-8")
+        path.write_text(value + "\n", encoding="utf-8")
         try:
             path.chmod(0o600)
         except OSError:
             pass
-        print(
-            "El login emitió un JWT. El cliente lo guardó y lo enviará como Authorization: Bearer.",
-            flush=True,
-        )
+
+    def set_token(self, token, expires_at=""):
+        token = (token or "").strip()
+        if expires_at:
+            self.token_expires_at = str(expires_at)
+        if not token or token == self.token:
+            return
+        self.token = token
+        self._write_secret(token_path(), token)
+        print("evidencia | JWT guardado | Authorization: Bearer ***\n", flush=True)
+
+    def set_refresh(self, token):
+        token = (token or "").strip()
+        if not token or token == self.refresh_token:
+            return
+        self.refresh_token = token
+        self._write_secret(refresh_path(), token)
 
     def clear_token(self):
         self.token = ""
-        path = token_path()
-        if path.is_file():
-            try:
-                path.unlink()
-            except OSError:
-                pass
+        self.refresh_token = ""
+        self.token_expires_at = ""
+        for path in (token_path(), refresh_path()):
+            if path.is_file():
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
 
-    def set_endpoints(self, login_url, books_url):
+    def set_endpoints(self, login_url, books_url, users_url=None, authors_url=None, pedidos_url=None, pagos_url=None):
         self.login_url = normalize_url(login_url, self.login_url)
         self.books_url = normalize_url(books_url, self.books_url)
+        if users_url:
+            self.users_url = normalize_url(users_url, self.users_url)
+        if authors_url:
+            self.authors_url = normalize_url(authors_url, self.authors_url)
+        if pedidos_url:
+            self.pedidos_url = normalize_url(pedidos_url, self.pedidos_url)
+        if pagos_url:
+            self.pagos_url = normalize_url(pagos_url, self.pagos_url)
 
     def save_cookies(self):
         self.cookie_file.parent.mkdir(parents=True, exist_ok=True)
@@ -226,7 +275,9 @@ class HttpClient:
         if status >= 400:
             raise ApiError(friendly_message(status, payload, method, path.split("?")[0]), status)
         if isinstance(payload, dict) and payload.get("token"):
-            self.set_token(payload["token"])
+            self.set_token(payload["token"], payload.get("tokenExpiresAt") or "")
+        if isinstance(payload, dict) and payload.get("refreshToken"):
+            self.set_refresh(payload["refreshToken"])
         return payload
 
     def probe(self, base, path="/health?format=json"):

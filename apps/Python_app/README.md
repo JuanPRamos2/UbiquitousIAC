@@ -57,7 +57,7 @@ El archivo queda en:
 
 La cookie de sesión va al lado, en `session-cookies.txt`. El JWT del login va en `jwt.txt`. No se guarda la contraseña.
 
-Cada petición se imprime en la consola del proceso: método, URL, encabezados, cuerpo y la respuesta del microservicio. La contraseña sale como `***`. En las escrituras se ve `Authorization: Bearer` con el token.
+Cada petición imprime una sola línea `evidencia` en la consola: método, URL, si va `Authorization: Bearer`, la contraseña como `***`, el código de respuesta y el HTTP. No imprime el JSON completo.
 
 La misma pantalla sirve para la computadora local y para la IP de la instancia. No hay dos programas.
 

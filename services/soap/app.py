@@ -4,8 +4,10 @@ from pathlib import Path
 
 from flask import Flask, Response, request, send_from_directory
 
+import bootstrap_shared  # noqa: F401
 from books_api import register_books_routes
 from config import settings
+from libreria_platform.web import apply_cors
 from soap.envelope import body_operation, parse_envelope
 from soap.faults import SoapFault, client_fault, server_fault
 from soap.service import handle
@@ -19,10 +21,8 @@ logger = logging.getLogger("library_soap")
 
 app = Flask(__name__)
 try:
-    from flask_cors import CORS
-
-    CORS(app)
-except ImportError:
+    apply_cors(app)
+except Exception:
     pass
 
 SOAP_DIR = Path(__file__).resolve().parent

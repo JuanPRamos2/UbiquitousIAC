@@ -1,0 +1,13 @@
+# Por qué Redis, en qué endpoints, y cómo queda implementado
+
+PostgreSQL sigue siendo la fuente de verdad: usuarios, libros, autores, pedidos y pagos viven ahí. Redis no los reemplaza. Sirve para datos que caducan solos y que todos los microservicios tienen que ver al mismo tiempo, sin llamarse entre ellos.
+
+Un JWT es válido en cualquier proceso que comparta `JWT_SECRET_KEY`. Eso basta para la firma, el algoritmo HS256, la expiración de 20 minutos y los claims `user_id` y `role_id`. No basta para el cierre de sesión. Si el token solo vive en el cliente, `/logout` no puede impedir que se siga usando hasta que caduque. La lista `jwt:revoked:<jti>` lo resuelve: login la escribe y books, users, autores, pedidos y pagos la consultan antes de aceptar una escritura. La sesión (`session:<jti>`) y el refresh (`refresh:<hash>`) también viven en Redis, con TTL. El access token dura 20 minutos. El refresh dura más, así el cliente de Tk puede renovarlo antes de que caduque con `POST /token/refresh`. Al hacer logout se borran la sesión y el refresh, y el `jti` queda revocado el resto de su vida.
+
+La caché es otro uso, y no el mismo. `GET /books` y `GET /books/{isbn}` son públicos y se repiten. Sus claves son `books:list:<filtros>` y `books:<isbn>`, con un TTL corto. Cualquier `POST`, `PUT`, `PATCH` o `DELETE` del catálogo borra `books:*`. `GET /authors` y `GET /authors/{id}` siguen la misma idea con `authors:*`, porque el catálogo de autores también es lectura frecuente. Si Redis se cae, esas lecturas siguen contra PostgreSQL y el encabezado `X-Cache` dice `BYPASS`. No se puede hacer lo mismo con la autorización: si Redis no responde, login no abre sesión y el resto responde 503 en vez de dejar pasar un token que quizá ya fue revocado.
+
+No todo endpoint debe tocar Redis como caché. `GET /users`, `GET /pedidos` y `GET /pagos` leen datos de una cuenta. Van con JWT y no se publican en una caché compartida. Las contraseñas no se guardan en Redis ni en los logs: el cambio pide la actual, la nueva y la confirmación, y PostgreSQL conserva solo el hash bcrypt. El correo no se edita, porque es la llave con la que la persona entra.
+
+El monolito de Node no entra en esta capa. Sigue consultando PostgreSQL directo, como se acordó no modificarlo ahora. Electron tampoco. El cliente que ejerce de administrador es la aplicación Tk: semáforos de los seis servicios y formularios de alta, consulta, cambio y baja. El protocolo de esas peticiones se elige con un radio HTTP o HTTPS, queda guardado en el equipo y arranca en HTTP.
+
+La animación de este flujo está en `docs/animacion/index.html`.

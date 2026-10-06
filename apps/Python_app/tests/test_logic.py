@@ -19,6 +19,7 @@ def test_filter_by_isbn_title_year_and_price():
 def test_health_three_states():
     assert health_api.classify(0, {}) == "down"
     assert health_api.classify(200, {"database": "ok"}) == "up"
+    assert health_api.classify(200, {"database": "ok", "redis": "error"}) == "degraded"
     assert health_api.classify(200, {"postgres": "ok"}) == "up"
     assert health_api.classify(503, {"postgres": "error"}) == "degraded"
     assert health_api.classify(200, {"database": "error"}) == "degraded"
@@ -41,11 +42,14 @@ def test_console_log_masks_password_and_shows_bearer():
         {"code": "CREDENTIALS_INVALID", "errors": ["Credenciales incorrectas."]},
         "Esta operación es pública: no se envía Authorization.",
     )
-    assert "POST" in text
+    assert text.startswith("evidencia | POST ")
+    assert "sin Authorization" in text
     assert "Bearer" not in text
     assert "ClaveSegura26" not in text
+    assert "{" not in text
     assert "Credenciales incorrectas." in text
-    assert "***" in text
+    assert "password=***" in text
+    assert "HTTP 401" in text
 
 
 def test_token_is_stored_for_later_requests(monkeypatch, tmp_path):
@@ -67,6 +71,15 @@ def test_config_persists_and_restores(monkeypatch, tmp_path):
     saved = save("http://10.0.0.8:5000/", "http://10.0.0.8:5001/")
     assert saved["loginUrl"] == "http://10.0.0.8:5000"
     assert load()["booksUrl"] == "http://10.0.0.8:5001"
+    assert load()["scheme"] == "http"
+    https = save(
+        "https://10.0.0.8:5000",
+        "https://10.0.0.8:5001",
+        scheme="https",
+        usersUrl="https://10.0.0.8:5002",
+    )
+    assert https["scheme"] == "https"
+    assert load()["usersUrl"] == "https://10.0.0.8:5002"
     restored = restore_defaults()
     assert restored["loginUrl"] == "http://localhost:5000"
     assert load()["booksUrl"] == "http://localhost:5001"

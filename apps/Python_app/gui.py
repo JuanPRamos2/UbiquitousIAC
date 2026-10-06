@@ -2,14 +2,16 @@
 import queue
 import threading
 import tkinter as tk
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from tkinter import messagebox, ttk
 
 import health_api
 from auth_api import AuthApi
 from books_api import BooksApi, authors_text, filter_books, has_image
-from config_store import config_path, load, restore_defaults, save
+from config_store import config_path, load, restore_defaults, save, with_scheme
 from http_api import ApiError, HttpClient
+from panels import Panels
+from remote_api import AuthorsApi, OrdersApi, PaymentsApi, UsersApi
 
 NAVY = "#1e3a5f"
 BG = "#f3f5f8"
@@ -30,15 +32,41 @@ class LibreriaApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Librería — cliente Python")
-        self.geometry("1180x760")
-        self.minsize(980, 640)
+        self.geometry("1280x820")
+        self.minsize(1100, 680)
         self.configure(bg=BG)
         stored = load()
-        self.http = HttpClient(stored["loginUrl"], stored["booksUrl"])
+        self.http = HttpClient(
+            stored["loginUrl"],
+            stored["booksUrl"],
+            stored["usersUrl"],
+            stored["authorsUrl"],
+            stored["pedidosUrl"],
+            stored["pagosUrl"],
+        )
+        self.scheme = stored.get("scheme") or "http"
         self.auth = AuthApi(self.http)
         self.books = BooksApi(self.http, self.auth)
+        self.users = UsersApi(self.http)
+        self.authors = AuthorsApi(self.http)
+        self.orders = OrdersApi(self.http)
+        self.payments = PaymentsApi(self.http)
+        self.panels = Panels(self)
+        self.services = (
+            ("login", "Login"),
+            ("books", "Books"),
+            ("users", "Users"),
+            ("authors", "Autores"),
+            ("pedidos", "Pedidos"),
+            ("pagos", "Pagos"),
+        )
         self.catalog = []
-        self._health = {"login": "unknown", "books": "unknown"}
+        self._health = {key: "unknown" for key, _label in self.services}
+        self.state_vars = {
+            key: tk.StringVar(value=health_api.describe(label, "unknown"))
+            for key, label in self.services
+        }
+        self._lamps = {}
         self._checked_at = "aún no"
         self._health_queue = queue.Queue()
         self._stop = threading.Event()
@@ -49,8 +77,8 @@ class LibreriaApp(tk.Tk):
         self.user_var = tk.StringVar(value="")
         self.warning_var = tk.StringVar(value="")
         self.checked_var = tk.StringVar(value="Última comprobación: aún no")
-        self.login_state_var = tk.StringVar(value=health_api.describe("Login", "unknown"))
-        self.books_state_var = tk.StringVar(value=health_api.describe("Books", "unknown"))
+        self.login_state_var = self.state_vars["login"]
+        self.books_state_var = self.state_vars["books"]
         self.protocol("WM_DELETE_WINDOW", self._close)
         threading.Thread(target=self._health_loop, daemon=True).start()
         self.after(400, self._drain_health)
@@ -242,16 +270,21 @@ class LibreriaApp(tk.Tk):
 
         signal = tk.Frame(root, bg=CARD, padx=12, pady=8)
         signal.pack(fill="x", padx=10, pady=(10, 0))
-        self.login_lamp = tk.Canvas(signal, width=22, height=22, bg=CARD, highlightthickness=0)
-        self.login_lamp.pack(side="left")
-        self.login_dot = self.login_lamp.create_oval(2, 2, 20, 20, fill=DIM, outline="")
-        tk.Label(signal, textvariable=self.login_state_var, bg=CARD).pack(side="left", padx=(4, 16))
-        self.books_lamp = tk.Canvas(signal, width=22, height=22, bg=CARD, highlightthickness=0)
-        self.books_lamp.pack(side="left")
-        self.books_dot = self.books_lamp.create_oval(2, 2, 20, 20, fill=DIM, outline="")
-        tk.Label(signal, textvariable=self.books_state_var, bg=CARD).pack(side="left", padx=(4, 16))
-        tk.Label(signal, textvariable=self.checked_var, bg=CARD, fg="#445066").pack(side="left")
-        tk.Button(signal, text="Comprobar ahora", command=self._check_now).pack(side="right")
+        lamps = tk.Frame(signal, bg=CARD)
+        lamps.pack(side="left", fill="x", expand=True)
+        self._lamps = {}
+        for index, (key, _label) in enumerate(self.services):
+            cell = tk.Frame(lamps, bg=CARD)
+            cell.grid(row=index // 3, column=index % 3, sticky="w", padx=(0, 12), pady=2)
+            canvas = tk.Canvas(cell, width=22, height=22, bg=CARD, highlightthickness=0)
+            canvas.pack(side="left")
+            dot = canvas.create_oval(2, 2, 20, 20, fill=DIM, outline="")
+            self._lamps[key] = (canvas, dot)
+            tk.Label(cell, textvariable=self.state_vars[key], bg=CARD).pack(side="left", padx=(4, 0))
+        side = tk.Frame(signal, bg=CARD)
+        side.pack(side="right")
+        tk.Label(side, textvariable=self.checked_var, bg=CARD, fg="#445066").pack(anchor="e")
+        tk.Button(side, text="Comprobar ahora", command=self._check_now).pack(anchor="e", pady=(4, 0))
         self._paint_health()
 
         self.warning_label = tk.Label(root, textvariable=self.warning_var, bg=BG, fg="#7a4b00", anchor="w")
@@ -261,16 +294,28 @@ class LibreriaApp(tk.Tk):
         self.profile_tab = tk.Frame(self.notebook, bg=BG)
         self.catalog_tab = tk.Frame(self.notebook, bg=BG)
         self.admin_tab = tk.Frame(self.notebook, bg=BG)
+        self.users_tab = tk.Frame(self.notebook, bg=BG)
+        self.authors_tab = tk.Frame(self.notebook, bg=BG)
+        self.orders_tab = tk.Frame(self.notebook, bg=BG)
+        self.payments_tab = tk.Frame(self.notebook, bg=BG)
         self.health_tab = tk.Frame(self.notebook, bg=BG)
         self.config_tab = tk.Frame(self.notebook, bg=BG)
         self.notebook.add(self.profile_tab, text="Sesión y perfil")
         self.notebook.add(self.catalog_tab, text="Catálogo")
-        self.notebook.add(self.admin_tab, text="Administración")
+        self.notebook.add(self.admin_tab, text="Libros")
+        self.notebook.add(self.users_tab, text="Usuarios")
+        self.notebook.add(self.authors_tab, text="Autores")
+        self.notebook.add(self.orders_tab, text="Pedidos")
+        self.notebook.add(self.payments_tab, text="Pagos")
         self.notebook.add(self.health_tab, text="Estado de los servicios")
         self.notebook.add(self.config_tab, text="Configuración")
         self._build_profile()
         self._build_catalog()
         self._build_admin()
+        self.panels.build_users(self.users_tab)
+        self.panels.build_authors(self.authors_tab)
+        self.panels.build_orders(self.orders_tab)
+        self.panels.build_payments(self.payments_tab)
         self._build_health_tab()
         self._build_config()
         tk.Label(root, textvariable=self.status_var, bg=BG, fg="#445066", anchor="w").pack(fill="x", padx=10, pady=(0, 8))
@@ -309,6 +354,7 @@ class LibreriaApp(tk.Tk):
                         self.http.clear_token()
                         self.force_login("La sesión expiró en el servidor.")
                     else:
+                        self._renew_token_if_needed()
                         self._apply_session_warning(payload)
                         self._refresh_user()
             self.after(15000, self._poll_session)
@@ -401,11 +447,11 @@ class LibreriaApp(tk.Tk):
         self.profile_text = tk.StringVar(value="Cargando sesión…")
         tk.Label(box, text="Sesión", bg=CARD, fg=NAVY, font=("TkDefaultFont", 13, "bold")).pack(anchor="w")
         tk.Label(box, textvariable=self.profile_text, bg=CARD, justify="left", anchor="w").pack(anchor="w", pady=(4, 8))
-        tk.Button(box, text="Extender sesión 30 minutos", command=self._extend).pack(anchor="w")
+        tk.Button(box, text="Renovar JWT antes de que caduque", command=self._extend).pack(anchor="w")
         tk.Label(box, text="Perfil", bg=CARD, fg=NAVY, font=("TkDefaultFont", 13, "bold")).pack(anchor="w", pady=(16, 4))
         tk.Label(
             box,
-            text="PATCH /profile envía solo los campos que escribas, con Authorization: Bearer. La contraseña nueva pide la actual.",
+            text="El correo no se cambia. La contraseña pide la actual, la nueva y la confirmación, y viaja al microservicio de usuarios.",
             bg=CARD,
             fg="#445066",
         ).pack(anchor="w")
@@ -413,15 +459,16 @@ class LibreriaApp(tk.Tk):
         form.pack(anchor="w", pady=8)
         self.profile_fields = {
             key: tk.StringVar()
-            for key in ("nombre", "paterno", "materno", "email", "current", "new")
+            for key in ("nombre", "paterno", "materno", "email", "current", "new", "confirm")
         }
         rows = [
             ("Nombre", "nombre", False),
             ("Apellido paterno", "paterno", False),
             ("Apellido materno", "materno", False),
-            ("Correo", "email", False),
+            ("Correo (no se cambia)", "email", False),
             ("Contraseña actual", "current", True),
             ("Contraseña nueva", "new", True),
+            ("Confirmar contraseña", "confirm", True),
         ]
         for index, (label, key, secret) in enumerate(rows):
             tk.Label(form, text=label, bg=CARD).grid(row=index, column=0, sticky="w", padx=(0, 8), pady=3)
@@ -439,6 +486,7 @@ class LibreriaApp(tk.Tk):
         self.profile_fields["email"].set(user.get("email") or "")
         self.profile_fields["current"].set("")
         self.profile_fields["new"].set("")
+        self.profile_fields["confirm"].set("")
         verified = "sí" if user.get("emailVerified") else "no"
         self.profile_text.set(
             "\n".join(
@@ -467,7 +515,7 @@ class LibreriaApp(tk.Tk):
         self._note_http()
         self._apply_session_warning(payload)
         self._fill_profile()
-        messagebox.showinfo("Sesión", "La sesión se extendió 30 minutos.", parent=self)
+        messagebox.showinfo("Sesión", "El JWT de acceso se renovó.", parent=self)
 
     def _save_profile(self):
         if not self._ensure_session():
@@ -480,22 +528,36 @@ class LibreriaApp(tk.Tk):
             ("materno", "apellidoMaterno", "maternal_surname"),
             ("email", "email", "email"),
         )
+        email = self.profile_fields["email"].get().strip()
+        if email and email != (user.get("email") or ""):
+            messagebox.showerror(
+                "Perfil",
+                "El correo identifica la cuenta y no se puede cambiar.",
+                parent=self,
+            )
+            return
         for key, remote, source in mapping:
-            value = self.profile_fields[key].get().strip()
-            current = user.get(source) or user.get("email") if key == "email" else user.get(source)
             if key == "email":
-                current = user.get("email") or ""
-            if value and value != (current or ""):
+                continue
+            value = self.profile_fields[key].get().strip()
+            current = user.get(source) or ""
+            if value and value != current:
                 changes[remote] = value
+        current_password = self.profile_fields["current"].get()
         new_password = self.profile_fields["new"].get()
-        if new_password:
-            changes["newPassword"] = new_password
-            changes["currentPassword"] = self.profile_fields["current"].get()
-        if not changes:
+        confirm_password = self.profile_fields["confirm"].get()
+        changing_password = any((current_password, new_password, confirm_password))
+        if not changes and not changing_password:
             messagebox.showinfo("Perfil", "No hay cambios respecto a la sesión actual.", parent=self)
             return
         try:
-            self.auth.update_profile(changes)
+            if changes:
+                self.auth.update_profile(changes)
+            if changing_password:
+                user_id = (self.auth.user or user).get("id")
+                if not user_id:
+                    raise ApiError("La sesión no trae el id del usuario.", 400)
+                self.users.change_password(user_id, current_password, new_password, confirm_password)
         except ApiError as exc:
             self._note_http()
             text = str(exc).lower()
@@ -934,12 +996,42 @@ class LibreriaApp(tk.Tk):
             wraplength=760,
             justify="left",
         ).pack(anchor="w", pady=(4, 8))
-        self.login_url_var = tk.StringVar(value=self.http.login_url)
-        self.books_url_var = tk.StringVar(value=self.http.books_url)
-        tk.Label(box, text="Login", bg=CARD).pack(anchor="w")
-        tk.Entry(box, textvariable=self.login_url_var, width=52).pack(anchor="w", pady=(2, 6))
-        tk.Label(box, text="Books", bg=CARD).pack(anchor="w")
-        tk.Entry(box, textvariable=self.books_url_var, width=52).pack(anchor="w", pady=(2, 6))
+        self.scheme_var = tk.StringVar(value=self.scheme if self.scheme in ("http", "https") else "http")
+        scheme_row = tk.Frame(box, bg=CARD)
+        scheme_row.pack(anchor="w", pady=(0, 8))
+        tk.Label(scheme_row, text="Protocolo de las peticiones", bg=CARD).pack(side="left", padx=(0, 8))
+        tk.Radiobutton(
+            scheme_row, text="HTTP", variable=self.scheme_var, value="http", bg=CARD, command=self._apply_scheme
+        ).pack(side="left")
+        tk.Radiobutton(
+            scheme_row, text="HTTPS", variable=self.scheme_var, value="https", bg=CARD, command=self._apply_scheme
+        ).pack(side="left")
+        tk.Label(
+            box,
+            text="HTTP queda seleccionado por defecto y la elección se guarda en este equipo.",
+            bg=CARD,
+            fg="#445066",
+        ).pack(anchor="w", pady=(0, 8))
+        self.url_vars = {
+            "loginUrl": tk.StringVar(value=self.http.login_url),
+            "booksUrl": tk.StringVar(value=self.http.books_url),
+            "usersUrl": tk.StringVar(value=self.http.users_url),
+            "authorsUrl": tk.StringVar(value=self.http.authors_url),
+            "pedidosUrl": tk.StringVar(value=self.http.pedidos_url),
+            "pagosUrl": tk.StringVar(value=self.http.pagos_url),
+        }
+        self.login_url_var = self.url_vars["loginUrl"]
+        self.books_url_var = self.url_vars["booksUrl"]
+        for label, key in (
+            ("Login", "loginUrl"),
+            ("Books", "booksUrl"),
+            ("Users", "usersUrl"),
+            ("Autores", "authorsUrl"),
+            ("Pedidos", "pedidosUrl"),
+            ("Pagos", "pagosUrl"),
+        ):
+            tk.Label(box, text=label, bg=CARD).pack(anchor="w")
+            tk.Entry(box, textvariable=self.url_vars[key], width=52).pack(anchor="w", pady=(2, 6))
         tk.Label(box, text=str(config_path()), bg=CARD, fg="#667085").pack(anchor="w", pady=(4, 8))
         row = tk.Frame(box, bg=CARD)
         row.pack(anchor="w")
@@ -947,27 +1039,77 @@ class LibreriaApp(tk.Tk):
         tk.Button(row, text="Guardar", command=self._save_config, bg=NAVY, fg="white", relief="flat", padx=10).pack(side="left", padx=8)
         tk.Button(row, text="Restaurar predeterminados", command=self._restore_config).pack(side="left")
 
-    def _apply_urls(self, login_url, books_url):
-        self.http.set_endpoints(login_url, books_url)
-        self.login_url_var.set(self.http.login_url)
-        self.books_url_var.set(self.http.books_url)
+    def _endpoint_values(self):
+        return {key: var.get() for key, var in self.url_vars.items()}
 
-    def _save_config(self):
-        stored = save(self.login_url_var.get(), self.books_url_var.get())
-        self._apply_urls(stored["loginUrl"], stored["booksUrl"])
-        messagebox.showinfo("Configuración", "URLs guardadas. Si cambiaste de máquina, inicia sesión otra vez.", parent=self)
+    def _apply_urls(self, stored):
+        self.scheme = stored.get("scheme") or "http"
+        if getattr(self, "scheme_var", None) is not None:
+            self.scheme_var.set(self.scheme)
+        self.http.set_endpoints(
+            stored["loginUrl"],
+            stored["booksUrl"],
+            stored.get("usersUrl"),
+            stored.get("authorsUrl"),
+            stored.get("pedidosUrl"),
+            stored.get("pagosUrl"),
+        )
+        if getattr(self, "url_vars", None):
+            self.url_vars["loginUrl"].set(self.http.login_url)
+            self.url_vars["booksUrl"].set(self.http.books_url)
+            self.url_vars["usersUrl"].set(self.http.users_url)
+            self.url_vars["authorsUrl"].set(self.http.authors_url)
+            self.url_vars["pedidosUrl"].set(self.http.pedidos_url)
+            self.url_vars["pagosUrl"].set(self.http.pagos_url)
+
+    def _apply_scheme(self):
+        scheme = self.scheme_var.get()
+        for key, var in self.url_vars.items():
+            var.set(with_scheme(var.get(), scheme))
+        self._save_config(silent=True)
+
+    def _save_config(self, silent=False):
+        values = self._endpoint_values()
+        stored = save(
+            values["loginUrl"],
+            values["booksUrl"],
+            scheme=self.scheme_var.get(),
+            usersUrl=values["usersUrl"],
+            authorsUrl=values["authorsUrl"],
+            pedidosUrl=values["pedidosUrl"],
+            pagosUrl=values["pagosUrl"],
+        )
+        self._apply_urls(stored)
+        if not silent:
+            messagebox.showinfo(
+                "Configuración",
+                "URLs y protocolo guardados. Si cambiaste de máquina, inicia sesión otra vez.",
+                parent=self,
+            )
 
     def _restore_config(self):
         stored = restore_defaults()
-        self._apply_urls(stored["loginUrl"], stored["booksUrl"])
-        messagebox.showinfo("Configuración", "Se restauraron http://localhost:5000 y http://localhost:5001.", parent=self)
+        self._apply_urls(stored)
+        messagebox.showinfo(
+            "Configuración",
+            "Se restauró HTTP y los puertos locales 5000 a 5005.",
+            parent=self,
+        )
 
     def _test_config(self):
-        self.http.set_endpoints(self.login_url_var.get(), self.books_url_var.get())
+        values = self._endpoint_values()
+        self.http.set_endpoints(
+            values["loginUrl"],
+            values["booksUrl"],
+            values["usersUrl"],
+            values["authorsUrl"],
+            values["pedidosUrl"],
+            values["pagosUrl"],
+        )
         self._check_now()
         messagebox.showinfo(
             "Probar",
-            self.login_state_var.get() + "\n" + self.books_state_var.get() + "\n" + self.checked_var.get(),
+            "\n".join(self.state_vars[key].get() for key, _label in self.services) + "\n" + self.checked_var.get(),
             parent=self,
         )
 
@@ -987,11 +1129,25 @@ class LibreriaApp(tk.Tk):
             self._fill_profile()
             self._refresh_user()
 
+    def _renew_token_if_needed(self):
+        raw = self.http.token_expires_at
+        if not raw or not self.http.refresh_token:
+            return
+        try:
+            expires = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            return
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if expires > datetime.now(timezone.utc) + timedelta(minutes=3):
+            return
+        try:
+            self.auth.refresh()
+        except ApiError:
+            self._note_http()
+
     def _check_now(self):
-        self._health = {
-            "login": self._probe(self.http.login_url),
-            "books": self._probe(self.http.books_url),
-        }
+        self._health = self._probe_all()
         self._checked_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self._paint_health()
 
@@ -999,15 +1155,18 @@ class LibreriaApp(tk.Tk):
         status, payload = self.http.probe(base)
         return health_api.classify(status, payload)
 
+    def _probe_all(self):
+        status = {}
+        for key, _label in self.services:
+            try:
+                status[key] = self._probe(getattr(self.http, f"{key}_url"))
+            except Exception:
+                status[key] = "down"
+        return status
+
     def _health_loop(self):
         while not self._stop.is_set():
-            try:
-                status = {
-                    "login": self._probe(self.http.login_url),
-                    "books": self._probe(self.http.books_url),
-                }
-            except Exception:
-                status = {"login": "down", "books": "down"}
+            status = self._probe_all()
             self._health_queue.put((status, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             if self._stop.wait(2):
                 break
@@ -1025,25 +1184,28 @@ class LibreriaApp(tk.Tk):
             self.after(200, self._drain_health)
 
     def _paint_health(self):
-        login_state = self._health.get("login", "unknown")
-        books_state = self._health.get("books", "unknown")
-        self.login_state_var.set(health_api.describe("Login", login_state))
-        self.books_state_var.set(health_api.describe("Books", books_state))
+        lines = []
+        for key, label in self.services:
+            state = self._health.get(key, "unknown")
+            self.state_vars[key].set(health_api.describe(label, state))
+            lines.append(self.state_vars[key].get())
+            pair = self._lamps.get(key)
+            if pair is not None and pair[0].winfo_exists():
+                pair[0].itemconfig(pair[1], fill=STATE_COLOR.get(state, DIM))
         self.checked_var.set("Última comprobación: " + self._checked_at)
-        if getattr(self, "login_lamp", None) is not None and self.login_lamp.winfo_exists():
-            self.login_lamp.itemconfig(self.login_dot, fill=STATE_COLOR.get(login_state, DIM))
-            self.books_lamp.itemconfig(self.books_dot, fill=STATE_COLOR.get(books_state, DIM))
         if getattr(self, "health_detail", None) is not None:
             self.health_detail.set(
                 "\n".join(
-                    [
-                        self.login_state_var.get(),
-                        self.books_state_var.get(),
+                    lines
+                    + [
+                        "",
                         self.checked_var.get(),
                         "",
-                        "Verde = HTTP 200 y base disponible.",
-                        "Amarillo = el proceso contestó, pero la base no.",
+                        "Verde = HTTP 200, base disponible y Redis disponible.",
+                        "Amarillo = el proceso contestó, pero PostgreSQL o Redis falló.",
                         "Rojo = conexión rechazada, tiempo agotado o URL incorrecta.",
+                        "En books, una lectura pública sigue si Redis no cachea.",
+                        "Login, revocación y escrituras se detienen si Redis no responde.",
                     ]
                 )
             )

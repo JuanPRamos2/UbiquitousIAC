@@ -7,8 +7,8 @@ from tests.conftest import client as make_client
 
 
 def test_login_issues_a_token_the_same_service_can_read():
-    token, _expires = jwt_auth.issue_token(
-        {"id": 7, "email": "ana@example.com", "role": "client"}
+    token, _expires, _jti = jwt_auth.issue_token(
+        {"id": 7, "email": "ana@example.com", "role": "client", "role_id": 2}
     )
     claims = jwt_auth.read_bearer("Bearer " + token)
     assert claims["sub"] == "7"

@@ -1,6 +1,7 @@
 """Microservicio independiente de autenticación. Puerto 5000. XML por defecto."""
 from datetime import datetime, timedelta, timezone
 import hashlib
+import json
 import logging
 import re
 import secrets
@@ -8,9 +9,9 @@ from pathlib import Path
 
 import bcrypt
 from flask import Flask, redirect, request, send_from_directory, session
-from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 
+import bootstrap_shared  # noqa: F401
 import captcha
 import config
 import db
@@ -18,6 +19,9 @@ import jwt_auth
 import mail
 from format import respond, wants_json
 from hateoas import links_for
+from libreria_platform.jwt_tokens import revoke
+from libreria_platform.redis_store import RedisUnavailable, store
+from libreria_platform.web import apply_cors
 
 ROOT = Path(__file__).resolve().parent
 EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
@@ -29,6 +33,7 @@ PUBLIC_USER_FIELDS = (
     "full_name",
     "email",
     "role",
+    "role_id",
 )
 logger = logging.getLogger("library_login")
 
@@ -41,7 +46,7 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=config.SESSION_MINUTES),
     JSON_SORT_KEYS=False,
 )
-CORS(app, supports_credentials=True)
+apply_cors(app)
 
 swagger_ui = get_swaggerui_blueprint(
     "/docs",
@@ -177,6 +182,29 @@ def parse_iso(value):
 
 def start_session(user):
     expires = now_utc() + timedelta(minutes=config.SESSION_MINUTES)
+    token, token_expires, jti = jwt_auth.issue_token(user)
+    refresh_raw = secrets.token_urlsafe(32)
+    refresh_hash = hashlib.sha256(refresh_raw.encode("utf-8")).hexdigest()
+    access_ttl = max(int((token_expires - now_utc()).total_seconds()), 1)
+    refresh_ttl = max(int(config.REFRESH_MINUTES) * 60, access_ttl)
+    record = {
+        "user_id": user["id"],
+        "email": user["email"],
+        "role": user.get("role") or "",
+        "role_id": user.get("role_id"),
+        "jti": jti,
+        "refresh_hash": refresh_hash,
+        "token_exp": int(token_expires.timestamp()),
+    }
+    try:
+        store.setex(f"session:{jti}", access_ttl, json.dumps(record))
+        store.setex(
+            f"refresh:{refresh_hash}",
+            refresh_ttl,
+            json.dumps({"user_id": user["id"], "access_jti": jti}),
+        )
+    except RedisUnavailable:
+        return None
     session.permanent = True
     session["user_id"] = user["id"]
     session["email"] = user["email"]
@@ -184,15 +212,34 @@ def start_session(user):
     session["started_at"] = iso(now_utc())
     session["expires_at"] = iso(expires)
     session["notified"] = False
+    session["jti"] = jti
+    session["refresh_hash"] = refresh_hash
+    session["token_exp"] = int(token_expires.timestamp())
     payload = session_payload(user, expires)
-    token, token_expires = jwt_auth.issue_token(user)
     payload["token"] = token
     payload["tokenType"] = "Bearer"
     payload["tokenExpiresAt"] = iso(token_expires)
+    payload["refreshToken"] = refresh_raw
+    payload["refreshExpiresMinutes"] = config.REFRESH_MINUTES
     return payload
 
 
+def redis_down():
+    return respond(
+        {
+            "ok": False,
+            "code": "REDIS_UNAVAILABLE",
+            "errors": ["Redis no está disponible. La sesión no se guardó."],
+            "error": "Redis no está disponible. La sesión no se guardó.",
+            "_links": links_for("self", "health", "docs"),
+        },
+        root_tag="error",
+        status=503,
+    )
+
+
 def token_error_response(exc):
+    status = 503 if exc.code == "REDIS_UNAVAILABLE" else 401
     return respond(
         {
             "ok": False,
@@ -202,7 +249,7 @@ def token_error_response(exc):
             "_links": links_for("self", "login", "docs"),
         },
         root_tag="error",
-        status=401,
+        status=status,
     )
 
 
@@ -237,7 +284,7 @@ def session_state():
         notification = {
             "code": "SESSION_EXPIRED",
             "message": (
-                "Su sesión de 30 minutos ha expirado. "
+                f"Su sesión de {config.SESSION_MINUTES} minutos ha expirado. "
                 "¿Desea extenderla? Si no hay respuesta, se cerrará."
             ),
             "requiresAction": True,
@@ -247,7 +294,7 @@ def session_state():
             "code": "SESSION_EXPIRING",
             "message": (
                 f"Su sesión expirará en {remaining} segundos. "
-                "¿Desea extenderla otros 30 minutos?"
+                f"¿Desea extenderla otros {config.SESSION_MINUTES} minutos?"
             ),
             "requiresAction": True,
         }
@@ -301,6 +348,7 @@ def root():
                     "algorithm": "HS256",
                     "scheme": "Bearer",
                     "expiresMinutes": config.JWT_MINUTES,
+                    "refreshMinutes": config.REFRESH_MINUTES,
                     "protected": ["PATCH /profile"],
                 },
                 "richardson": 3,
@@ -337,16 +385,28 @@ def health():
         postgres_ok = db.ping()
     except Exception as exc:
         error = str(exc)
-    status = "ok" if postgres_ok else "error"
+    redis_ok = store.ping()
+    ready = postgres_ok and redis_ok
     payload = {
-        "status": status,
+        "status": "ok" if ready else "error",
         "service": "login",
         "postgres": "ok" if postgres_ok else "error",
+        "redis": "ok" if redis_ok else "error",
         "_links": links_for("self", "docs", "register", "login", "session"),
     }
     if error:
         payload["error"] = error
-    return respond(payload, root_tag="health", status=200 if postgres_ok else 503)
+    return respond(payload, root_tag="health", status=200 if ready else 503)
+
+
+@app.get("/metrics")
+def metrics():
+    snap = store.snapshot()
+    return respond(
+        {"service": "login", "redis": snap, "_links": links_for("self", "health")},
+        root_tag="metrics",
+        status=200 if snap.get("connected") else 503,
+    )
 
 
 @app.get("/captcha")
@@ -511,6 +571,8 @@ def login():
             status=403,
         )
     started = start_session(user)
+    if started is None:
+        return redis_down()
     notice = notification(
         "SESSION_STARTED",
         "Sesión iniciada. El usuario existe y el correo está verificado.",
@@ -628,6 +690,8 @@ def verify_email():
             status=400,
         )
     started = start_session(user)
+    if started is None:
+        return redis_down()
     notice = notification(
         "EMAIL_VERIFIED",
         "Correo verificado. El usuario existe y ya puede iniciar sesión.",
@@ -649,8 +713,37 @@ def verify_email():
     )
 
 
+def drop_redis_login():
+    jti = session.get("jti")
+    refresh_hash = session.get("refresh_hash")
+    token_exp = session.get("token_exp")
+    header = request.headers.get("Authorization")
+    if header:
+        try:
+            claims = jwt_auth.peek_bearer(header)
+            jti = claims.get("jti") or jti
+            token_exp = claims.get("exp") or token_exp
+        except jwt_auth.TokenError:
+            pass
+    if jti:
+        raw = store.get(f"session:{jti}", optional=True)
+        if raw and not refresh_hash:
+            try:
+                refresh_hash = json.loads(raw).get("refresh_hash")
+            except json.JSONDecodeError:
+                refresh_hash = None
+        revoke(jti, token_exp)
+        store.delete(f"session:{jti}")
+    if refresh_hash:
+        store.delete(f"refresh:{refresh_hash}")
+
+
 @app.route("/logout", methods=["GET", "POST"])
 def logout():
+    try:
+        drop_redis_login()
+    except RedisUnavailable:
+        return redis_down()
     clear_session()
     return respond(
         {
@@ -712,13 +805,91 @@ def extend_session():
             root_tag="error",
             status=401,
         )
+    try:
+        drop_redis_login()
+    except RedisUnavailable:
+        return redis_down()
     started = start_session(user)
+    if started is None:
+        return redis_down()
     return respond(
         {
             "ok": True,
-            "message": "Sesión extendida 30 minutos.",
+            "message": f"Sesión extendida. El JWT de acceso dura {config.JWT_MINUTES} minutos.",
             **started,
             "_links": links_for("self", "session", "logout", "health", "docs"),
+        },
+        root_tag="result",
+    )
+
+
+@app.post("/token/refresh")
+def refresh_token():
+    payload = parse_payload()
+    raw = field(payload, "refreshToken", "refresh_token")
+    if not raw:
+        return respond(
+            {
+                "ok": False,
+                "code": "TOKEN_MISSING",
+                "errors": ["Falta refreshToken."],
+                "error": "Falta refreshToken.",
+            },
+            root_tag="error",
+            status=401,
+        )
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    try:
+        stored = store.get(f"refresh:{digest}")
+    except RedisUnavailable:
+        return redis_down()
+    if not stored:
+        return respond(
+            {
+                "ok": False,
+                "code": "TOKEN_INVALID",
+                "errors": ["El refresh token no existe o ya expiró."],
+                "error": "El refresh token no existe o ya expiró.",
+            },
+            root_tag="error",
+            status=401,
+        )
+    try:
+        doc = json.loads(stored)
+    except json.JSONDecodeError:
+        doc = {}
+    user = db.find_user_by_id(doc.get("user_id"))
+    if not user:
+        return respond(
+            {"ok": False, "errors": ["El usuario del refresh token ya no existe."]},
+            root_tag="error",
+            status=401,
+        )
+    old_jti = doc.get("access_jti")
+    try:
+        if old_jti:
+            raw_session = store.get(f"session:{old_jti}", optional=True)
+            token_exp = None
+            if raw_session:
+                try:
+                    token_exp = json.loads(raw_session).get("token_exp")
+                except json.JSONDecodeError:
+                    token_exp = None
+            revoke(old_jti, token_exp)
+            store.delete(f"session:{old_jti}", f"refresh:{digest}")
+        else:
+            store.delete(f"refresh:{digest}")
+    except RedisUnavailable:
+        return redis_down()
+    started = start_session(user)
+    if started is None:
+        return redis_down()
+    return respond(
+        {
+            "ok": True,
+            "message": "Token de acceso renovado.",
+            **started,
+            "_links": links_for("self", "session", "logout", "docs"),
         },
         root_tag="result",
     )

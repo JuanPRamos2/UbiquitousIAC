@@ -1,0 +1,190 @@
+{
+  "info": {
+    "name": "Librería · Redis y microservicios",
+    "description": "Login con JWT de 20 minutos, refresh, revocación, caché de books y CRUD de users, autores, pedidos y pagos. Importa también Libreria-local.postman_environment.json si ya lo usas. El access token se guarda en {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "login", "value": "http://127.0.0.1:5000" },
+    { "key": "books", "value": "http://127.0.0.1:5001" },
+    { "key": "users", "value": "http://127.0.0.1:5002" },
+    { "key": "authors", "value": "http://127.0.0.1:5003" },
+    { "key": "pedidos", "value": "http://127.0.0.1:5004" },
+    { "key": "pagos", "value": "http://127.0.0.1:5005" },
+    { "key": "token", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Login",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": "{{login}}/health?format=json"
+          }
+        },
+        {
+          "name": "Login admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('login 200', () => pm.response.to.have.status(200));",
+                  "if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "if (body.refreshToken) pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mariana.solis@libreriaonline.mx\",\n  \"password\": \"LibreriaAdmin26\"\n}"
+            },
+            "url": "{{login}}/login?format=json"
+          }
+        },
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "if (body.refreshToken) pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{login}}/token/refresh?format=json"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{login}}/logout?format=json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "GET catálogo",
+          "request": { "method": "GET", "url": "{{books}}/books?format=json" }
+        },
+        {
+          "name": "GET un ISBN",
+          "request": { "method": "GET", "url": "{{books}}/books/9780451524935?format=json" }
+        },
+        {
+          "name": "POST sin token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"isbn\": \"111\",\n  \"title\": \"X\"\n}" },
+            "url": "{{books}}/books?format=json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET sin token",
+          "request": { "method": "GET", "url": "{{users}}/users" }
+        },
+        {
+          "name": "GET admin",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{users}}/users"
+          }
+        },
+        {
+          "name": "Contraseña incompleta",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"LibreriaAdmin26\",\n  \"newPassword\": \"LibreriaAdmin27\"\n}"
+            },
+            "url": "{{users}}/users/1/password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Autores",
+      "item": [
+        {
+          "name": "GET público",
+          "request": { "method": "GET", "url": "{{authors}}/authors" }
+        },
+        {
+          "name": "POST sin token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Sin token\"\n}" },
+            "url": "{{authors}}/authors"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedidos y pagos",
+      "item": [
+        {
+          "name": "GET pedidos sin token",
+          "request": { "method": "GET", "url": "{{pedidos}}/pedidos" }
+        },
+        {
+          "name": "POST pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lines\": [{ \"isbn\": \"9780451524935\", \"quantity\": 1 }]\n}"
+            },
+            "url": "{{pedidos}}/pedidos"
+          }
+        },
+        {
+          "name": "GET pagos sin token",
+          "request": { "method": "GET", "url": "{{pagos}}/pagos" }
+        }
+      ]
+    }
+  ]
+}

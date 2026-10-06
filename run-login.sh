@@ -12,4 +12,5 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 python3 -m pip install -q -r requirements.txt
+export PYTHONPATH="$ROOT/services/shared:${PYTHONPATH:-}"
 exec python3 app.py
