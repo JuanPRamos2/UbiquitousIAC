@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monterrey GPS Tracker</title>
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <p class="eyebrow">Rastreo GPS en tiempo real</p>
+      <h1>Monterrey GPS Tracker</h1>
+    </div>
+    <div class="pills">
+      <span id="live" class="pill wait"><i class="dot"></i><span id="live-text">Conectando…</span></span>
+      <span id="scale" class="pill quiet">snapshot / update</span>
+    </div>
+  </header>
+  <main>
+    <aside>
+      <section class="link-box" aria-label="Enlace en tiempo real">
+        <div class="link-row"><span>Estado</span><strong id="link-state">Conectando…</strong></div>
+        <div class="link-row"><span>Último mensaje</span><strong id="last-msg">—</strong></div>
+        <div class="link-row"><span>Mensajes</span><strong id="msg-count" class="num">0</strong></div>
+      </section>
+      <div class="scroll">
+        <div class="list-head">
+          <h2>Vehículos</h2>
+          <span id="count" class="count num">0</span>
+        </div>
+        <p id="empty" class="empty">Todavía no hay vehículos. En otra terminal corre GPSApp y elige cuántos autos simular.</p>
+        <div id="cards"></div>
+        <footer class="side-foot">
+          <p id="ws-url" class="mono"></p>
+          <p id="health-url" class="mono"></p>
+          <p class="note">El mapa entra con role=map. Recibe snapshot al conectar y update en cada posición.</p>
+          <p class="note">Calles y mapa © colaboradores de OpenStreetMap</p>
+        </footer>
+      </div>
+    </aside>
+    <div class="map-wrap">
+      <div id="map"></div>
+      <p id="tile-warn" class="warn" hidden>No se pudo cargar el mapa de OpenStreetMap. Los vehículos siguen llegando por WebSocket.</p>
+      <button id="frame" class="map-btn" type="button">Centrar vehículos</button>
+    </div>
+  </main>
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
