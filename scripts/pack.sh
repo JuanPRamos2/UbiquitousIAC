@@ -15,7 +15,7 @@ tar -czf "$OUT_DIR/Libreria-monorepo.tar.gz" \
   --exclude='*.pyc' \
   app apps services data prompts \
   app.py serve.py requirements.txt README.md \
-  run.sh run-flask.sh run-library.sh run-electron.sh \
+  run.sh run-flask.sh run-library.sh run-electron.sh run-login.sh \
   scripts
 
 if command -v zip >/dev/null 2>&1; then
@@ -23,7 +23,7 @@ if command -v zip >/dev/null 2>&1; then
   zip -qr "$OUT_DIR/Libreria-monorepo.zip" \
     app apps services data prompts \
     app.py serve.py requirements.txt README.md \
-    run.sh run-flask.sh run-library.sh run-electron.sh \
+    run.sh run-flask.sh run-library.sh run-electron.sh run-login.sh \
     scripts \
     -x '*/node_modules/*' '*/.venv/*' '*/__pycache__/*' '*/.git/*' 'entrega/*'
 fi

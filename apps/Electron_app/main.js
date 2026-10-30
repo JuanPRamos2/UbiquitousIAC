@@ -40,8 +40,8 @@ function createWindow() {
     {
       label: "Microservicio",
       submenu: [
+        { label: "Login Swagger (:5000)", click: () => win.loadURL("http://127.0.0.1:5000/docs") },
         { label: "Flask SOAP (:5001)", click: () => win.loadURL(SOAP) },
-        { label: "Flask SOAP (:5000)", click: () => win.loadURL("http://127.0.0.1:5000/") },
         { label: "GET /books XML", click: () => win.loadURL("http://127.0.0.1:5001/books") },
         {
           label: "GET /books-images XML",

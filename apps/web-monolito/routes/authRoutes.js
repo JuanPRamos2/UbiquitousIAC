@@ -36,8 +36,14 @@ router.get('/register', requireGuest, (req, res) => {
 
 router.post('/register', requireGuest, async (req, res, next) => {
   try {
-    const { full_name, email, password } = req.body;
-    if (!full_name || !email || !password) {
+    const { nombre, apellido_paterno, apellido_materno, full_name, email, password } = req.body;
+    if (!(nombre && apellido_paterno && apellido_materno) && !full_name) {
+      return res.status(400).render('auth/register', {
+        title: 'Registrarse',
+        error: 'Nombre, apellido paterno y apellido materno son obligatorios.'
+      });
+    }
+    if (!email || !password) {
       return res.status(400).render('auth/register', {
         title: 'Registrarse',
         error: 'Todos los campos son obligatorios.'
@@ -50,7 +56,14 @@ router.post('/register', requireGuest, async (req, res, next) => {
         error: passwordError
       });
     }
-    const user = await authService.registerUser({ fullName: full_name, email, password });
+    const user = await authService.registerUser({
+      firstName: nombre,
+      paternalSurname: apellido_paterno,
+      maternalSurname: apellido_materno,
+      fullName: full_name,
+      email,
+      password
+    });
     req.session.user = user;
     setNotice(req, 'Cuenta creada. Bienvenido a la librería.');
     res.redirect(`${res.locals.basePath}/`);

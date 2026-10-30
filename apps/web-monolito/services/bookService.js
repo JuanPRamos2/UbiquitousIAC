@@ -1,4 +1,5 @@
 const { query } = require('../config/db');
+const coverService = require('./coverService');
 
 const attachRelations = async (books) => {
   if (!books.length) return books;
@@ -23,13 +24,21 @@ const attachRelations = async (books) => {
   const imagesByBook = group(images.rows);
   const conceptsByBook = group(concepts.rows);
 
-  return books.map((book) => ({
-    ...book,
-    authors: authorsByBook[book.id] || [],
-    genres: genresByBook[book.id] || [],
-    images: imagesByBook[book.id] || [],
-    concepts: conceptsByBook[book.id] || []
-  }));
+  await coverService.fetchCatalogImages();
+
+  return books.map((book) => {
+    const images = (imagesByBook[book.id] || []).map((image) =>
+      coverService.decorateImage(book, image)
+    );
+    return {
+      ...book,
+      authors: authorsByBook[book.id] || [],
+      genres: genresByBook[book.id] || [],
+      images,
+      concepts: conceptsByBook[book.id] || [],
+      ...coverService.coverFields(book, images)
+    };
+  });
 };
 
 const searchBooks = async ({ isbn = '', title = '' } = {}) => {

@@ -4,13 +4,14 @@
   <p class="lede">Cuentas de la librería. Solo una persona puede ser administradora.</p>
   <table class="table">
     <thead>
-      <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acciones</th></tr>
+      <tr><th>Nombre</th><th>Correo</th><th>Verificado</th><th>Rol</th><th>Acciones</th></tr>
     </thead>
     <tbody>
       <% users.forEach((user) => { %>
         <tr>
           <td><%= user.full_name %></td>
           <td><%= user.email %></td>
+          <td><%= user.email_verified ? 'Sí' : 'Pendiente' %></td>
           <td><%= user.role === 'admin' ? 'Administrador' : 'Lector' %></td>
           <td>
             <form class="inline-actions" action="<%= u('/admin/users/' + user.id + '/role') %>" method="POST">

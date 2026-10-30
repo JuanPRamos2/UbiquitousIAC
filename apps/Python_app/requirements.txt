@@ -1,0 +1,11 @@
+# El cliente usa la biblioteca estándar (tkinter, urllib, json).
+# PyJWT vive en los microservicios de login y books, que firman y verifican el token.
+# Este programa solo guarda el JWT y lo manda en Authorization: Bearer.
+# Cada petición se imprime en la consola.
+# Python 3.10 o superior.
+#
+# Tk no viene siempre instalado con el intérprete:
+#   Debian/Ubuntu: sudo apt-get install -y python3-tk
+#   Arch Linux:    sudo pacman -S tk
+#   Windows 11:    el instalador oficial de python.org incluye Tcl/Tk.
+#                  Márcalo en "Optional Features" si usas el instalador.

@@ -2,7 +2,11 @@
 <section class="card" style="max-width: 600px; margin: 3rem auto;">
   <h1>Mi perfil</h1>
   <p><strong>Nombre:</strong> <%= user.full_name %></p>
+  <p><strong>Nombre de pila:</strong> <%= user.first_name || '—' %></p>
+  <p><strong>Apellido paterno:</strong> <%= user.paternal_surname || '—' %></p>
+  <p><strong>Apellido materno:</strong> <%= user.maternal_surname || '—' %></p>
   <p><strong>Correo:</strong> <%= user.email %></p>
+  <p><strong>Correo verificado:</strong> <%= user.email_verified ? 'Sí' : 'Pendiente' %></p>
   <p><strong>Rol:</strong> <%= user.role === 'admin' ? 'Administrador' : 'Usuario registrado' %></p>
   <p><strong>Registro:</strong> <%= new Date(user.created_at).toLocaleString('es-MX') %></p>
   <a class="btn" href="<%= u('/') %>">Volver al inicio</a>

@@ -9,3 +9,4 @@ Prompts de la materia (SC3705), juntos en la raíz de UbiquitousIAC.
 | PROMPT_SOAP_EG02.txt | SOAP (contexto EG02) |
 | PROMPT_SOAP_EG03.txt | EG03 SOAP |
 | PROMPT_MAESTRO_IA.md | Prompt maestro |
+| 04_electron_prompt.md | Cliente de escritorio Electron |

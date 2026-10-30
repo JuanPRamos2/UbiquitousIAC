@@ -14,6 +14,7 @@ const { requireAuth } = require('./middleware/auth');
 const { flash } = require('./middleware/flash');
 const { notFound, errorHandler } = require('./middleware/errors');
 const bookService = require('./services/bookService');
+const coverService = require('./services/coverService');
 
 const app = express();
 const router = express.Router();
@@ -61,6 +62,13 @@ router.use((req, res, next) => {
 });
 router.use(express.static(path.join(__dirname, 'public')));
 router.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+router.get('/covers/:isbn', async (req, res, next) => {
+  try {
+    await coverService.sendCover(req.params.isbn, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get('/', requireAuth, async (req, res) => {
   let stats = { books: 0, categories: 0, authors: 0, users: 0 };

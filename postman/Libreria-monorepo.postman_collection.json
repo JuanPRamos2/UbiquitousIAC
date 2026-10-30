@@ -1,0 +1,681 @@
+{
+  "info": {
+    "name": "Librería · evidencia JSON",
+    "description": "Colección para evidencia del monorepo. Todas las APIs Flask usan ?format=json.\n\nOrden obligatorio de la carpeta 1 (Login):\n1. Índice HATEOAS\n2. Health\n3. Captcha\n4. Register (pide captcha solo y lo resuelve)\n5. Login sin verificar (403)\n6. Verify email\n7. Login cuenta nueva\n8. Session\n9. Extender sesión\n10. Logout\n11. Login admin ya verificado\n\nLuego corre 2. SOAP y 3. Node.\n\nEn Collection Runner activa Keep variable values y guarda el reporte HTML.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "login", "value": "http://127.0.0.1:5000" },
+    { "key": "soap", "value": "http://127.0.0.1:5001" },
+    { "key": "library", "value": "http://127.0.0.1:3000/library" },
+    { "key": "captchaId", "value": "" },
+    { "key": "captchaAnswer", "value": "" },
+    { "key": "captchaQuestion", "value": "" },
+    { "key": "verificationToken", "value": "" },
+    { "key": "registerEmail", "value": "postman.demo@example.com" },
+    { "key": "registerPassword", "value": "ClaveSegura26" },
+    { "key": "adminEmail", "value": "mariana.solis@libreriaonline.mx" },
+    { "key": "adminPassword", "value": "LibreriaAdmin26" }
+  ],
+  "item": [
+    {
+      "name": "1. Login JSON :5000",
+      "description": "Microservicio services/login. Sesión de 30 min, captcha, verificación de correo, HATEOAS.",
+      "item": [
+        {
+          "name": "01 GET / índice HATEOAS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('JSON HATEOAS del login', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.service).to.eql('login');",
+                  "  pm.expect(d.richardson).to.eql(3);",
+                  "  pm.expect(d.sessionMinutes).to.eql(30);",
+                  "  pm.expect(d._links.captcha).to.be.ok;",
+                  "  pm.expect(d._links.register).to.be.ok;",
+                  "  pm.expect(d._links.login).to.be.ok;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/?format=json"
+          }
+        },
+        {
+          "name": "02 GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('health + postgres ok', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.status).to.eql('ok');",
+                  "  pm.expect(d.postgres).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/health?format=json"
+          }
+        },
+        {
+          "name": "03 GET /captcha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.collectionVariables.set('captchaId', d.captchaId);",
+                  "pm.collectionVariables.set('captchaQuestion', d.question);",
+                  "const parts = String(d.question || '').split('+');",
+                  "pm.collectionVariables.set('captchaAnswer', String(Number(parts[0]) + Number(parts[1])));",
+                  "pm.test('captcha JSON', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.captchaId).to.be.ok;",
+                  "  pm.expect(d.question).to.match(/\\d+ \\+ \\d+/);",
+                  "  pm.expect(d.expiresInSeconds).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/captcha?format=json"
+          }
+        },
+        {
+          "name": "04 POST /register SIN captcha (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('captcha obligatorio', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(d.ok).to.eql(false);",
+                  "  pm.expect(JSON.stringify(d.errors)).to.include('captcha');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sin\",\n  \"apellidoPaterno\": \"Captcha\",\n  \"apellidoMaterno\": \"Demo\",\n  \"email\": \"sin.captcha@example.com\",\n  \"password\": \"ClaveSegura26\"\n}"
+            },
+            "url": "{{login}}/register?format=json"
+          }
+        },
+        {
+          "name": "05 POST /register CON captcha (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('registerEmail', 'postman.' + Date.now() + '@example.com');",
+                  "pm.sendRequest({",
+                  "  url: pm.collectionVariables.get('login') + '/captcha?format=json',",
+                  "  method: 'GET',",
+                  "  header: { Accept: 'application/json' }",
+                  "}, (err, res) => {",
+                  "  if (err) throw err;",
+                  "  const d = res.json();",
+                  "  const parts = String(d.question || '').split('+');",
+                  "  pm.collectionVariables.set('captchaId', d.captchaId);",
+                  "  pm.collectionVariables.set('captchaQuestion', d.question);",
+                  "  pm.collectionVariables.set('captchaAnswer', String(Number(parts[0]) + Number(parts[1])));",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.verificationToken) pm.collectionVariables.set('verificationToken', d.verificationToken);",
+                  "if (d.notification && d.notification.body && d.notification.body.verificationToken) {",
+                  "  pm.collectionVariables.set('verificationToken', d.notification.body.verificationToken);",
+                  "}",
+                  "pm.test('registro: usuario existe, notificación JSON, correo NO verificado', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.ok).to.eql(true);",
+                  "  pm.expect(d.userExists).to.eql(true);",
+                  "  pm.expect(d.user.emailVerified).to.eql(false);",
+                  "  pm.expect(d.notification.code).to.eql('EMAIL_VERIFICATION_REQUIRED');",
+                  "  pm.expect(d.notification.channel).to.eql('json');",
+                  "  pm.expect(d.notification.body.userExists).to.eql(true);",
+                  "  pm.expect(d.notification.body.verificationToken).to.be.ok;",
+                  "  pm.expect(d.notification.body.verifyUrl).to.include('format=json');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellidoPaterno\": \"Prueba\",\n  \"apellidoMaterno\": \"Json\",\n  \"email\": \"{{registerEmail}}\",\n  \"password\": \"{{registerPassword}}\",\n  \"captchaId\": \"{{captchaId}}\",\n  \"captchaAnswer\": \"{{captchaAnswer}}\"\n}"
+            },
+            "url": "{{login}}/register?format=json"
+          }
+        },
+        {
+          "name": "05b GET /account usuario existe (sin verificar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('PostgreSQL confirma que el usuario existe', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.ok).to.eql(true);",
+                  "  pm.expect(d.userExists).to.eql(true);",
+                  "  pm.expect(d.emailVerified).to.eql(false);",
+                  "  pm.expect(d.notification.code).to.eql('USER_EXISTS_UNVERIFIED');",
+                  "  pm.expect(d.user.email).to.eql(pm.collectionVariables.get('registerEmail'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/account?format=json&email={{registerEmail}}"
+          }
+        },
+        {
+          "name": "06 POST /login SIN verificar (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('login bloqueado hasta verificar correo', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(d.ok).to.eql(false);",
+                  "  pm.expect(d.userExists).to.eql(true);",
+                  "  pm.expect(d.user.emailVerified).to.eql(false);",
+                  "  pm.expect(d.notification.code).to.eql('EMAIL_NOT_VERIFIED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{registerEmail}}\",\n  \"password\": \"{{registerPassword}}\"\n}"
+            },
+            "url": "{{login}}/login?format=json"
+          }
+        },
+        {
+          "name": "07 GET /verify-email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('correo verificado y sesión abierta', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.ok).to.eql(true);",
+                  "  pm.expect(d.userExists).to.eql(true);",
+                  "  pm.expect(d.user.emailVerified).to.eql(true);",
+                  "  pm.expect(d.notification.code).to.eql('EMAIL_VERIFIED');",
+                  "  pm.expect(d.session.authenticated).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/verify-email?format=json&token={{verificationToken}}"
+          }
+        },
+        {
+          "name": "07b GET /account usuario existe (ya verificado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('PostgreSQL confirma usuario verificado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.userExists).to.eql(true);",
+                  "  pm.expect(d.emailVerified).to.eql(true);",
+                  "  pm.expect(d.notification.code).to.eql('USER_EXISTS');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/account?format=json&email={{registerEmail}}"
+          }
+        },
+        {
+          "name": "08 POST /login cuenta nueva",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({",
+                  "  url: pm.collectionVariables.get('login') + '/logout?format=json',",
+                  "  method: 'POST',",
+                  "  header: { Accept: 'application/json' }",
+                  "}, () => {});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('login JSON cuenta verificada', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.ok).to.eql(true);",
+                  "  pm.expect(d.user.emailVerified).to.eql(true);",
+                  "  pm.expect(d.session.authenticated).to.eql(true);",
+                  "  pm.expect(d.session.idleTimeoutMinutes).to.eql(30);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{registerEmail}}\",\n  \"password\": \"{{registerPassword}}\"\n}"
+            },
+            "url": "{{login}}/login?format=json"
+          }
+        },
+        {
+          "name": "09 GET /session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('sesión autenticada 30 min', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.session.authenticated).to.eql(true);",
+                  "  pm.expect(d.session.remainingSeconds).to.be.above(0);",
+                  "  pm.expect(d.session.idleTimeoutMinutes).to.eql(30);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/session?format=json"
+          }
+        },
+        {
+          "name": "10 POST /session extender",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('sesión extendida', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.ok).to.eql(true);",
+                  "  pm.expect(d.session.authenticated).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/session?format=json"
+          }
+        },
+        {
+          "name": "11 POST /logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('logout cierra sesión', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.ok).to.eql(true);",
+                  "  pm.expect(d.session.authenticated).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{login}}/logout?format=json"
+          }
+        },
+        {
+          "name": "12 POST /login admin ya verificado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('admin verificado de antemano', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.ok).to.eql(true);",
+                  "  pm.expect(d.user.email).to.eql('mariana.solis@libreriaonline.mx');",
+                  "  pm.expect(d.user.emailVerified).to.eql(true);",
+                  "  pm.expect(d.user).to.not.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": "{{login}}/login?format=json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Catálogo SOAP JSON :5001",
+      "description": "services/books. Catálogo bilingüe. JSON sólo con ?format=json.",
+      "item": [
+        {
+          "name": "01 GET / índice JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('índice SOAP JSON', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.service).to.eql('LibraryClassifier');",
+                  "  pm.expect(d.endpoints.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{soap}}/?format=json"
+          }
+        },
+        {
+          "name": "02 GET /books",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('catálogo de libros JSON', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.count).to.be.at.least(30);",
+                  "  pm.expect(d.books[0].isbn).to.be.ok;",
+                  "  pm.expect(d.books[0].title).to.be.ok;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{soap}}/books?format=json"
+          }
+        },
+        {
+          "name": "03 GET /books/9780451524935 (1984)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('libro 1984 JSON', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.book.isbn).to.eql('9780451524935');",
+                  "  pm.expect(d.book.title).to.eql('1984');",
+                  "  pm.expect(d.book.coverUrl).to.be.ok;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{soap}}/books/9780451524935?format=json"
+          }
+        },
+        {
+          "name": "04 GET /books-images",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('libros con imágenes JSON', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.count).to.be.at.least(1);",
+                  "  pm.expect(d.books[0].coverUrl || d.books[0].isbn).to.be.ok;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{soap}}/books-images?format=json"
+          }
+        },
+        {
+          "name": "05 GET /cloud-concepts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "const names = (d.models || []).map(m => m.name || m.modelo);",
+                  "pm.test('IaaS PaaS SaaS FaaS JSON', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.count).to.eql(4);",
+                  "  pm.expect(names).to.include('IaaS');",
+                  "  pm.expect(names).to.include('PaaS');",
+                  "  pm.expect(names).to.include('SaaS');",
+                  "  pm.expect(names).to.include('FaaS');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{soap}}/cloud-concepts?format=json"
+          }
+        },
+        {
+          "name": "06 GET /soap operaciones JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('operaciones SOAP en JSON', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(d.format).to.eql('json');",
+                  "  pm.expect(d.operations).to.include('ObtenerConceptosPendientes');",
+                  "  pm.expect(d.operations).to.include('RegistrarClasificacion');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{soap}}/soap?format=json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Librería Node :3000",
+      "description": "apps/web-monolito. Health es texto plano; login es HTML (no JSON).",
+      "item": [
+        {
+          "name": "01 GET /library/health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('librería Node viva', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.text()).to.eql('OK');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{library}}/health"
+          }
+        },
+        {
+          "name": "02 GET /library/login HTML",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('pantalla login HTML', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('text/html');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{library}}/login"
+          }
+        }
+      ]
+    }
+  ]
+}

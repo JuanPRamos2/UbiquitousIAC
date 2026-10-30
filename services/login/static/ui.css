@@ -1,0 +1,62 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Liberation Sans", system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 8% -10%, rgba(92, 122, 104, 0.14), transparent 42%),
+    #f3efe8;
+  color: #1f1c18;
+}
+.card {
+  width: min(880px, calc(100% - 2rem));
+  margin: 2rem auto;
+  background: #fffcf8;
+  border: 1px solid #ddd6cb;
+  border-radius: 18px;
+  padding: 1.4rem 1.5rem;
+  box-shadow: 0 18px 44px rgba(36, 51, 43, 0.08);
+}
+.eyebrow { color: #6a635a; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.75rem; }
+h1, h2 { font-family: Georgia, serif; }
+.lede { color: #6a635a; }
+label { display: block; font-weight: 700; margin: 0.4rem 0 0.25rem; }
+input, button { font: inherit; }
+input {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #ddd6cb;
+  border-radius: 10px;
+  background: #faf8f4;
+  margin-bottom: 0.5rem;
+}
+button {
+  background: #3c5344;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+button.danger { background: #8a3b32; }
+button.secondary { background: transparent; color: #24332b; border: 1px solid #ddd6cb; }
+.captcha-box {
+  background: #efe8dc;
+  border: 1px solid #ddd6cb;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin: 0.6rem 0 1rem;
+}
+.captcha-title { margin: 0; font-weight: 700; }
+#captcha-question { font-size: 1.35rem; font-family: Georgia, serif; margin: 0.35rem 0 0.6rem; }
+.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+#auth-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.notice { padding: 0.9rem 1rem; border-radius: 12px; margin: 1rem 0; background: #e4efe8; border: 1px solid #c5d9cc; }
+.notice.warn { background: #f6e6e2; border-color: #e2c2ba; color: #7a2e26; }
+.hidden { display: none !important; }
+.hint, .footer-links { color: #6a635a; text-align: center; }
+.footer-links a { color: #3c5344; font-weight: 700; }
+@media (max-width: 800px) {
+  #auth-panel { grid-template-columns: 1fr; }
+}

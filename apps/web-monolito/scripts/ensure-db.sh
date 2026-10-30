@@ -32,6 +32,7 @@ set_env DB_PASSWORD "$DEMO_PASSWORD"
 set_env SESSION_SECRET "$DEMO_SECRET"
 set_env HOST 0.0.0.0
 set_env PORT 3000
+set_env SOAP_URL "${SOAP_URL:-http://127.0.0.1:5001}"
 
 compose() {
   if docker compose version >/dev/null 2>&1; then
@@ -72,6 +73,8 @@ if [ "$has_books" != "books" ]; then
   for f in \
     "$SQL_DIR"/01_schema.sql \
     "$SQL_DIR"/02_seed_30_per_table.sql \
+    "$SQL_DIR"/08_normalize_users.sql \
+    "$SQL_DIR"/09_email_verified.sql \
     "$SQL_DIR"/04_stored_procedures.sql \
     "$SQL_DIR"/05_triggers.sql \
     "$SQL_DIR"/06_views.sql
@@ -80,7 +83,12 @@ if [ "$has_books" != "books" ]; then
     compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$f"
   done
 else
-  echo "El esquema ya está cargado."
+  echo "El esquema ya está cargado. Aplicando normalización de usuarios si hace falta..."
+  compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$SQL_DIR"/08_normalize_users.sql
+  compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$SQL_DIR"/09_email_verified.sql
+  compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$SQL_DIR"/04_stored_procedures.sql
+  compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$SQL_DIR"/05_triggers.sql
+  compose exec -T postgres psql -U library_user -d library_db -v ON_ERROR_STOP=1 < "$SQL_DIR"/06_views.sql
 fi
 
 echo "Otorgando permisos a library_user..."

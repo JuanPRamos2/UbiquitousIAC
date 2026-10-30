@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Librería · JWT, Redis y microservicios</title>
+  <style>
+    :root {
+      --bg: #10141c;
+      --card: #1b2330;
+      --ink: #f4f7fb;
+      --muted: #b7c3d4;
+      --line: #314056;
+      --jwt: #7bdff2;
+      --redis: #ff6b6b;
+      --pg: #8fd18a;
+      --client: #f6c453;
+      --bad: #ff8b7b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    header, main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 28px 0 8px; }
+    h1 { font-size: 1.7rem; margin: 0 0 8px; }
+    p { color: var(--muted); line-height: 1.5; }
+    .stage {
+      display: grid;
+      grid-template-columns: 180px 1fr 180px;
+      gap: 16px;
+      align-items: center;
+      margin: 18px 0;
+    }
+    .node, .redis, .pg {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 72px;
+    }
+    .node strong, .redis strong, .pg strong { display: block; margin-bottom: 4px; }
+    .client { border-color: var(--client); }
+    .svc { font-size: 0.92rem; }
+    .redis { border-color: var(--redis); text-align: center; }
+    .pg { border-color: var(--pg); text-align: center; }
+    .flow {
+      position: relative;
+      height: 280px;
+    }
+    .packet {
+      position: absolute;
+      left: 8px;
+      top: 24px;
+      background: var(--jwt);
+      color: #082028;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      opacity: 0;
+    }
+    .packet.bad { background: var(--bad); color: #2a0906; }
+    .packet.show { animation: travel 2.4s ease forwards; }
+    @keyframes travel {
+      0% { opacity: 0; transform: translateX(0); }
+      12% { opacity: 1; }
+      100% { opacity: 1; transform: translateX(240px); }
+    }
+    .steps { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 18px; }
+    button {
+      background: #243044;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    button.active { background: var(--jwt); color: #082028; border-color: transparent; }
+    ol { padding-left: 18px; }
+    li { margin: 8px 0; }
+    code { color: var(--jwt); }
+    .caption {
+      background: #172033;
+      border-radius: 12px;
+      padding: 14px 16px;
+      min-height: 92px;
+    }
+    @media (max-width: 800px) {
+      .stage { grid-template-columns: 1fr; }
+      .flow { height: 90px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cómo circulan JWT y Redis en la librería</h1>
+    <p>
+      Seis microservicios independientes comparten la misma URL de Redis y la misma clave HMAC.
+      PostgreSQL guarda los datos. Redis guarda lo que caduca: sesión, refresh, revocación y caché del catálogo.
+      El monolito Node no pasa por Redis.
+    </p>
+  </header>
+  <main>
+    <div class="stage">
+      <div class="node client">
+        <strong>Cliente Tk</strong>
+        <span id="client-note">HTTP por defecto</span>
+      </div>
+      <div class="flow">
+        <div class="node svc" style="margin-bottom:8px">Login :5000 · Books :5001 · Users :5002</div>
+        <div class="node svc">Autores :5003 · Pedidos :5004 · Pagos :5005</div>
+        <div class="packet" id="packet">JWT</div>
+      </div>
+      <div>
+        <div class="redis"><strong>Redis :6379</strong><div id="redis-note">session · refresh · revoked · books</div></div>
+        <div class="pg" style="margin-top:12px"><strong>PostgreSQL</strong><div>fuente de verdad</div></div>
+      </div>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="caption" id="caption"></div>
+    <ol>
+      <li>El radio de Tk elige HTTP o HTTPS y lo guarda. El valor inicial es HTTP.</li>
+      <li><code>POST /login</code> compara la contraseña con el hash bcrypt en PostgreSQL. No firma con esa contraseña.</li>
+      <li>Login emite un JWT HS256 de 20 minutos con <code>user_id</code>, <code>role_id</code> y <code>jti</code>, usando <code>JWT_SECRET_KEY</code>.</li>
+      <li>Guarda <code>session:&lt;jti&gt;</code> con el TTL del access token y <code>refresh:&lt;hash&gt;</code> con un TTL mayor. El refresh en claro se queda en el cliente.</li>
+      <li>Cada escritura manda <code>Authorization: Bearer</code>. El servicio verifica firma, algoritmo, emisor, audiencia, expiración y claims.</li>
+      <li>Después lee <code>jwt:revoked:&lt;jti&gt;</code>. Si la clave existe, responde 401. Si Redis no contesta, responde 503 y no modifica datos.</li>
+      <li>Un administrador (<code>role_id</code> 1) puede dar de alta, cambiar y borrar. Un cliente solo ve sus pedidos y sus pagos, y solo cambia su propia contraseña con tres valores.</li>
+      <li><code>GET /books</code> y <code>GET /books/{isbn}</code> miran primero <code>books:list:&lt;filtros&gt;</code> o <code>books:&lt;isbn&gt;</code>. Si no está, leen PostgreSQL o el catálogo del proceso y guardan el resultado unos segundos.</li>
+      <li>Un alta o un cambio de libro borra <code>books:*</code>. Lo mismo pasa con <code>authors:*</code>.</li>
+      <li>Pedidos descuenta stock en la misma transacción. Pagos, en su propio proceso, marca el pedido como pagado. No se llaman por HTTP.</li>
+      <li><code>POST /logout</code> borra sesión y refresh, y escribe la revocación. El access token deja de servir aunque todavía no haya caducado.</li>
+      <li>Si Redis cae, el catálogo público se sigue leyendo. Login, logout, refresh y cualquier operación que dependa de la revocación se detienen.</li>
+    </ol>
+  </main>
+  <script>
+    const scenes = [
+      ["Cliente", "La app Tk arranca en HTTP. El radio queda guardado en el equipo.", "HTTP", "sin claves todavía"],
+      ["Login", "PostgreSQL valida el hash. Redis todavía no tiene sesión.", "credenciales", "vacío"],
+      ["JWT", "Login firma 20 minutos, HS256, user_id, role_id y jti.", "JWT 20 min", "a punto de guardar"],
+      ["Sesión", "Redis recibe session:<jti> y refresh:<hash>, cada uno con su TTL.", "refresh", "session + refresh"],
+      ["Books GET", "La lectura pública busca books:list o books:isbn. Si falta, consulta el catálogo y cachea.", "GET público", "MISS y luego la clave"],
+      ["Escritura", "Users, autores, pedidos o pagos exigen Bearer y revisan jwt:revoked:<jti>.", "Bearer", "¿revocado?"],
+      ["Revocado", "Logout borra sesión y refresh, y deja jwt:revoked:<jti> hasta que el token iba a morir.", "logout", "revocado"],
+      ["Redis caído", "El GET del catálogo sigue. La autorización no: responde 503.", "GET sigue", "sin respuesta"],
+      ["Monolito", "La app Node no usa esta capa. Sigue yendo directo a PostgreSQL.", "Node", "no participa"]
+    ];
+    const steps = document.getElementById("steps");
+    const caption = document.getElementById("caption");
+    const packet = document.getElementById("packet");
+    const client = document.getElementById("client-note");
+    const redis = document.getElementById("redis-note");
+    scenes.forEach((scene, index) => {
+      const button = document.createElement("button");
+      button.textContent = (index + 1) + ". " + scene[0];
+      button.addEventListener("click", () => show(index));
+      steps.appendChild(button);
+    });
+    function show(index) {
+      const scene = scenes[index];
+      [...steps.children].forEach((button, buttonIndex) => {
+        button.classList.toggle("active", buttonIndex === index);
+      });
+      caption.textContent = scene[1];
+      client.textContent = scene[2];
+      redis.textContent = scene[3];
+      packet.textContent = scene[0];
+      packet.classList.toggle("bad", index === 6 || index === 7);
+      packet.classList.remove("show");
+      void packet.offsetWidth;
+      packet.classList.add("show");
+    }
+    show(0);
+  </script>
+</body>
+</html>

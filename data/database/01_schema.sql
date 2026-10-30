@@ -84,19 +84,37 @@ CREATE TABLE book_concepts (
     PRIMARY KEY (book_id, concept_id)
 );
 
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(20) NOT NULL UNIQUE CHECK (name IN ('admin', 'client')),
+    description TEXT
+);
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    full_name VARCHAR(150) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    first_name VARCHAR(80) NOT NULL,
+    paternal_surname VARCHAR(80) NOT NULL,
+    maternal_surname VARCHAR(80) NOT NULL DEFAULT '',
+    email VARCHAR(255) NOT NULL UNIQUE
+        CHECK (email ~* '^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$'),
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'client' CHECK (role IN ('admin', 'client')),
+    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_token_hash VARCHAR(64),
+    verification_expires_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    full_name VARCHAR(240) GENERATED ALWAYS AS (
+        btrim(
+            first_name || ' ' || paternal_surname ||
+            CASE WHEN btrim(maternal_surname) = '' THEN '' ELSE ' ' || maternal_surname END
+        )
+    ) STORED
 );
 
 CREATE UNIQUE INDEX ux_users_single_admin
-    ON users (role)
-    WHERE role = 'admin';
+    ON users (role_id)
+    WHERE role_id = 1;
 
 CREATE UNIQUE INDEX ux_book_images_one_cover
     ON book_images (book_id)
@@ -110,6 +128,6 @@ CREATE INDEX idx_book_authors_author_id ON book_authors (author_id);
 CREATE INDEX idx_book_genres_genre_id ON book_genres (genre_id);
 CREATE INDEX idx_book_concepts_concept_id ON book_concepts (concept_id);
 CREATE INDEX idx_users_email ON users (email);
-CREATE INDEX idx_users_role ON users (role);
+CREATE INDEX idx_users_role_id ON users (role_id);
 
 COMMIT;

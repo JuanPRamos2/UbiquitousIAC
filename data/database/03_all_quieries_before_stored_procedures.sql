@@ -10,6 +10,7 @@ UNION ALL SELECT 'genres', COUNT(*) FROM genres
 UNION ALL SELECT 'concepts', COUNT(*) FROM concepts
 UNION ALL SELECT 'books', COUNT(*) FROM books
 UNION ALL SELECT 'images', COUNT(*) FROM images
+UNION ALL SELECT 'roles', COUNT(*) FROM roles
 UNION ALL SELECT 'users', COUNT(*) FROM users
 UNION ALL SELECT 'book_authors', COUNT(*) FROM book_authors
 UNION ALL SELECT 'book_genres', COUNT(*) FROM book_genres
@@ -42,7 +43,10 @@ SELECT isbn, title FROM books WHERE isbn = '9780134444245';
 SELECT isbn, title FROM books WHERE title ILIKE '%cloud%';
 
 -- Administrador único
-SELECT id, email, role FROM users WHERE role = 'admin';
+SELECT u.id, u.email, r.name AS role
+FROM users u
+JOIN roles r ON r.id = u.role_id
+WHERE r.name = 'admin';
 
 -- ============================================================
 -- Pruebas negativas de integridad (se espera ERROR de PostgreSQL)
@@ -71,5 +75,5 @@ SELECT id, email, role FROM users WHERE role = 'admin';
 -- DELETE FROM formats WHERE id IN (SELECT format_id FROM books LIMIT 1);
 
 -- Segundo administrador. Esperado: unique index ux_users_single_admin o trigger
--- INSERT INTO users (full_name, email, password_hash, role)
--- VALUES ('Otro admin', 'otro-admin@library.local', 'hash', 'admin');
+-- INSERT INTO users (first_name, paternal_surname, maternal_surname, email, password_hash, role_id)
+-- VALUES ('Otro', 'Admin', '', 'otro-admin@library.local', 'hash', 1);

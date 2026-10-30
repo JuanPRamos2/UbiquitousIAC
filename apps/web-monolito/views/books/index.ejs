@@ -25,12 +25,13 @@
       <p>No hay libros que coincidan con la búsqueda.</p>
     <% } %>
     <% books.forEach((book) => { %>
-      <% const cover = (book.images || []).find((img) => img.is_cover) || (book.images || [])[0]; %>
       <article class="book-item">
         <img
-          src="<%= cover ? u('/uploads/' + cover.stored_name) : u('/placeholder-book.svg') %>"
-          alt="<%= (cover && cover.alt_text) || book.title %>"
-          onerror="this.onerror=null;this.src='<%= u('/placeholder-book.svg') %>';"
+          src="<%= book.cover_url || u('/placeholder-book.svg') %>"
+          alt="Portada de <%= book.title %>"
+          data-fallback="<%= book.cover_fallback_url || '' %>"
+          data-placeholder="<%= u('/placeholder-book.svg') %>"
+          onerror="window.libraryCoverFallback && window.libraryCoverFallback(this)"
         />
         <h3><%= book.title %></h3>
         <p><strong>ISBN:</strong> <%= book.isbn %></p>

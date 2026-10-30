@@ -4,5 +4,18 @@
         <p>Librería Online</p>
       </div>
     </footer>
+    <script>
+      window.libraryCoverFallback = function (img) {
+        if (!img || img.dataset.coverFailed === 'placeholder') return;
+        if (img.dataset.fallback && img.src !== img.dataset.fallback && img.dataset.coverFailed !== 'fallback') {
+          img.dataset.coverFailed = 'fallback';
+          img.src = img.dataset.fallback;
+          return;
+        }
+        img.dataset.coverFailed = 'placeholder';
+        img.onerror = null;
+        img.src = img.dataset.placeholder || '';
+      };
+    </script>
   </body>
 </html>

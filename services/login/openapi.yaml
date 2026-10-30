@@ -1,0 +1,250 @@
+openapi: 3.0.3
+info:
+  title: Login · Librería
+  version: "1.0.0"
+  description: |
+    Microservicio independiente de autenticación (puerto 5000).
+
+    **Formato:** sin `format` o `?format=xml` → XML.
+    `?format=json` → JSON. La interfaz de login usa JSON; el contrato por defecto es XML.
+
+    Las respuestas incluyen hipermedia (HATEOAS, nivel 3 de Richardson).
+    La sesión dura 30 minutos. `GET /session` avisa si está por expirar;
+    `POST /session` la extiende. Si no hay respuesta, la sesión se cierra.
+
+    `POST /login` emite un JWT (PyJWT, HS256). `PATCH /profile` exige
+    `Authorization: Bearer <token>`. La contraseña del usuario se guarda como hash bcrypt.
+servers:
+  - url: http://127.0.0.1:5000
+tags:
+  - name: autenticacion
+  - name: sesion
+  - name: sistema
+paths:
+  /account:
+    get:
+      tags: [autenticacion]
+      summary: Comprobar en JSON si el usuario existe en PostgreSQL
+      parameters:
+        - $ref: "#/components/parameters/Format"
+        - name: email
+          in: query
+          required: true
+          schema: { type: string, format: email }
+      responses:
+        "200":
+          description: El usuario existe. notification.userExists=true y emailVerified true/false
+        "404":
+          description: Ese correo no está en la base
+  /register:
+    post:
+      tags: [autenticacion]
+      summary: Registrar un nuevo usuario
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            example:
+              nombre: Ana
+              apellidoPaterno: Ruiz
+              apellidoMaterno: García
+              email: ana.nueva@example.com
+              password: ClaveSegura26
+              captchaId: token
+              captchaAnswer: "7"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Usuario creado. notification JSON con token para verificar el correo
+        "400":
+          description: Validación fallida o captcha incorrecto
+        "409":
+          description: Correo duplicado (userExists true)
+  /login:
+    post:
+      tags: [autenticacion]
+      summary: Autenticar e iniciar sesión
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              email: mariana.solis@libreriaonline.mx
+              password: LibreriaAdmin26
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Sesión iniciada. Incluye token JWT (Bearer) emitido por este servicio
+        "401":
+          description: Credenciales incorrectas
+        "403":
+          description: Correo aún no verificado
+  /logout:
+    post:
+      tags: [autenticacion]
+      summary: Cerrar la sesión
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: Sesión cerrada
+  /session:
+    get:
+      tags: [sesion]
+      summary: Consultar si existe una sesión autenticada
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: Estado de la sesión, restante y notificación HATEOAS
+    post:
+      tags: [sesion]
+      summary: Extender la sesión 30 minutos
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: Sesión renovada
+        "401":
+          description: No hay sesión para extender
+  /captcha:
+    get:
+      tags: [autenticacion]
+      summary: Captcha obligatorio para registrar un correo real
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: Pregunta aritmética de un solo uso
+  /verify-email:
+    get:
+      tags: [autenticacion]
+      summary: Verificar el correo con el token enviado
+      parameters:
+        - $ref: "#/components/parameters/Format"
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Correo verificado; emailVerified pasa a true
+        "400":
+          description: Token inválido o expirado
+    post:
+      tags: [autenticacion]
+      summary: Verificar el correo (token en el cuerpo)
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+      responses:
+        "200":
+          description: Correo verificado
+        "400":
+          description: Token inválido
+  /health:
+    get:
+      tags: [sistema]
+      summary: Estado del microservicio y PostgreSQL
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: Servicio y base de datos disponibles
+        "503":
+          description: PostgreSQL no responde
+components:
+  parameters:
+    Format:
+      name: format
+      in: query
+      required: false
+      description: xml por defecto. json sólo si se envía format=json.
+      schema:
+        type: string
+        enum: [xml, json]
+        default: xml
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [nombre, apellidoPaterno, apellidoMaterno, email, password, captchaId, captchaAnswer]
+      properties:
+        nombre: { type: string }
+        apellidoPaterno: { type: string }
+        apellidoMaterno: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+        captchaId: { type: string }
+        captchaAnswer: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    AuthResponse:
+      type: object
+      properties:
+        format: { type: string }
+        ok: { type: boolean }
+        message: { type: string }
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            first_name: { type: string }
+            paternal_surname: { type: string }
+            maternal_surname: { type: string }
+            full_name: { type: string }
+            email: { type: string }
+            role: { type: string }
+            emailVerified: { type: boolean }
+        notification:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            channel: { type: string }
+            userExists: { type: boolean }
+            emailVerified: { type: boolean }
+            body:
+              type: object
+              properties:
+                verificationToken: { type: string }
+                verifyUrl: { type: string }
+                userExists: { type: boolean }
+        session:
+          type: object
+          properties:
+            authenticated: { type: boolean }
+            remainingSeconds: { type: integer }
+            expiresAt: { type: string }
+            notification: { type: object, nullable: true }
+        token: { type: string, description: JWT firmado por el login }
+        tokenType: { type: string, example: Bearer }
+        tokenExpiresAt: { type: string }
+        _links:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              href: { type: string }
+              method: { type: string }

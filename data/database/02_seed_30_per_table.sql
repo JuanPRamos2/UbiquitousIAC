@@ -341,40 +341,49 @@ FROM books b
 JOIN images i ON i.stored_name = 'cover-' || b.isbn || '.png'
 ON CONFLICT DO NOTHING;
 
-INSERT INTO users (full_name, email, password_hash, role) VALUES
-    ('Mariana Solís', 'mariana.solis@libreriaonline.mx', '$2a$10$5mS9u0K1CdpizxQthvyF7O/MmY83UeO56dlwyAjaGPswKed5q309a', 'admin')
+INSERT INTO roles (id, name, description) VALUES
+    (1, 'admin', 'Administrador único de la librería'),
+    (2, 'client', 'Usuario registrado')
+ON CONFLICT (name) DO NOTHING;
+SELECT setval('roles_id_seq', (SELECT MAX(id) FROM roles));
+
+INSERT INTO users (first_name, paternal_surname, maternal_surname, email, password_hash, role_id)
+SELECT v.first_name, v.paternal_surname, v.maternal_surname, v.email, v.password_hash, r.id
+FROM (VALUES
+    ('Mariana', 'Solís', '', 'mariana.solis@libreriaonline.mx', '$2a$10$5mS9u0K1CdpizxQthvyF7O/MmY83UeO56dlwyAjaGPswKed5q309a', 'admin'),
+    ('Carlos', 'Hernández', '', 'carlos.hernandez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Ana', 'Patricia', 'Ruiz', 'ana.ruiz@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Luis', 'Miguel', 'Torres', 'luis.torres@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Sofía', 'Navarro', '', 'sofia.navarro@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Diego', 'Ramírez', '', 'diego.ramirez@yahoo.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Valeria', 'Castro', '', 'valeria.castro@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Jorge', 'Mendoza', '', 'jorge.mendoza@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Fernanda', 'López', '', 'fernanda.lopez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Ricardo', 'Peña', '', 'ricardo.pena@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Camila', 'Ortega', '', 'camila.ortega@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Andrés', 'Ibarra', '', 'andres.ibarra@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Paola', 'Jiménez', '', 'paola.jimenez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Héctor', 'Salazar', '', 'hector.salazar@yahoo.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Daniela', 'Vega', '', 'daniela.vega@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Emilio', 'Ríos', '', 'emilio.rios@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Regina', 'Flores', '', 'regina.flores@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Santiago', 'Morales', '', 'santiago.morales@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Renata', 'Aguilar', '', 'renata.aguilar@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Iván', 'Delgado', '', 'ivan.delgado@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Montserrat', 'Reyes', '', 'montserrat.reyes@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Pablo', 'Estrada', '', 'pablo.estrada@yahoo.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Alejandra', 'Soto', '', 'alejandra.soto@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Mauricio', 'Campos', '', 'mauricio.campos@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Ximena', 'Barrera', '', 'ximena.barrera@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Óscar', 'Núñez', '', 'oscar.nunez@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Isabela', 'Paredes', '', 'isabela.paredes@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Rodrigo', 'Fuentes', '', 'rodrigo.fuentes@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Lucía', 'Méndez', '', 'lucia.mendez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
+    ('Gabriel', 'Ortiz', '', 'gabriel.ortiz@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client')
+) AS v(first_name, paternal_surname, maternal_surname, email, password_hash, role_name)
+JOIN roles r ON r.name = v.role_name
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO users (full_name, email, password_hash, role) VALUES
-    ('Carlos Hernández', 'carlos.hernandez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Ana Patricia Ruiz', 'ana.ruiz@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Luis Miguel Torres', 'luis.torres@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Sofía Navarro', 'sofia.navarro@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Diego Ramírez', 'diego.ramirez@yahoo.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Valeria Castro', 'valeria.castro@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Jorge Mendoza', 'jorge.mendoza@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Fernanda López', 'fernanda.lopez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Ricardo Peña', 'ricardo.pena@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Camila Ortega', 'camila.ortega@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Andrés Ibarra', 'andres.ibarra@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Paola Jiménez', 'paola.jimenez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Héctor Salazar', 'hector.salazar@yahoo.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Daniela Vega', 'daniela.vega@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Emilio Ríos', 'emilio.rios@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Regina Flores', 'regina.flores@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Santiago Morales', 'santiago.morales@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Renata Aguilar', 'renata.aguilar@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Iván Delgado', 'ivan.delgado@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Montserrat Reyes', 'montserrat.reyes@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Pablo Estrada', 'pablo.estrada@yahoo.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Alejandra Soto', 'alejandra.soto@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Mauricio Campos', 'mauricio.campos@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Ximena Barrera', 'ximena.barrera@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Óscar Núñez', 'oscar.nunez@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Isabela Paredes', 'isabela.paredes@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Rodrigo Fuentes', 'rodrigo.fuentes@outlook.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Lucía Méndez', 'lucia.mendez@gmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client'),
-    ('Gabriel Ortiz', 'gabriel.ortiz@hotmail.com', '$2a$10$IaEvY3zUQtRh02xFX0q6t.EZ1hCLXhB/XjflX.s3tnprHKZyo9CRq', 'client')
-ON CONFLICT (email) DO NOTHING;
+UPDATE users SET email_verified = TRUE;
 
 COMMIT;

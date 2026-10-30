@@ -63,9 +63,27 @@ FROM books
 WHERE stock <= 3
 ORDER BY stock ASC, title;
 
+DROP VIEW IF EXISTS v_users;
+CREATE VIEW v_users AS
+SELECT u.id,
+       u.first_name,
+       u.paternal_surname,
+       u.maternal_surname,
+       u.full_name,
+       u.email,
+       u.password_hash,
+       u.email_verified,
+       r.id AS role_id,
+       r.name AS role,
+       u.created_at,
+       u.updated_at
+FROM users u
+JOIN roles r ON r.id = u.role_id;
+
 CREATE OR REPLACE VIEW v_admin_unique AS
 SELECT COUNT(*)::int AS admin_count
-FROM users
-WHERE role = 'admin';
+FROM users u
+JOIN roles r ON r.id = u.role_id
+WHERE r.name = 'admin';
 
 COMMIT;

@@ -56,6 +56,6 @@ electron .
 | `GET {endpoint}/books-images` | Datos mínimos + portadas (`coverUrl` e `images[]`) |
 | `GET {endpoint}/covers/{isbn}.svg` | Imagen de cada libro |
 
-El microservicio canónico está en `services/soap/app.py`. La práctica pide también `app/services/soap/app.py`; ese archivo carga el mismo Flask.
+El microservicio de libros está en `services/books/app.py`. La práctica pide también `app/services/soap/app.py`; ese archivo carga el mismo Flask.
 
 Tus capturas: `apps/Electron_app/screenshots/`. Tu reflexión: `apps/Electron_app/REFLEXION.md`.

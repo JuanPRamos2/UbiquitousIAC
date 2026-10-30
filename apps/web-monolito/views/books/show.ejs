@@ -1,13 +1,14 @@
 <%- include('../partials/header') %>
 <section class="card">
-  <% const cover = (book.images || []).find((img) => img.is_cover) || (book.images || [])[0]; %>
   <div class="form-row">
     <div>
       <img
-        src="<%= cover ? u('/uploads/' + cover.stored_name) : u('/placeholder-book.svg') %>"
-        alt="<%= (cover && cover.alt_text) || book.title %>"
+        src="<%= book.cover_url || u('/placeholder-book.svg') %>"
+        alt="Portada de <%= book.title %>"
         style="max-width: 240px; max-height: 320px; object-fit: cover;"
-        onerror="this.onerror=null;this.src='<%= u('/placeholder-book.svg') %>';"
+        data-fallback="<%= book.cover_fallback_url || '' %>"
+        data-placeholder="<%= u('/placeholder-book.svg') %>"
+        onerror="window.libraryCoverFallback && window.libraryCoverFallback(this)"
       />
     </div>
     <div>
@@ -56,7 +57,13 @@
     <% if (book.images && book.images.length) { %>
       <% book.images.forEach((image) => { %>
         <div class="book-item">
-          <img src="<%= u('/uploads/' + image.stored_name) %>" alt="<%= image.alt_text || book.title %>" onerror="this.onerror=null;this.src='<%= u('/placeholder-book.svg') %>';" />
+          <img
+            src="<%= image.url || book.cover_url || u('/placeholder-book.svg') %>"
+            alt="<%= image.alt_text || book.title %>"
+            data-fallback="<%= book.cover_fallback_url || '' %>"
+            data-placeholder="<%= u('/placeholder-book.svg') %>"
+            onerror="window.libraryCoverFallback && window.libraryCoverFallback(this)"
+          />
           <p><%= image.is_cover ? 'Portada' : 'Imagen adicional' %></p>
           <p class="hint"><%= image.alt_text || 'Sin texto alternativo' %></p>
           <% if (currentUser.role === 'admin') { %>

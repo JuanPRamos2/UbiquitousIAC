@@ -23,9 +23,14 @@ EXECUTE FUNCTION fn_touch_updated_at();
 CREATE OR REPLACE FUNCTION fn_prevent_second_admin()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.role = 'admin' AND EXISTS (
-        SELECT 1 FROM users WHERE role = 'admin' AND id IS DISTINCT FROM NEW.id
-    ) THEN
+    IF EXISTS (SELECT 1 FROM roles WHERE id = NEW.role_id AND name = 'admin')
+       AND EXISTS (
+            SELECT 1
+            FROM users u
+            JOIN roles r ON r.id = u.role_id
+            WHERE r.name = 'admin' AND u.id IS DISTINCT FROM NEW.id
+       )
+    THEN
         RAISE EXCEPTION 'Solo se permite un usuario con rol Administrador'
             USING ERRCODE = 'P0001';
     END IF;
@@ -35,7 +40,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_users_single_admin ON users;
 CREATE TRIGGER trg_users_single_admin
-BEFORE INSERT OR UPDATE OF role ON users
+BEFORE INSERT OR UPDATE OF role_id ON users
 FOR EACH ROW
 EXECUTE FUNCTION fn_prevent_second_admin();
 

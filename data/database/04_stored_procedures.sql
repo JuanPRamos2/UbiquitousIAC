@@ -205,29 +205,125 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION IF EXISTS sp_register_user(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS sp_create_user(TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS sp_update_user_role(INTEGER, TEXT);
+
+CREATE OR REPLACE FUNCTION sp_register_user(
+    p_first_name TEXT,
+    p_paternal_surname TEXT,
+    p_maternal_surname TEXT,
+    p_email TEXT,
+    p_password_hash TEXT,
+    p_role TEXT DEFAULT 'client'
+) RETURNS TABLE (
+    id INTEGER,
+    first_name VARCHAR,
+    paternal_surname VARCHAR,
+    maternal_surname VARCHAR,
+    full_name VARCHAR,
+    email VARCHAR,
+    role VARCHAR,
+    role_id INTEGER,
+    email_verified BOOLEAN,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) AS $$
+DECLARE
+    v_role_id INTEGER;
+    v_id INTEGER;
+BEGIN
+    SELECT r.id INTO v_role_id FROM roles r WHERE r.name = COALESCE(NULLIF(btrim(p_role), ''), 'client');
+    IF v_role_id IS NULL THEN
+        RAISE EXCEPTION 'Rol no permitido'
+            USING ERRCODE = 'P0001';
+    END IF;
+
+    INSERT INTO users (first_name, paternal_surname, maternal_surname, email, password_hash, role_id, email_verified)
+    VALUES (
+        btrim(p_first_name),
+        btrim(p_paternal_surname),
+        COALESCE(btrim(p_maternal_surname), ''),
+        lower(btrim(p_email)),
+        p_password_hash,
+        v_role_id,
+        FALSE
+    )
+    RETURNING users.id INTO v_id;
+
+    RETURN QUERY
+    SELECT u.id, u.first_name, u.paternal_surname, u.maternal_surname, u.full_name,
+           u.email, r.name, u.role_id, u.email_verified, u.created_at, u.updated_at
+    FROM users u
+    JOIN roles r ON r.id = u.role_id
+    WHERE u.id = v_id;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION sp_create_user(
     p_full_name TEXT,
     p_email TEXT,
     p_password_hash TEXT,
     p_role TEXT
-) RETURNS users AS $$
+) RETURNS TABLE (
+    id INTEGER,
+    first_name VARCHAR,
+    paternal_surname VARCHAR,
+    maternal_surname VARCHAR,
+    full_name VARCHAR,
+    email VARCHAR,
+    role VARCHAR,
+    role_id INTEGER,
+    email_verified BOOLEAN,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) AS $$
 DECLARE
-    rec users;
+    parts TEXT[];
+    v_first TEXT;
+    v_paternal TEXT;
+    v_maternal TEXT;
 BEGIN
-    INSERT INTO users (full_name, email, password_hash, role)
-    VALUES (btrim(p_full_name), lower(btrim(p_email)), p_password_hash, COALESCE(p_role, 'client'))
-    RETURNING * INTO rec;
-    RETURN rec;
+    parts := regexp_split_to_array(btrim(COALESCE(p_full_name, '')), '\s+');
+    v_first := COALESCE(parts[1], '');
+    v_paternal := COALESCE(parts[2], v_first);
+    v_maternal := CASE WHEN array_length(parts, 1) >= 3
+        THEN array_to_string(parts[3:array_length(parts, 1)], ' ')
+        ELSE '' END;
+    RETURN QUERY
+    SELECT * FROM sp_register_user(v_first, v_paternal, v_maternal, p_email, p_password_hash, p_role);
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION sp_update_user_role(p_id INTEGER, p_role TEXT)
-RETURNS users AS $$
+RETURNS TABLE (
+    id INTEGER,
+    first_name VARCHAR,
+    paternal_surname VARCHAR,
+    maternal_surname VARCHAR,
+    full_name VARCHAR,
+    email VARCHAR,
+    role VARCHAR,
+    role_id INTEGER,
+    email_verified BOOLEAN,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) AS $$
 DECLARE
-    rec users;
+    v_role_id INTEGER;
 BEGIN
-    UPDATE users SET role = p_role WHERE id = p_id RETURNING * INTO rec;
-    RETURN rec;
+    SELECT r.id INTO v_role_id FROM roles r WHERE r.name = btrim(p_role);
+    IF v_role_id IS NULL THEN
+        RAISE EXCEPTION 'Rol no permitido'
+            USING ERRCODE = 'P0001';
+    END IF;
+    UPDATE users SET role_id = v_role_id WHERE users.id = p_id;
+    RETURN QUERY
+    SELECT u.id, u.first_name, u.paternal_surname, u.maternal_surname, u.full_name,
+           u.email, r.name, u.role_id, u.email_verified, u.created_at, u.updated_at
+    FROM users u
+    JOIN roles r ON r.id = u.role_id
+    WHERE u.id = p_id;
 END;
 $$ LANGUAGE plpgsql;
 

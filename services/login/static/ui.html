@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login · Librería</title>
+    <link rel="stylesheet" href="/ui/ui.css" />
+  </head>
+  <body>
+    <main class="card">
+      <p class="eyebrow">Microservicio · puerto 5000 · JSON de aplicación / XML por contrato</p>
+      <h1>Acceso a la librería</h1>
+      <p class="lede">
+        Esta pantalla usa <code>?format=json</code>. Sin ese parámetro, los mismos
+        endpoints responden XML.
+      </p>
+      <div id="notice" class="notice hidden"></div>
+
+      <section id="auth-panel">
+        <form id="login-form">
+          <h2>Iniciar sesión</h2>
+          <label for="login-email">Correo</label>
+          <input id="login-email" name="email" type="email" required />
+          <label for="login-password">Contraseña</label>
+          <input id="login-password" name="password" type="password" required />
+          <button type="submit">Entrar</button>
+        </form>
+
+        <form id="register-form">
+          <h2>Registro</h2>
+          <label for="nombre">Nombre</label>
+          <input id="nombre" required />
+          <label for="paterno">Apellido paterno</label>
+          <input id="paterno" required />
+          <label for="materno">Apellido materno</label>
+          <input id="materno" required />
+          <label for="reg-email">Correo verdadero</label>
+          <input id="reg-email" type="email" required placeholder="tucorreo@dominio.com" />
+          <label for="reg-password">Contraseña</label>
+          <input id="reg-password" type="password" minlength="8" required />
+          <div class="captcha-box">
+            <p class="captcha-title">Captcha</p>
+            <p id="captcha-question">Cargando reto…</p>
+            <label for="captcha-answer">Resultado</label>
+            <input id="captcha-answer" required inputmode="numeric" />
+            <input type="hidden" id="captcha-id" />
+            <button id="reload-captcha" type="button" class="secondary">Otro captcha</button>
+          </div>
+          <button type="submit">Crear cuenta y verificar correo</button>
+        </form>
+      </section>
+
+      <section id="session-panel" class="hidden">
+        <h2>Sesión activa</h2>
+        <p id="session-user"></p>
+        <p id="session-timer"></p>
+        <div class="actions">
+          <button id="extend-btn" type="button">Extender 30 minutos</button>
+          <button id="logout-btn" type="button" class="danger">Cerrar sesión</button>
+        </div>
+        <p class="hint">Si no responde al aviso de expiración, la sesión se cierra sola.</p>
+      </section>
+    </main>
+    <p class="footer-links">
+      <a href="/docs">Swagger</a>
+      ·
+      <a href="/health">/health XML</a>
+      ·
+      <a href="/health?format=json">/health JSON</a>
+    </p>
+    <script src="/ui/ui.js"></script>
+  </body>
+</html>

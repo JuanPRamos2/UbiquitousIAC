@@ -1,8 +1,6 @@
-"""Microservicio Flask pedido por la práctica: app/services/soap/app.py
+"""Ruta de la práctica: app/services/soap/app.py
 
-Carga el mismo código canónico de services/soap/app.py (SOAP + XML/JSON).
-
-    SOAP_DEMO=1 PYTHONPATH=services/soap python3 app/services/soap/app.py
+El microservicio de libros vive en services/books. Este archivo carga ese mismo Flask.
 """
 from __future__ import annotations
 
@@ -11,7 +9,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SOAP_DIR = ROOT / "services" / "soap"
+SOAP_DIR = ROOT / "services" / "books"
 sys.path.insert(0, str(SOAP_DIR))
 
 spec = importlib.util.spec_from_file_location("library_soap_app", SOAP_DIR / "app.py")
