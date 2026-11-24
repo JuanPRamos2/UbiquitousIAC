@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titulo %}Transparencia{% endblock %}
+{% block contenido %}
+<h1>Transparencia</h1>
+<p class="subtitulo">Qué hace el sistema con la información, en lenguaje llano.</p>
+
+{% for s in secciones %}
+  <div class="tarjeta">
+    <h3>{{ s.titulo }}</h3>
+    <p>{{ s.contenido }}</p>
+  </div>
+{% else %}
+  <div class="aviso aviso-info">Aún no hay secciones publicadas.</div>
+{% endfor %}
+{% endblock %}

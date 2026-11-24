@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titulo %}Bienestar Nexum — Inicio{% endblock %}
+{% block contenido %}
+
+<section class="portada">
+  <h1>Medir el bienestar del equipo sin vigilar a las personas</h1>
+  <p>Plataforma de prevención de burnout para Nexum Servicios Corporativos.
+     Los resultados se publican por unidad organizacional, nunca por persona,
+     y el sistema está construido para que eso no dependa de una promesa.</p>
+  <p style="margin-top:20px">
+    <a class="btn btn-primario" href="{{ url_for('sesion.entrar') }}">Entrar al portal</a>
+    <a class="btn" href="{{ url_for('publico.transparencia') }}">Cómo se protegen mis datos</a>
+  </p>
+</section>
+
+<div class="rejilla rejilla-3">
+  <div class="tarjeta">
+    <h3>Tu respuesta va seudonimizada</h3>
+    <p class="tenue">Tu identidad y tus respuestas se guardan en estructuras separadas,
+    unidas solo por un seudónimo. Ni tu jefatura ni el área de bienestar pueden
+    consultar lo que contestaste.</p>
+  </div>
+  <div class="tarjeta">
+    <h3>Nada se publica en grupos chicos</h3>
+    <p class="tenue">Si una unidad tiene menos de cinco respuestas, el resultado se
+    suprime por completo. No se muestra un valor parcial ni un aproximado.</p>
+  </div>
+  <div class="tarjeta">
+    <h3>Los promedios llevan ruido a propósito</h3>
+    <p class="tenue">Cada valor publicado recibe ruido calibrado con el mecanismo de
+    Laplace, y cada consulta consume presupuesto de privacidad. Eso impide
+    deducir una respuesta individual comparando consultas.</p>
+  </div>
+</div>
+
+<div class="tarjeta" style="margin-top:20px">
+  <h3>Puedes revisar quién consultó tus datos</h3>
+  <p class="tenue">El sistema registra cada acceso a información de consentimiento y
+  cada consulta de resultados agregados. Desde tu portal puedes ver ese registro
+  sin pedírselo a nadie.</p>
+</div>
+
+{% endblock %}

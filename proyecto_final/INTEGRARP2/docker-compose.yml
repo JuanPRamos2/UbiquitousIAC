@@ -1,0 +1,245 @@
+name: integrar-p2
+
+services:
+  datos:
+    image: postgres:16
+    restart: unless-stopped
+    networks:
+      integrar:
+        aliases: [postgres]
+    environment:
+      POSTGRES_DB: bienestar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: desarrollo_local
+      PG_USUARIO: bienestar_app
+      PG_CLAVE: desarrollo_local
+    ports:
+      - "5433:5432"
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+      - ./segundo_parcial_microservicios/db/esquema/00_rol_aplicacion.sh:/docker-entrypoint-initdb.d/00_rol_aplicacion.sh:ro
+      - ./segundo_parcial_microservicios/db/esquema/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
+      - ./segundo_parcial_microservicios/db/migraciones/001_rol_motor_y_funciones_definer.sql:/docker-entrypoint-initdb.d/05_migracion_001.sql:ro
+      - ./segundo_parcial_microservicios/db/esquema/09_permisos.sh:/docker-entrypoint-initdb.d/09_permisos.sh:ro
+      - ./segundo_parcial_microservicios/db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/02_volumen_sintetico.sql:ro
+      - ./db/06_columnas_descripcion.sql:/docker-entrypoint-initdb.d/06_columnas_descripcion.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bienestar"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  cache:
+    image: redis:7
+    restart: unless-stopped
+    networks:
+      integrar:
+        aliases: [redis]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  documentos:
+    image: mongo:7
+    restart: unless-stopped
+    networks:
+      integrar:
+        aliases: [mongo]
+    ports:
+      - "27017:27017"
+    volumes:
+      - datos_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  web:
+    build:
+      context: ./segundo_parcial_microservicios/apps/web
+    restart: unless-stopped
+    networks: [integrar]
+    ports:
+      - "8000:8000"
+    environment: &py
+      APP_AMBIENTE: developer
+      PG_HOST: datos
+      PG_BASE: bienestar
+      PG_USUARIO: bienestar_app
+      PG_CLAVE: desarrollo_local
+      REDIS_HOST: cache
+      MONGO_URI: mongodb://documentos:27017
+      MONGO_BASE: bienestar
+      JWT_SECRETO: secreto-solo-para-developer-32-bytes
+      JWT_MINUTOS: "15"
+      MOSTRAR_ERRORES: "true"
+      NIVEL_BITACORA: INFO
+      AUTH_SERVICE_URL: http://auth-service:8000
+      USERS_SERVICE_URL: http://users-service:8000
+      DOCUMENTS_SERVICE_URL: http://documents-service:8000
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8000
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ./segundo_parcial_microservicios/apps/microservicios
+      dockerfile: auth-service/Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["8101:8000"]
+    environment: *py
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+  users-service:
+    build:
+      context: ./segundo_parcial_microservicios/apps/microservicios
+      dockerfile: users-service/Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["8102:8000"]
+    environment: *py
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+  documents-service:
+    build:
+      context: ./segundo_parcial_microservicios/apps/microservicios
+      dockerfile: documents-service/Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["8103:8000"]
+    environment: *py
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+
+  notifications-service:
+    build:
+      context: ./segundo_parcial_microservicios/apps/microservicios
+      dockerfile: notifications-service/Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["8104:8000"]
+    environment: *py
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: docker/catalog.Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["3002:3002"]
+    environment: &node
+      JWT_SECRET: secreto-solo-para-developer-32-bytes
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: bienestar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: desarrollo_local
+      REDIS_URL: redis://redis:6379
+      MONGO_URL: mongodb://mongo:27017
+      MONGO_DB: bienestar
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+  main-process-service:
+    build:
+      context: .
+      dockerfile: docker/main-process.Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["3003:3003"]
+    environment: *node
+    depends_on:
+      datos:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+
+  queries-service:
+    build:
+      context: .
+      dockerfile: services/queries-service/Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["3010:3000"]
+    environment:
+      <<: *node
+      SERVICE_NAME: queries-service
+      PORT: "3000"
+      JWT_REQUIRE_SESSION: "true"
+      CACHE_TTL_SEC: "60"
+      RATE_LIMIT_REQUESTS: "60"
+      RATE_LIMIT_WINDOW_SEC: "60"
+      CORS_ORIGINS: http://127.0.0.1:8000,http://127.0.0.1:3001,http://localhost:8000
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+
+  reports-service:
+    build:
+      context: .
+      dockerfile: services/reports-service/Dockerfile
+    restart: unless-stopped
+    networks: [integrar]
+    ports: ["3020:3000"]
+    environment:
+      <<: *node
+      SERVICE_NAME: reports-service
+      PORT: "3000"
+      JWT_REQUIRE_SESSION: "true"
+      CACHE_TTL_SEC: "60"
+      RATE_LIMIT_REQUESTS: "60"
+      RATE_LIMIT_WINDOW_SEC: "60"
+      CORS_ORIGINS: http://127.0.0.1:8000,http://127.0.0.1:3001,http://localhost:8000
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+
+networks:
+  integrar:
+    name: integrar
+
+volumes:
+  datos_pg:
+  datos_mongo:

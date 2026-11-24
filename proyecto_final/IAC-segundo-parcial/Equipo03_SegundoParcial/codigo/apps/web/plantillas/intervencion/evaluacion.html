@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block titulo %}Plan #{{ plan.intervencion_id }}{% endblock %}
+{% block contenido %}
+<h1>Plan #{{ plan.intervencion_id }} — {{ plan.tipo }}</h1>
+<p class="subtitulo">{{ plan.unidad }} &middot; estado {{ plan.estado }} &middot; {{ plan.fecha_inicio }} → {{ plan.fecha_fin }}</p>
+
+<div class="tarjeta">
+  <h3>Justificación</h3>
+  <p>{{ plan.justificacion }}</p>
+  {% if plan.resultado_esperado %}
+    <h3>Resultado esperado</h3><p>{{ plan.resultado_esperado }}</p>
+  {% endif %}
+</div>
+
+<h2>Seguimiento de la ejecución</h2>
+{% if 'INTERVENCION_SEGUIMIENTO' in permisos %}
+<form method="post" action="{{ url_for('intervenciones.seguimiento', plan_id=plan.intervencion_id) }}" class="tarjeta">
+  <div class="fila-campos">
+    <div><label for="er">Estado reportado</label>
+      <select id="er" name="estado_reportado">
+        <option value="EN_EJECUCION">En ejecución</option>
+        <option value="APROBADA">Aprobada, aún sin iniciar</option>
+        <option value="FINALIZADA">Finalizada</option>
+      </select></div>
+    <div style="grid-column:span 2"><label for="nota">Nota de avance</label>
+      <input type="text" id="nota" name="avance_nota" required minlength="10"
+             placeholder="Se redistribuyeron 40 horas semanales entre dos turnos"></div>
+  </div>
+  <button class="btn btn-primario" type="submit">Registrar avance</button>
+</form>
+{% endif %}
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Fecha</th><th>Estado reportado</th><th>Avance</th><th>Registró</th></tr></thead>
+  <tbody>
+  {% for s in seguimientos %}
+    <tr>
+      <td>{{ s.fecha_registro.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ s.estado_reportado }}</td>
+      <td>{{ s.avance_nota }}</td>
+      <td class="tenue">{{ s.registrado_por }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="tenue">Sin registros de seguimiento.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Evaluación del efecto</h2>
+<div class="aviso aviso-info">
+  La comparación usa valores <strong>ya publicados con ruido aplicado</strong>.
+  No se recalcula sobre las respuestas, así que medir el efecto de una
+  intervención no consume presupuesto de privacidad adicional. Una diferencia
+  menor que el ruido combinado de las dos mediciones no se reporta como efecto.
+</div>
+
+{% if evaluacion %}
+<div class="tarjeta">
+  <div class="rejilla rejilla-3">
+    <div class="dato">
+      <div class="cifra">{{ '%.2f'|format(evaluacion.valor_antes) }}</div>
+      <div class="rotulo">Antes ({{ evaluacion.campania_antes }})</div>
+    </div>
+    <div class="dato">
+      <div class="cifra">{{ '%.2f'|format(evaluacion.valor_despues) }}</div>
+      <div class="rotulo">Después ({{ evaluacion.campania_despues }})</div>
+    </div>
+    <div class="dato">
+      <div class="cifra">{{ '%+.2f'|format(evaluacion.variacion) }}</div>
+      <div class="rotulo">Variación</div>
+    </div>
+  </div>
+  <p style="margin-top:14px">
+    Conclusión:
+    {% if evaluacion.conclusion == 'MEJORA' %}<span class="insignia insignia-ok">Mejora</span>
+    {% elif evaluacion.conclusion == 'DETERIORO' %}<span class="insignia insignia-alto">Deterioro</span>
+    {% else %}<span class="insignia insignia-medio">{{ evaluacion.conclusion }}</span>{% endif %}
+  </p>
+  <p class="tenue">{{ evaluacion.nota_metodologica }}</p>
+</div>
+{% endif %}
+
+{% if 'INTERVENCION_SEGUIMIENTO' in permisos %}
+<form method="post" class="tarjeta">
+  <h3>{{ 'Recalcular' if evaluacion else 'Evaluar' }} comparando dos campañas</h3>
+  {% if disponibles|length < 2 %}
+    <div class="aviso aviso-error">Esta unidad tiene {{ disponibles|length }} campaña(s)
+    con resultado publicado. Hacen falta al menos dos para comparar.</div>
+  {% else %}
+  <div class="fila-campos">
+    <div><label for="ca">Campaña antes</label>
+      <select id="ca" name="campania_antes">
+        {% for d in disponibles %}<option value="{{ d.campania_id }}">{{ d.nombre }} ({{ '%.2f'|format(d.valor_protegido) }})</option>{% endfor %}
+      </select></div>
+    <div><label for="cd">Campaña después</label>
+      <select id="cd" name="campania_despues">
+        {% for d in disponibles %}<option value="{{ d.campania_id }}" {{ 'selected' if loop.last }}>{{ d.nombre }} ({{ '%.2f'|format(d.valor_protegido) }})</option>{% endfor %}
+      </select></div>
+  </div>
+  <div class="campo">
+    <label for="nm">Nota metodológica (opcional)</label>
+    <input type="text" id="nm" name="nota_metodologica"
+           placeholder="La unidad tuvo rotación alta en el periodo, lo que puede influir">
+  </div>
+  <button class="btn btn-primario" type="submit">Calcular evaluación</button>
+  {% endif %}
+</form>
+{% endif %}
+
+<p style="margin-top:20px"><a class="btn" href="{{ url_for('intervenciones.listar') }}">Volver a los planes</a></p>
+{% endblock %}

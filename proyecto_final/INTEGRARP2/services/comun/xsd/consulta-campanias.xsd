@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="response">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="success" type="xs:boolean"/>
+        <xs:element name="message" type="xs:string"/>
+        <xs:element name="data" type="datosCampanias"/>
+        <xs:element name="pagination" type="paginacion" minOccurs="0"/>
+        <xs:element name="meta" type="metaConsulta" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="datosCampanias">
+    <xs:sequence>
+      <xs:element name="campanias" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="campania" type="campania" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="campania">
+    <xs:sequence>
+      <xs:element name="campania_id" type="xs:string"/>
+      <xs:element name="nombre" type="xs:string"/>
+      <xs:element name="estado">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="BORRADOR"/>
+            <xs:enumeration value="ABIERTA"/>
+            <xs:enumeration value="CERRADA"/>
+            <xs:enumeration value="CANCELADA"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="fecha_inicio" type="xs:date"/>
+      <xs:element name="fecha_fin" type="xs:date"/>
+      <xs:element name="secuencia" type="xs:integer"/>
+      <xs:element name="instrumento_id" type="xs:string"/>
+      <xs:element name="version_instrumento" type="xs:integer"/>
+      <xs:element name="activa" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="paginacion">
+    <xs:sequence>
+      <xs:element name="page" type="xs:integer"/>
+      <xs:element name="limit" type="xs:integer"/>
+      <xs:element name="total" type="xs:integer"/>
+      <xs:element name="totalPages" type="xs:integer"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="metaConsulta">
+    <xs:sequence>
+      <xs:element name="cache">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="HIT"/>
+            <xs:enumeration value="MISS"/>
+            <xs:enumeration value="BYPASS"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="servicio" type="xs:string"/>
+      <xs:element name="correlacion_id" type="xs:string" minOccurs="0"/>
+      <xs:element name="clave_cache" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

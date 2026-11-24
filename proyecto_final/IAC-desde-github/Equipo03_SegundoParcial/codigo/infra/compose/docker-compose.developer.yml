@@ -1,0 +1,107 @@
+# Ambiente DEVELOPER — corre en la máquina de cada integrante del equipo.
+#
+# Diferencias deliberadas contra production:
+#   - Se publican los puertos de base de datos y Redis para poder
+#     inspeccionarlos con psql, DBeaver o redis-cli.
+#   - Se monta el código como volumen y se usa el servidor de desarrollo
+#     de Flask, para no reconstruir la imagen en cada cambio.
+#   - Se cargan los datos sintéticos de db/semilla.
+#   - Los errores se devuelven con detalle, porque nadie externo los ve.
+#
+# Este archivo NO debe usarse fuera de la máquina de un integrante.
+
+services:
+
+  datos:
+    ports:
+      - "5432:5432"
+    volumes:
+      # Los cuatro archivos de semilla: el volumen sintético y los tres de
+      # demostración (una campaña abierta, agregados ya publicados con sus
+      # supresiones, y un plan de intervención con seguimiento). Sin los
+      # tres últimos, el portal levanta con pantallas vacías y no se puede
+      # demostrar nada.
+      - ../../db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/08_semilla_02.sql:ro
+      - ../../db/semilla/03_campania_abierta_demo.sql:/docker-entrypoint-initdb.d/09_semilla_03.sql:ro
+      - ../../db/semilla/04_agregados_y_riesgo_demo.sql:/docker-entrypoint-initdb.d/10_semilla_04.sql:ro
+      - ../../db/semilla/05_intervencion_demo.sql:/docker-entrypoint-initdb.d/11_semilla_05.sql:ro
+    networks:
+      - privada
+      - publica          # solo en developer, para poder conectarse desde el host
+
+  cache:
+    ports:
+      - "6379:6379"
+
+  web:
+    ports:
+      - "8000:8000"
+    environment:
+      APP_AMBIENTE: developer
+      NIVEL_BITACORA: DEBUG
+      MOSTRAR_ERRORES: "true"
+      FLASK_APP: wsgi:app
+    volumes:
+      - ../../apps/web:/app
+    command: ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=8000", "--reload"]
+
+  # --- microservicios: puertos publicados solo en developer, para poder
+  #     abrir el Swagger de cada uno desde el navegador del equipo.
+  #
+  # El orden de los puertos sigue el de los integrantes, no el alfabetico:
+  # 8101-8102 Integrante 1, 8103-8104 Integrante 2, 8105-8106 Integrante 3,
+  # 8107-8108 consultas y reportes. Asi, en la demostracion, quien presenta
+  # su parte sabe en que par de puertos esta sin tener que consultar nada.
+  documentos:
+    ports:
+      - "27017:27017"
+
+  # Integrante 1 — Python
+  auth-service:
+    ports: ["8101:8000"]
+
+  users-service:
+    ports: ["8102:8000"]
+
+  # Integrante 2 — Node
+  catalog-service:
+    ports: ["8103:8000"]
+
+  main-process-service:
+    ports: ["8104:8000"]
+
+  # Integrante 3 — Python
+  documents-service:
+    ports: ["8105:8000"]
+
+  notifications-service:
+    ports: ["8106:8000"]
+
+  # Consultas y reportes — Python
+  queries-service:
+    ports: ["8107:8000"]
+
+  reports-service:
+    ports: ["8108:8000"]
+
+  # Motor de reglas
+  algorithms-service:
+    ports: ["8109:8000"]
+
+  # Integrantes 1 y 2 — servicios del reparto de 24
+  consent-service:
+    ports: ["8110:8000"]
+  privacy-service:
+    ports: ["8111:8000"]
+  survey-service:
+    ports: ["8112:8000"]
+  indicators-service:
+    ports: ["8113:8000"]
+  support-service:
+    ports: ["8116:8000"]
+  organizational-service:
+    ports: ["8117:8000"]
+  audit-service:
+    ports: ["8118:8000"]
+  data-governance-service:
+    ports: ["8119:8000"]

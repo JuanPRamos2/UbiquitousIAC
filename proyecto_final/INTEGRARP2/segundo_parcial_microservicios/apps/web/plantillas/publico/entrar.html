@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Entrar{% endblock %}
+{% block contenido %}
+<div class="caja-entrar">
+  <h1>Entrar</h1>
+  <p class="subtitulo">Usa tu correo institucional.</p>
+
+  <form method="post" class="tarjeta">
+    <input type="hidden" name="siguiente" value="{{ siguiente }}">
+    <div class="campo">
+      <label for="correo">Correo</label>
+      <input type="email" id="correo" name="correo" required autofocus
+             autocomplete="username" placeholder="nombre.apellido@nexum.com.mx">
+    </div>
+    <div class="campo">
+      <label for="contrasena">Contraseña</label>
+      <input type="password" id="contrasena" name="contrasena" required
+             autocomplete="current-password">
+    </div>
+    <button class="btn btn-primario" type="submit" style="width:100%">Entrar</button>
+  </form>
+
+  {% if ambiente == 'developer' %}
+  <div class="credenciales">
+    <strong>Cuentas de prueba</strong> (solo en el ambiente developer) &mdash; contraseña <code>demo123</code>
+    <table>
+      <tr><th>Perfil</th><th>Correo</th></tr>
+      <tr><td>Colaborador</td><td>ana.perez@nexum.com.mx</td></tr>
+      <tr><td>Líder de unidad</td><td>lucia.hernandez@nexum.com.mx</td></tr>
+      <tr><td>Especialista de bienestar</td><td>mariana.solis@nexum.com.mx</td></tr>
+      <tr><td>Auditor de cumplimiento</td><td>roberto.garcia@nexum.com.mx</td></tr>
+      <tr><td>Administrador del sistema</td><td>carlos.ramirez@nexum.com.mx</td></tr>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="catalogos.xsd"/>
+
+  <xs:element name="arbol_organizacional_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="unidad_raiz_id" type="IdUnidad"/>
+        <xs:element name="total_nodos"    type="xs:nonNegativeInteger"/>
+        <xs:element name="nodos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="nodo" type="UnidadOrganizacional"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

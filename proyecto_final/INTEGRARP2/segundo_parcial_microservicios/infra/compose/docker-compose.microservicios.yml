@@ -1,0 +1,129 @@
+# Módulo de microservicios — segundo parcial.
+#
+# Se levanta ADEMÁS de los archivos base y de ambiente:
+#
+#   docker compose -f docker-compose.base.yml \
+#                  -f docker-compose.developer.yml \
+#                  -f docker-compose.microservicios.yml up
+#
+# Cada microservicio tiene su propio contenedor, su propia imagen y su
+# propia responsabilidad, como exige el parcial. Comparten PostgreSQL,
+# MongoDB y Redis porque eso está autorizado; lo que no comparten son
+# vistas, sesiones ni plantillas del sistema web.
+#
+# Los cuatro viven en la red privada y solo publican puerto en developer,
+# para poder abrir su Swagger desde el navegador. En production el acceso
+# pasa por el proxy.
+
+services:
+
+  # ------------------------------------------------ MongoDB (segundo parcial)
+  documentos:
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_BASE:-bienestar}
+    volumes:
+      - datos_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # --------------------------------------------------- Integrante 1
+  auth-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: auth-service/Dockerfile
+    image: bienestar-nexum/auth-service:${VERSION:-local}
+    environment: &entorno_comun
+      APP_AMBIENTE: ${APP_AMBIENTE:?falta APP_AMBIENTE}
+      PG_HOST: datos
+      PG_BASE: ${PG_BASE:-bienestar}
+      PG_USUARIO: ${PG_USUARIO:-bienestar_app}
+      PG_CLAVE: ${PG_CLAVE:?falta PG_CLAVE}
+      REDIS_HOST: cache
+      MONGO_URI: mongodb://documentos:27017
+      MONGO_BASE: ${MONGO_BASE:-bienestar}
+      # El MISMO secreto que el sistema web: por eso un token sirve en
+      # ambos y un logout revoca en todos los componentes.
+      JWT_SECRETO: ${JWT_SECRETO:-}
+      JWT_MINUTOS: ${JWT_MINUTOS:-15}
+      NIVEL_BITACORA: ${NIVEL_BITACORA:-INFO}
+      MOSTRAR_ERRORES: ${MOSTRAR_ERRORES:-false}
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  users-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: users-service/Dockerfile
+    image: bienestar-nexum/users-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # --------------------------------------------------- Integrante 3
+  documents-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: documents-service/Dockerfile
+    image: bienestar-nexum/documents-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  notifications-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: notifications-service/Dockerfile
+    image: bienestar-nexum/notifications-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # El sistema web aprende a dónde llamar. Si estos servicios no responden,
+  # el portal cae a PostgreSQL y sigue operando: la pantalla de Servicios
+  # permite demostrarlo apagándolos durante la demostración.
+  web:
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      USERS_SERVICE_URL: http://users-service:8000
+      DOCUMENTS_SERVICE_URL: http://documents-service:8000
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8000
+      MICROSERVICIO_TIMEOUT: "2.5"
+
+volumes:
+  datos_mongo:

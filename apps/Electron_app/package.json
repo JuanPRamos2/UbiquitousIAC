@@ -1,14 +1,16 @@
 {
-  "name": "electron-app",
+  "name": "library-catalog-electron",
   "version": "1.0.0",
-  "description": "Escritorio de la librería: abre Node :3000 y Flask :5001",
-  "main": "main.js",
+  "description": "Catalogo de libros XML para Electron",
+  "main": "src/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/models/configuration.js && node --check src/models/bookRepository.js && node --check src/views/catalogView.js && node --check src/controllers/catalogController.js"
   },
-  "author": "Juan Pablo Ramos Salazar",
-  "license": "UNLICENSED",
   "devDependencies": {
-    "electron": "^28.3.3"
+    "electron": "^36.3.1"
+  },
+  "allowScripts": {
+    "electron@36.9.5": true
   }
 }

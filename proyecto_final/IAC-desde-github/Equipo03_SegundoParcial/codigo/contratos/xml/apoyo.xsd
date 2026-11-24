@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:simpleType name="EstadoSolicitudApoyo">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ABIERTA"/>
+      <xs:enumeration value="EN_PROCESO"/>
+      <xs:enumeration value="CERRADA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="EntradaHistorialApoyo">
+    <xs:sequence>
+      <xs:element name="estado"   type="EstadoSolicitudApoyo"/>
+      <xs:element name="fecha"    type="xs:dateTime"/>
+      <xs:element name="actor_id" type="xs:string" nillable="true" minOccurs="0"/>
+      <xs:element name="nota"     type="xs:string" nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SolicitudApoyoDetalle">
+    <xs:sequence>
+      <xs:element name="id"                  type="xs:string"/>
+      <xs:element name="seudonimo_id"        type="IdSeudonimo" minOccurs="0"/>
+      <xs:element name="mensaje"             type="xs:string"/>
+      <xs:element name="fecha"               type="xs:dateTime"/>
+      <xs:element name="estado"              type="EstadoSolicitudApoyo"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" nillable="true" minOccurs="0"/>
+      <xs:element name="historial" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="entrada" type="EntradaHistorialApoyo"
+                        minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="solicitud_apoyo" type="SolicitudApoyoDetalle"/>
+
+  <xs:element name="solicitudes_apoyo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="solicitudes">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="solicitud" type="SolicitudApoyoDetalle"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="paginacion" type="Paginacion" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="mensaje_apoyo_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="resultado"    type="xs:string"/>
+        <xs:element name="solicitud_id" type="xs:string"/>
+        <xs:element name="mensaje"      type="xs:string"/>
+        <xs:element name="fecha"        type="xs:dateTime"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

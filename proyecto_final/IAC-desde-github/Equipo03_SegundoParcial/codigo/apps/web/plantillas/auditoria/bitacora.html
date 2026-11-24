@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Bitácora de auditoría{% endblock %}
+{% block contenido %}
+<h1>Bitácora de auditoría</h1>
+<p class="subtitulo">Últimos 200 eventos. Incluye los intentos rechazados, no solo los exitosos.</p>
+
+<form method="get" class="tarjeta">
+  <div class="fila-campos">
+    <div><label for="accion">Acción</label>
+      <select id="accion" name="accion" onchange="this.form.submit()">
+        <option value="">Todas</option>
+        {% for a in acciones %}
+          <option value="{{ a.codigo }}" {{ 'selected' if a.codigo == f_accion }}>{{ a.descripcion }}</option>
+        {% endfor %}
+      </select></div>
+    <div><label for="resultado">Resultado</label>
+      <select id="resultado" name="resultado" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        {% for r in resultados %}
+          <option value="{{ r.codigo }}" {{ 'selected' if r.codigo == f_resultado }}>{{ r.descripcion }}</option>
+        {% endfor %}
+      </select></div>
+  </div>
+  <noscript><button class="btn" type="submit">Filtrar</button></noscript>
+</form>
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Fecha</th><th>Actor</th><th>Perfil</th><th>Acción</th><th>Recurso</th><th>Resultado</th><th>Correlación</th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+    <tr>
+      <td>{{ f.fecha_hora.strftime('%d/%m %H:%M:%S') }}</td>
+      <td>{{ f.actor_usuario_id or '—' }}</td>
+      <td>{{ f.actor_perfil }}</td>
+      <td>{{ f.accion }}</td>
+      <td>{{ f.tipo_recurso or '' }} {{ f.recurso_id or '' }}</td>
+      <td>
+        {% if f.resultado_codigo == 'EXITO' %}<span class="insignia insignia-ok">{{ f.resultado }}</span>
+        {% elif f.resultado_codigo in ('RECHAZADO','ERROR_TECNICO') %}<span class="insignia insignia-alto">{{ f.resultado }}</span>
+        {% else %}<span class="insignia insignia-medio">{{ f.resultado }}</span>{% endif %}
+      </td>
+      <td class="tenue"><code>{{ f.correlacion_id }}</code></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="tenue">Sin eventos que coincidan con el filtro.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

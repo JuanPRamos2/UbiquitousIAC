@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}Unidades organizacionales{% endblock %}
+{% block contenido %}
+<h1>Unidades organizacionales</h1>
+<p class="subtitulo">Catálogo operable. Una unidad con colaboradores activos no se elimina: se inactiva (RN-08).</p>
+
+<details class="tarjeta">
+  <summary style="cursor:pointer;font-weight:600">Agregar o editar una unidad</summary>
+  <form method="post" style="margin-top:16px">
+    <div class="fila-campos">
+      <div><label for="uid">Identificador</label>
+        <input type="text" id="uid" name="unidad_organizacional_id" required placeholder="UO-CC-TURNO-C"></div>
+      <div><label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required placeholder="Call Center Turno C"></div>
+      <div><label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">
+          <option>TURNO</option><option>AREA</option><option>DIRECCION</option>
+        </select></div>
+      <div><label for="padre">Unidad padre</label>
+        <select id="padre" name="unidad_padre_id">
+          <option value="">(ninguna)</option>
+          {% for f in filas %}<option value="{{ f.unidad_organizacional_id }}">{{ f.nombre }}</option>{% endfor %}
+        </select></div>
+      <div><label for="plantilla">Plantilla declarada</label>
+        <input type="number" id="plantilla" name="plantilla_declarada" min="1" required value="20"></div>
+    </div>
+    <button class="btn btn-primario" type="submit">Guardar</button>
+  </form>
+</details>
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Nivel</th><th>Plantilla</th><th>Colaboradores</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+    <tr>
+      <td><code>{{ f.unidad_organizacional_id }}</code></td>
+      <td>{{ f.nombre }}</td>
+      <td>{{ f.tipo }}</td>
+      <td>{{ f.nivel_jerarquico }}</td>
+      <td>{{ f.plantilla_declarada }}</td>
+      <td>{{ f.colaboradores }}</td>
+      <td>{% if f.activa %}<span class="insignia insignia-ok">Activa</span>
+          {% else %}<span class="insignia insignia-neutra">Inactiva</span>{% endif %}</td>
+      <td>
+        {% if f.activa %}
+        <form method="post" action="{{ url_for('catalogos.inactivar_unidad', uid=f.unidad_organizacional_id) }}">
+          <button class="btn btn-peligro" type="submit" style="padding:4px 9px;font-size:12px">Inactivar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

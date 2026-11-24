@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:complexType name="IndicadorDef">
+    <xs:sequence>
+      <xs:element name="clave"          type="xs:string"/>
+      <xs:element name="nombre"         type="xs:string"/>
+      <xs:element name="dimension_id"   type="xs:string" nillable="true" minOccurs="0"/>
+      <xs:element name="unidad_medida"  type="xs:string"/>
+      <xs:element name="umbral_alerta"  type="xs:decimal"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="indicadores_catalogo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="indicadores">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="indicador" type="IndicadorDef"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="ItemAgregado">
+    <xs:sequence>
+      <xs:element name="clave"                 type="xs:string"/>
+      <xs:element name="nombre"                type="xs:string"/>
+      <xs:element name="dimension_id"          type="xs:string" nillable="true" minOccurs="0"/>
+      <xs:element name="valor"                 type="xs:decimal" nillable="true"/>
+      <xs:element name="n_observaciones"       type="xs:nonNegativeInteger"/>
+      <xs:element name="k_umbral"              type="xs:positiveInteger"/>
+      <xs:element name="suprimido_por_umbral"  type="xs:boolean"/>
+      <xs:element name="nivel_riesgo"          type="xs:string"/>
+      <xs:element name="precision"             type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="agregados_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="campania_id"  type="xs:string"/>
+        <xs:element name="unidad_id"    type="IdUnidad"/>
+        <xs:element name="indicadores">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="indicador" type="ItemAgregado"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total"  type="xs:nonNegativeInteger"/>
+        <xs:element name="fuente" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="historico_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="unidad_id"     type="IdUnidad"/>
+        <xs:element name="dimension_id"  type="xs:string"/>
+        <xs:element name="puntos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="punto" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="campania_id"            type="xs:string"/>
+                    <xs:element name="campania"               type="xs:string"/>
+                    <xs:element name="fecha"                  type="xs:date"/>
+                    <xs:element name="dimension_id"           type="xs:string"/>
+                    <xs:element name="valor"                  type="xs:decimal" nillable="true"/>
+                    <xs:element name="suprimido_por_umbral"   type="xs:boolean"/>
+                    <xs:element name="n_observaciones"        type="xs:nonNegativeInteger"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="calculo_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="resultado"              type="xs:string"/>
+        <xs:element name="campania_id"            type="xs:string"/>
+        <xs:element name="unidades_consolidadas"  type="xs:nonNegativeInteger"/>
+        <xs:element name="mensaje"                type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

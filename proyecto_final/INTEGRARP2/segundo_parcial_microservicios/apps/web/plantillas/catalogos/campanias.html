@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block titulo %}Campañas{% endblock %}
+{% block contenido %}
+<h1>Campañas de medición</h1>
+<p class="subtitulo">Ciclo de vida: borrador → abierta → cerrada. Una campaña cerrada no se reabre.</p>
+
+<details class="tarjeta">
+  <summary style="cursor:pointer;font-weight:600">Crear una campaña nueva</summary>
+  <form method="post" style="margin-top:16px">
+    <div class="fila-campos">
+      <div><label for="cid">Identificador</label>
+        <input type="text" id="cid" name="campania_id" required placeholder="CAMP-2026-S6"></div>
+      <div><label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required placeholder="Medicion semana 6"></div>
+      <div><label for="instr">Instrumento y versión</label>
+        <select id="instr" name="instrumento" required>
+          {% for i in instrumentos %}
+            <option value="{{ i.instrumento_id }}|{{ i.version }}">{{ i.nombre }} · v{{ i.version }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label for="ini">Apertura</label>
+        <input type="date" id="ini" name="fecha_inicio" required></div>
+      <div><label for="fin">Cierre</label>
+        <input type="date" id="fin" name="fecha_fin" required></div>
+    </div>
+
+    <div class="campo">
+      <label>Unidades participantes</label>
+      <p class="tenue" style="margin:0 0 8px">Solo las personas de estas unidades verán la campaña.
+         Una unidad con menos de cinco respuestas no recibirá resultado publicado.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px;max-height:230px;overflow:auto;border:1px solid var(--linea);border-radius:8px;padding:12px">
+        {% for u in unidades %}
+        <label style="font-weight:400;display:flex;gap:7px;align-items:center;margin:0">
+          <input type="checkbox" name="unidades" value="{{ u.unidad_organizacional_id }}">
+          <span>{{ u.nombre }} <span class="tenue">({{ u.plantilla_declarada }})</span></span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <button class="btn btn-primario" type="submit">Crear en borrador</button>
+  </form>
+</details>
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>ID</th><th>Nombre</th><th>Instrumento</th><th>Periodo</th><th>Unidades</th><th>Resultados</th><th>Estado</th><th>Acción</th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+    <tr>
+      <td><code>{{ f.campania_id }}</code></td>
+      <td>{{ f.nombre }}</td>
+      <td class="tenue">{{ f.instrumento_id }} v{{ f.version_instrumento }}</td>
+      <td class="tenue">{{ f.fecha_inicio }} → {{ f.fecha_fin }}</td>
+      <td>{{ f.unidades }}</td>
+      <td>{{ f.resultados }}</td>
+      <td>
+        {% if f.estado == 'ABIERTA' %}<span class="insignia insignia-ok">Abierta</span>
+        {% elif f.estado == 'BORRADOR' %}<span class="insignia insignia-medio">Borrador</span>
+        {% else %}<span class="insignia insignia-neutra">Cerrada</span>{% endif %}
+      </td>
+      <td>
+        {% if f.estado == 'BORRADOR' %}
+          <form method="post" action="{{ url_for('campanias.cambiar_estado', cid=f.campania_id) }}">
+            <input type="hidden" name="estado" value="ABIERTA">
+            <button class="btn" type="submit" style="padding:4px 9px;font-size:12px">Abrir</button>
+          </form>
+        {% elif f.estado == 'ABIERTA' %}
+          <form method="post" action="{{ url_for('campanias.cambiar_estado', cid=f.campania_id) }}">
+            <input type="hidden" name="estado" value="CERRADA">
+            <button class="btn btn-peligro" type="submit" style="padding:4px 9px;font-size:12px">Cerrar</button>
+          </form>
+        {% else %}<span class="tenue">—</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

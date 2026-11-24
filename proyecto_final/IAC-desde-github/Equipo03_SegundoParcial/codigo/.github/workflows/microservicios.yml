@@ -1,0 +1,241 @@
+# Integración continua del módulo de microservicios (segundo parcial).
+#
+# Se separa del flujo `verificacion` a propósito: ese protege la garantía
+# central del primer parcial (que el rol de la aplicación no pueda leer
+# respuestas individuales) y debe seguir corriendo rápido y en claro. Este
+# necesita PostgreSQL, Redis, Python y Node a la vez, y tarda más.
+#
+# Lo que comprueba:
+#   1. Que los nueve microservicios pasan sus 211 pruebas.
+#   2. Que los archivos generados ESTÁN al día. Un contrato generado que
+#      alguien editó a mano, o un esquema JSON que nadie regeneró después
+#      de cambiar el OpenAPI, es documentación que miente; aquí falla.
+#   3. Que el compose del módulo combina con los de ambiente.
+#   4. Que las constantes de permisos de Node siguen coincidiendo con
+#      usuarios.permiso. Ese desajuste ya costó un 403 inexplicable una vez.
+
+name: microservicios
+
+on:
+  push:
+    branches: [main, desarrollo]
+  pull_request:
+
+jobs:
+
+  pruebas:
+    name: Suite de los nueve servicios
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.13
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: bienestar_ci
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s
+          --health-timeout 5s --health-retries 10
+        ports: ["6379:6379"]
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: ci
+      POSTGRES_USER: postgres
+      PG_HOST: localhost
+      PG_BASE: bienestar_ci
+      PG_USUARIO: bienestar_app
+      PG_CLAVE: ci_app
+      REDIS_HOST: localhost
+      APP_AMBIENTE: developer
+      MOSTRAR_ERRORES: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar cliente de PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Cadena de arranque de la base, con datos sintéticos
+        run: ./scripts/arranque_base.sh bienestar_ci --con-semilla
+
+      - name: Aplicar las migraciones
+        run: |
+          for m in db/migraciones/*.sql; do
+            echo "== $m"
+            psql -v ON_ERROR_STOP=1 -d bienestar_ci -f "$m"
+          done
+
+      - name: Dependencias de Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./apps/microservicios/comun
+          pip install -r apps/microservicios/comun/requirements.txt
+          pip install -r apps/web/requirements.txt
+          # mongomock sustituye a MongoDB en las pruebas; pytest, jsonschema y
+          # lxml son para la suite y los contratos.
+          pip install pytest mongomock jsonschema lxml pyyaml
+
+      - name: Dependencias de los dos servicios en Node
+        run: |
+          npm --prefix apps/microservicios/comun-node install --no-audit --no-fund
+          npm --prefix apps/microservicios/catalog-service install --no-audit --no-fund
+          npm --prefix apps/microservicios/main-process-service install --no-audit --no-fund
+
+      - name: Suite completa
+        run: python -m pytest pruebas/ -q
+
+      - name: La suite es repetible
+        # Una suite que solo pasa la primera vez no sirve para verificar
+        # nada: los contadores de Redis la harían fallar en la segunda.
+        run: python -m pytest pruebas/ -q
+
+      - name: Pruebas propias de los servicios en Node
+        run: |
+          npm --prefix apps/microservicios/catalog-service test
+          npm --prefix apps/microservicios/main-process-service test
+
+  generados:
+    name: Los archivos generados están al día
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.13
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: bienestar_ci
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s
+          --health-timeout 5s --health-retries 10
+        ports: ["6379:6379"]
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: ci
+      POSTGRES_USER: postgres
+      PG_HOST: localhost
+      PG_BASE: bienestar_ci
+      PG_USUARIO: bienestar_app
+      PG_CLAVE: ci_app
+      REDIS_HOST: localhost
+      APP_AMBIENTE: developer
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar cliente de PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Base mínima para poder importar los servicios
+        run: ./scripts/arranque_base.sh bienestar_ci --con-semilla
+
+      - name: Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./apps/microservicios/comun
+          pip install -r apps/microservicios/comun/requirements.txt
+          pip install mongomock pyyaml
+
+      - name: Regenerar los contratos
+        run: |
+          python3 contratos/generar_openapi_node.py
+          python3 contratos/generar_json.py
+
+      - name: Nada debió cambiar
+        # Si algo cambió, es que alguien editó un archivo generado a mano o
+        # cambió un contrato sin regenerar. Las dos cosas dejan la
+        # documentación describiendo algo distinto a lo que el servicio hace.
+        run: |
+          if ! git diff --quiet; then
+            echo "FALLA: hay archivos generados fuera de fecha." >&2
+            git diff --stat >&2
+            echo "" >&2
+            echo "Corre contratos/generar_openapi_node.py y" >&2
+            echo "contratos/generar_json.py, y vuelve a confirmar." >&2
+            exit 1
+          fi
+          echo "OK: los contratos generados coinciden con sus fuentes"
+
+  compose_microservicios:
+    name: El compose del módulo combina
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar variables de ejemplo
+        run: |
+          cp infra/ambientes/developer.env.ejemplo infra/ambientes/developer.env
+          cp infra/ambientes/production.env.ejemplo infra/ambientes/production.env
+          sed -i 's/^PG_CLAVE=.*/PG_CLAVE=ci/' infra/ambientes/developer.env
+          sed -i 's/^PG_CLAVE=.*/PG_CLAVE=ci/' infra/ambientes/production.env
+          sed -i 's/^VERSION=.*/VERSION=ci/'    infra/ambientes/production.env
+          echo "PG_CLAVE_SUPER=ci" >> infra/ambientes/production.env
+          mkdir -p infra/secretos && echo ci > infra/secretos/pg_clave_super.txt
+
+      - name: developer + microservicios resuelve con los nueve servicios
+        run: |
+          docker compose --env-file infra/ambientes/developer.env \
+            -f infra/compose/docker-compose.base.yml \
+            -f infra/compose/docker-compose.developer.yml \
+            -f infra/compose/docker-compose.microservicios.yml \
+            config --format json > /tmp/dev.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/dev.json"))
+          esperados = {
+              "auth-service", "users-service", "catalog-service",
+              "main-process-service", "documents-service",
+              "notifications-service", "queries-service", "reports-service",
+              "algorithms-service",
+          }
+          faltan = esperados - set(d["services"])
+          assert not faltan, f"faltan servicios en el compose: {sorted(faltan)}"
+          # Cada microservicio tiene que publicar su propio puerto en
+          # developer: es como se abre su Swagger en la demostracion.
+          sin_puerto = [s for s in esperados if not d["services"][s].get("ports")]
+          assert not sin_puerto, f"sin puerto publicado en developer: {sorted(sin_puerto)}"
+          print(f"OK: los {len(esperados)} microservicios resuelven y publican puerto")
+          PY
+
+      - name: production no publica los puertos de los microservicios
+        # En production el acceso pasa por el proxy. Un puerto publicado ahi
+        # seria una ruta directa a un servicio sin pasar por el.
+        run: |
+          docker compose --env-file infra/ambientes/production.env \
+            -f infra/compose/docker-compose.base.yml \
+            -f infra/compose/docker-compose.production.yml \
+            -f infra/compose/docker-compose.microservicios.yml \
+            config --format json > /tmp/prod.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/prod.json"))
+          expuestos = [s for s, v in d["services"].items()
+                       if s.endswith("-service") and v.get("ports")]
+          assert not expuestos, f"production publica puertos de: {sorted(expuestos)}"
+          assert not d["services"]["datos"].get("ports"), \
+              "production publica el puerto de la base de datos"
+          assert not d["services"]["documentos"].get("ports"), \
+              "production publica el puerto de MongoDB"
+          print("OK: en production ningun servicio ni base publica puerto")
+          PY

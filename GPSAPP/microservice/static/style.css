@@ -186,7 +186,7 @@ aside {
 
 .speed { font-weight: 700; }
 
-.route, .streets, .meta {
+.route, .streets, .motion, .meta {
   grid-column: 1 / -1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -198,6 +198,88 @@ aside {
 .streets {
   color: #9ddec4;
   font-size: 0.9rem;
+}
+
+.motion { font-size: 0.86rem; color: #d7e4f0; }
+.motion[data-motion="acelerando"] { color: #8ee0b5; }
+.motion[data-motion="frenando"] { color: #ffc46b; }
+.motion[data-motion="detenido"] { color: #ff8b8b; }
+.motion[data-motion="en tope"] { color: #ffe08a; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 14px 0 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.lg {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: -1px;
+}
+
+.lg.sem { background: #e23d4a; box-shadow: inset 0 0 0 2px #2a130f; }
+.lg.tope {
+  width: 16px;
+  height: 8px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(90deg, #1a1a1a 0 4px, #f5c542 4px 8px);
+}
+.lg.saved {
+  width: 18px;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px dashed #c5d4e2;
+  background: none;
+  vertical-align: 3px;
+}
+
+.ghost {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ghost:hover { background: #1b3a52; }
+
+.note { margin: 8px 0 0; color: var(--muted); font-size: 0.8rem; }
+
+.feat-icon {
+  background: transparent;
+  border: none;
+}
+
+.light {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.light.rojo { background: #e23d4a; }
+.light.amarillo { background: #f5c542; }
+.light.verde { background: #2fce74; }
+
+.bump {
+  width: 18px;
+  height: 8px;
+  border-radius: 4px;
+  border: 1px solid #fff;
+  background: repeating-linear-gradient(90deg, #1a1a1a 0 4px, #f5c542 4px 8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .meta {

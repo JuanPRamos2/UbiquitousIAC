@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src http: https:; img-src 'self' data: http: https:; style-src 'self'; script-src 'self'">
+  <title>Atlas | Catálogo XML</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">A</span><div><strong>ATLAS</strong><small>CATÁLOGO DE LIBROS</small></div></div>
+    <button class="settings-button" id="settings-button" type="button" aria-label="Abrir configuración">Configuración <span>⌘</span></button>
+  </header>
+
+  <main class="layout">
+    <section class="hero">
+      <p class="eyebrow">Biblioteca conectada</p>
+      <h1>Historias para<br><em>seguir pensando.</em></h1>
+      <p class="hero-copy">Explora el catálogo servido directamente desde tu fuente XML.</p>
+      <div class="status-line"><span class="status-dot" id="status-dot"></span><span id="connection-status">Sin conexión</span><span class="source-url" id="source-url"></span></div>
+    </section>
+
+    <section class="catalog-section" aria-live="polite">
+      <div class="section-heading"><div><p class="eyebrow">Selección actual</p><h2>Todos los títulos</h2></div><span class="count" id="book-count">0 títulos</span></div>
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="book-grid" id="book-grid"></div>
+      <nav class="pagination" id="pagination" aria-label="Paginación"></nav>
+    </section>
+  </main>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" id="settings-form">
+      <div class="dialog-heading"><div><p class="eyebrow">Fuente de datos</p><h2>Configura tu catálogo</h2></div><button class="close-button" value="cancel" aria-label="Cerrar">×</button></div>
+      <p class="dialog-copy">La aplicación sólo consume XML. La configuración queda guardada en este equipo.</p>
+      <label>URL base<input id="base-url" name="baseUrl" type="url" required></label>
+      <label>Endpoint XML<input id="endpoint" name="endpoint" type="text" required></label>
+      <label>Títulos por página<input id="page-size" name="pageSize" type="number" min="1" max="48" required></label>
+      <div class="dialog-actions"><button class="button secondary" value="cancel">Cancelar</button><button class="button primary" value="default">Guardar y cargar</button></div>
+    </form>
+  </dialog>
+  <script type="module" src="../controllers/catalogController.js"></script>
+</body>
+</html>

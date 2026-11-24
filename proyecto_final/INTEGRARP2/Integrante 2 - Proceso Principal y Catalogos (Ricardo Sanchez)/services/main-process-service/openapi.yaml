@@ -1,0 +1,172 @@
+openapi: 3.0.3
+info:
+  title: Main Process Service API - Bienestar Nexum (Integrante 2)
+  description: |
+    Microservicio del Proceso Principal de Evaluaciones y Solicitudes de Apoyo.
+    Responsable: Integrante 2 (Ricardo Arath Sánchez Aguirre #583928).
+    Persistencia: MongoDB 7 con estricto cumplimiento de regla D-01 (sin empleado_id).
+    Formatos soportados: JSON (por defecto) y XML mediante cabecera Accept o parámetro ?format=xml.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3003
+    description: Microservicio local independiente
+  - url: http://localhost:3000
+    description: API Gateway / Monolito
+
+paths:
+  /health:
+    get:
+      summary: Sonda de salud del microservicio
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              example:
+                status: "UP"
+                service: "main-process-service"
+                version: "1.0.0"
+                dependencies:
+                  mongodb: true
+                  postgresql: true
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <salud>
+                  <status>UP</status>
+                  <service>main-process-service</service>
+                  <dependencies>
+                    <mongodb>true</mongodb>
+                    <postgresql>true</postgresql>
+                  </dependencies>
+                </salud>
+
+  /api/v1/encuestas/respuestas:
+    post:
+      summary: Registrar respuestas de evaluación (Solo COLAB, requiere consentimiento previo)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              campania_id: 1
+              instrumento_id: "INST-BURNOUT-01"
+              version_instrumento: 1
+              unidad_organizacional_id: "UO-OPS-CC-T1"
+              respuestas:
+                - reactivo_id: 1
+                  valor: 4
+                - reactivo_id: 2
+                  valor: 3
+      responses:
+        '201':
+          description: Respuestas registradas en MongoDB y evento emitido
+          content:
+            application/json:
+              example:
+                ok: true
+                id: "670c5e1234567890abcdef12"
+                campania_id: 1
+                evento_id: "670c5e1234567890abcdef13"
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <proceso_respuesta>
+                  <ok>true</ok>
+                  <id>670c5e1234567890abcdef12</id>
+                  <campania_id>1</campania_id>
+                  <evento_id>670c5e1234567890abcdef13</evento_id>
+                </proceso_respuesta>
+        '400':
+          description: Payload inválido o intento de enviar empleado_id (D-01)
+        '403':
+          description: Sin consentimiento informado vigente
+
+  /api/v1/encuestas/agregados/resumen:
+    get:
+      summary: Consultar resumen analítico agregado en MongoDB
+      parameters:
+        - name: campania_id
+          in: query
+          schema:
+            type: integer
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, xml]
+      responses:
+        '200':
+          description: Resumen analítico por unidad
+          content:
+            application/json:
+              example:
+                total_grupos: 2
+                resumen:
+                  - unidad_organizacional_id: "UO-OPS-CC-T1"
+                    campania_id: 1
+                    total: 25
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <agregados_resumen>
+                  <total_grupos>2</total_grupos>
+                  <resumen>
+                    <item>
+                      <unidad_organizacional_id>UO-OPS-CC-T1</unidad_organizacional_id>
+                      <campania_id>1</campania_id>
+                      <total>25</total>
+                    </item>
+                  </resumen>
+                </agregados_resumen>
+
+  /api/v1/solicitudes-apoyo:
+    post:
+      summary: Crear solicitud de apoyo psicológico/bienestar (Solo COLAB)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              mensaje: "Requiero orientación respecto a estrés prolongado en mi jornada laboral"
+      responses:
+        '201':
+          description: Solicitud creada con estado ABIERTA
+    get:
+      summary: Listar solicitudes de apoyo (AUDITOR o ADMIN_SISTEMA)
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum: [ABIERTA, EN_PROCESO, CERRADA]
+      responses:
+        '200':
+          description: Lista de solicitudes
+
+  /api/v1/solicitudes-apoyo/{id}/estado:
+    patch:
+      summary: Actualizar estado de solicitud (Transición con historial $push)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              estado: "EN_PROCESO"
+              nota: "Canalizado con especialista de bienestar"
+      responses:
+        '200':
+          description: Estado actualizado
+
+  /api/v1/eventos-proceso:
+    get:
+      summary: Consultar bitácora de eventos del flujo operativo (AUDITOR o ADMIN_SISTEMA)
+      responses:
+        '200':
+          description: Lista de eventos registrados

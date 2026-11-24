@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block titulo %}Administración de usuarios{% endblock %}
+{% block contenido %}
+<h1>Administración de usuarios</h1>
+<p class="subtitulo">Alta, cambio de perfil y de estado.</p>
+
+<div class="aviso aviso-info">
+  <strong>Datos obtenidos desde: {{ origen }}.</strong>
+  El sistema web llama a <code>users-service</code> cuando está disponible y
+  consulta PostgreSQL directamente cuando no. Puedes apagar el microservicio
+  y recargar esta página: seguirá funcionando.
+</div>
+
+<details class="tarjeta">
+  <summary style="cursor:pointer;font-weight:600">Dar de alta un usuario</summary>
+  <form method="post" style="margin-top:16px">
+    <div class="fila-campos">
+      <div><label for="uid">Identificador</label>
+        <input type="text" id="uid" name="usuario_id" required placeholder="USR-00020"
+               pattern="USR-[0-9]{5}" title="Forma USR-00000"></div>
+      <div><label for="nom">Nombre</label>
+        <input type="text" id="nom" name="nombre" required minlength="2"></div>
+      <div><label for="ap">Apellido paterno</label>
+        <input type="text" id="ap" name="apellido_paterno" required minlength="2"></div>
+      <div><label for="am">Apellido materno</label>
+        <input type="text" id="am" name="apellido_materno"></div>
+      <div><label for="cor">Correo</label>
+        <input type="email" id="cor" name="correo" required
+               placeholder="nombre.apellido@nexum.com.mx"></div>
+      <div><label for="con">Contraseña</label>
+        <input type="password" id="con" name="contrasena" required minlength="8"></div>
+      <div><label for="per">Perfil</label>
+        <select id="per" name="perfil_id" required>
+          {% for p in perfiles %}<option value="{{ p.perfil_id }}">{{ p.nombre }}</option>{% endfor %}
+        </select></div>
+      <div><label for="alc">Alcance organizacional</label>
+        <select id="alc" name="unidad_alcance_id">
+          <option value="">Toda la organización</option>
+          {% for u in unidades %}<option value="{{ u.unidad_organizacional_id }}">{{ u.nombre }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <p class="tenue">La contraseña se cifra en la base con <code>crypt()</code>;
+       el texto plano no se guarda en ningún momento.</p>
+    <button class="btn btn-primario" type="submit">Crear usuario</button>
+  </form>
+</details>
+
+<form method="get" class="tarjeta">
+  <div class="fila-campos">
+    <div><label for="bus">Buscar</label>
+      <input type="text" id="bus" name="busqueda" value="{{ busqueda }}"
+             placeholder="nombre, correo o identificador"></div>
+    <div><label for="fil">Perfil</label>
+      <select id="fil" name="perfil_id" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        {% for p in perfiles %}
+          <option value="{{ p.perfil_id }}" {{ 'selected' if p.perfil_id|string == perfil_filtro }}>{{ p.nombre }}</option>
+        {% endfor %}
+      </select></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" type="submit">Filtrar</button></div>
+  </div>
+</form>
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Perfil</th><th>Alcance</th><th>Estado</th><th>Acciones</th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+    <tr>
+      <td><code>{{ f.usuario_id }}</code></td>
+      <td>{{ f.nombre }} {{ f.apellido_paterno }}</td>
+      <td class="tenue">{{ f.correo }}</td>
+      <td>
+        <form method="post" action="{{ url_for('administracion.cambiar_perfil', usuario_id=f.usuario_id) }}"
+              style="display:flex;gap:5px;align-items:center">
+          <select name="perfil_id" style="padding:4px 7px;font-size:12px">
+            {% for p in perfiles %}
+              <option value="{{ p.perfil_id }}" {{ 'selected' if p.perfil_id == f.perfil_id }}>{{ p.nombre }}</option>
+            {% endfor %}
+          </select>
+          <select name="unidad_alcance_id" style="padding:4px 7px;font-size:12px;max-width:150px">
+            <option value="">Toda la organización</option>
+            {% for u in unidades %}
+              <option value="{{ u.unidad_organizacional_id }}" {{ 'selected' if u.unidad_organizacional_id == f.unidad_alcance_id }}>{{ u.nombre }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn" type="submit" style="padding:4px 8px;font-size:12px">Guardar</button>
+        </form>
+      </td>
+      <td class="tenue">{{ f.unidad_alcance_id or '—' }}</td>
+      <td>{% if f.activo %}<span class="insignia insignia-ok">Activo</span>
+          {% else %}<span class="insignia insignia-neutra">Inactivo</span>{% endif %}</td>
+      <td>
+        <form method="post" action="{{ url_for('administracion.cambiar_estado', usuario_id=f.usuario_id) }}">
+          <input type="hidden" name="activo" value="{{ '0' if f.activo else '1' }}">
+          <button class="btn {{ 'btn-peligro' if f.activo }}" type="submit"
+                  style="padding:4px 9px;font-size:12px">{{ 'Desactivar' if f.activo else 'Activar' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div style="display:flex;gap:10px;align-items:center;margin-top:14px">
+  {% if paginacion.tiene_anterior %}
+    <a class="btn" href="?pagina={{ paginacion.pagina - 1 }}&busqueda={{ busqueda }}&perfil_id={{ perfil_filtro }}">Anterior</a>
+  {% endif %}
+  <span class="tenue">Página {{ paginacion.pagina }} de {{ paginacion.total_paginas }}
+    &middot; {{ paginacion.total }} usuarios</span>
+  {% if paginacion.tiene_siguiente %}
+    <a class="btn" href="?pagina={{ paginacion.pagina + 1 }}&busqueda={{ busqueda }}&perfil_id={{ perfil_filtro }}">Siguiente</a>
+  {% endif %}
+</div>
+{% endblock %}

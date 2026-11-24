@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD oficial para main-process-service (Bienestar Nexum - Integrante 2).
+  Define los contratos XML para el proceso principal de evaluación y solicitudes de apoyo.
+  
+  REGLA D-01: Ningún elemento expone empleado_id ni identidad real.
+  Solo viaja IdSeudonimo cuando corresponde.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <!-- ===================== Respuestas de Encuesta ===================== -->
+
+  <xs:complexType name="ItemRespuestaDetalle">
+    <xs:sequence>
+      <xs:element name="reactivo_id" type="xs:positiveInteger"/>
+      <xs:element name="valor"       type="xs:integer"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="proceso_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="ok"             type="xs:boolean"/>
+        <xs:element name="id"             type="xs:string"/>
+        <xs:element name="campania_id"    type="xs:positiveInteger"/>
+        <xs:element name="evento_id"      type="xs:string" minOccurs="0"/>
+        <xs:element name="mensaje"        type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== Resumen Analítico Agregado ===================== -->
+
+  <xs:complexType name="ItemResumenAgregado">
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="campania_id"             type="xs:positiveInteger"/>
+      <xs:element name="total"                   type="xs:nonNegativeInteger"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="agregados_resumen">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="total_grupos" type="xs:nonNegativeInteger"/>
+        <xs:element name="resumen">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="item" type="ItemResumenAgregado" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== Solicitudes de Apoyo ===================== -->
+
+  <xs:simpleType name="EstadoSolicitud">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ABIERTA"/>
+      <xs:enumeration value="EN_PROCESO"/>
+      <xs:enumeration value="CERRADA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="EntradaHistorial">
+    <xs:sequence>
+      <xs:element name="estado"   type="EstadoSolicitud"/>
+      <xs:element name="actor_id" type="xs:string"/>
+      <xs:element name="fecha"    type="xs:dateTime"/>
+      <xs:element name="nota"     type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SolicitudApoyo">
+    <xs:sequence>
+      <xs:element name="id"                  type="xs:string"/>
+      <xs:element name="mensaje"             type="xs:string"/>
+      <xs:element name="fecha"               type="xs:dateTime"/>
+      <xs:element name="estado"              type="EstadoSolicitud"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="historial" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="entrada" type="EntradaHistorial" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="solicitud_apoyo" type="SolicitudApoyo"/>
+
+  <xs:element name="solicitudes_apoyo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="pagina" type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="limite" type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="total"  type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="data">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="item" type="SolicitudApoyo" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

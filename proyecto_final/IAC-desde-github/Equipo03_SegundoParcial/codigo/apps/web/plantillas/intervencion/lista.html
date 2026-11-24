@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block titulo %}Intervenciones organizacionales{% endblock %}
+
+{% block contenido %}
+<h1>Intervenciones organizacionales</h1>
+<p class="subtitulo">Acciones sobre el entorno de trabajo de una unidad, nunca sobre una persona.</p>
+
+<div class="aviso aviso-info">
+  <strong>Una intervención actúa sobre una unidad.</strong> Ninguna tabla del
+  sistema admite un empleado como objetivo de una intervención, y la garantía
+  G1 lo verifica contra el catálogo de la base. "Enviar a terapia al empleado X"
+  no es algo que esta plataforma pueda expresar.
+</div>
+
+{% if 'INTERVENCION_PROPONER' in permisos %}
+<details class="tarjeta">
+  <summary style="cursor:pointer;font-weight:600">Proponer un plan de intervención</summary>
+
+  {% if detecciones %}
+  <p class="tenue" style="margin-top:14px">Condiciones detectadas por el motor de reglas:</p>
+  <div class="tabla-envoltura" style="margin-bottom:16px">
+  <table>
+    <thead><tr><th>Unidad</th><th>Nivel</th><th>Regla</th><th>Sugerencia</th></tr></thead>
+    <tbody>
+    {% for d in detecciones[:6] %}
+      <tr>
+        <td>{{ d.unidad }}</td>
+        <td><span class="insignia {{ 'insignia-alto' if d.nivel == 'PRIORITARIO' else 'insignia-medio' }}">{{ d.nivel }}</span></td>
+        <td class="tenue">{{ d.regla_id }}</td>
+        <td>{{ d.intervencion_sugerida }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+
+  <form method="post">
+    <div class="fila-campos">
+      <div><label for="det">Detección que la origina</label>
+        <select id="det" name="deteccion_id">
+          <option value="">(sin detección asociada)</option>
+          {% for d in detecciones %}
+            <option value="{{ d.deteccion_id }}" data-unidad="{{ d.unidad_organizacional_id }}">#{{ d.deteccion_id }} · {{ d.unidad }} · {{ d.regla_id }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label for="uni">Unidad</label>
+        <select id="uni" name="unidad_organizacional_id" required>
+          {% for u in unidades %}
+            <option value="{{ u.unidad_organizacional_id }}">{{ u.nombre }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label for="tipo">Tipo de intervención</label>
+        <select id="tipo" name="tipo_intervencion" required>
+          {% for t in tipos %}<option value="{{ t.tipo_intervencion }}">{{ t.nombre }}</option>{% endfor %}
+        </select></div>
+      <div><label for="lb">Campaña de línea base</label>
+        <select id="lb" name="campania_linea_base">
+          <option value="">(ninguna)</option>
+          {% for c in campanias %}<option value="{{ c.campania_id }}">{{ c.nombre }}</option>{% endfor %}
+        </select></div>
+      <div><label for="fi">Inicio</label><input type="date" id="fi" name="fecha_inicio" required></div>
+      <div><label for="ff">Cierre</label><input type="date" id="ff" name="fecha_fin" required></div>
+    </div>
+    <div class="campo">
+      <label for="just">Justificación</label>
+      <input type="text" id="just" name="justificacion" required minlength="20"
+             placeholder="La carga percibida bajó durante tres campañas consecutivas en esta unidad">
+    </div>
+    <div class="campo">
+      <label for="esp">Resultado esperado</label>
+      <input type="text" id="esp" name="resultado_esperado"
+             placeholder="Recuperar el nivel de carga percibida a 3.5 en dos campañas">
+    </div>
+    <button class="btn btn-primario" type="submit">Registrar propuesta</button>
+  </form>
+</details>
+{% endif %}
+
+<h2>Planes registrados</h2>
+{% for p in planes %}
+<div class="tarjeta">
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+    <div>
+      <h3 style="margin:0">#{{ p.intervencion_id }} · {{ p.tipo }}</h3>
+      <div class="tenue">{{ p.unidad }} &middot; {{ p.fecha_inicio }} → {{ p.fecha_fin }}</div>
+    </div>
+    <div style="text-align:right">
+      {% if p.estado == 'PROPUESTA' %}<span class="insignia insignia-medio">Propuesta</span>
+      {% elif p.estado == 'APROBADA' %}<span class="insignia insignia-ok">Aprobada</span>
+      {% elif p.estado == 'EN_EJECUCION' %}<span class="insignia insignia-ok">En ejecución</span>
+      {% elif p.estado == 'FINALIZADA' %}<span class="insignia insignia-neutra">Finalizada</span>
+      {% else %}<span class="insignia insignia-alto">Cancelada</span>{% endif %}
+      {% if p.conclusion %}<div style="margin-top:5px"><span class="insignia insignia-neutra">{{ p.conclusion }}</span></div>{% endif %}
+    </div>
+  </div>
+
+  <p style="margin:12px 0 4px">{{ p.justificacion }}</p>
+  {% if p.resultado_esperado %}<p class="tenue" style="margin:0">Esperado: {{ p.resultado_esperado }}</p>{% endif %}
+  <p class="tenue" style="margin:6px 0 0">{{ p.seguimientos }} registro(s) de seguimiento</p>
+
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+    {% if p.estado == 'PROPUESTA' and 'INTERVENCION_APROBAR' in permisos %}
+      <form method="post" action="{{ url_for('intervenciones.cambiar_estado', plan_id=p.intervencion_id) }}">
+        <input type="hidden" name="estado" value="APROBADA">
+        <button class="btn btn-primario" type="submit" style="padding:5px 11px;font-size:13px">Aprobar</button>
+      </form>
+    {% elif p.estado == 'APROBADA' and 'INTERVENCION_SEGUIMIENTO' in permisos %}
+      <form method="post" action="{{ url_for('intervenciones.cambiar_estado', plan_id=p.intervencion_id) }}">
+        <input type="hidden" name="estado" value="EN_EJECUCION">
+        <button class="btn btn-primario" type="submit" style="padding:5px 11px;font-size:13px">Iniciar ejecución</button>
+      </form>
+    {% elif p.estado == 'EN_EJECUCION' and 'INTERVENCION_SEGUIMIENTO' in permisos %}
+      <form method="post" action="{{ url_for('intervenciones.cambiar_estado', plan_id=p.intervencion_id) }}">
+        <input type="hidden" name="estado" value="FINALIZADA">
+        <button class="btn" type="submit" style="padding:5px 11px;font-size:13px">Marcar finalizada</button>
+      </form>
+    {% endif %}
+    {% if 'INTERVENCION_SEGUIMIENTO' in permisos %}
+      <a class="btn" href="{{ url_for('intervenciones.ver_evaluacion', plan_id=p.intervencion_id) }}"
+         style="padding:5px 11px;font-size:13px">Seguimiento y evaluación</a>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="aviso aviso-info">Todavía no hay planes registrados.</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var det = document.getElementById('det'), uni = document.getElementById('uni');
+  if (!det || !uni) return;
+  det.addEventListener('change', function () {
+    var u = det.options[det.selectedIndex].getAttribute('data-unidad');
+    if (u) uni.value = u;
+  });
+})();
+</script>
+{% endblock %}

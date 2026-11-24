@@ -1,0 +1,17 @@
+{
+  "name": "@bienestar-nexum/organizational-service",
+  "version": "1.0.0",
+  "description": "Microservicio de Estructura Organizacional y Jerarquia (Puerto 8117) - Integrante 2",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@bienestar/comun": "file:../comun-node",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0"
+  }
+}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}Garantías del sistema{% endblock %}
+{% block contenido %}
+<h1>Garantías verificadas</h1>
+<p class="subtitulo">Calculadas contra la base en vivo, no escritas a mano.</p>
+
+<div class="aviso aviso-info">
+  Cada renglón lo evalúa una función que consulta el catálogo del motor de base
+  de datos. Si alguien agregara una columna o una vista que rompe una garantía,
+  este tablero lo mostraría en rojo sin que nadie tuviera que acordarse de revisarlo.
+</div>
+
+{% set fallan = filas | rejectattr('cumple') | list %}
+{% if fallan %}
+  <div class="aviso aviso-error"><strong>{{ fallan|length }} garantía(s) no se cumplen.</strong>
+  Revisa los renglones marcados antes de publicar cualquier resultado.</div>
+{% else %}
+  <div class="aviso aviso-ok"><strong>Las {{ filas|length }} garantías se cumplen.</strong></div>
+{% endif %}
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th style="width:290px">Garantía</th><th style="width:100px">Estado</th><th>Detalle</th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+    <tr>
+      <td><strong>{{ f.garantia }}</strong></td>
+      <td>{% if f.cumple %}<span class="insignia insignia-ok">Cumple</span>
+          {% else %}<span class="insignia insignia-alto">Falla</span>{% endif %}</td>
+      <td class="tenue">{{ f.detalle }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

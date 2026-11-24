@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titulo %}Mi consentimiento{% endblock %}
+{% block contenido %}
+<h1>Mi consentimiento</h1>
+<p class="subtitulo">Tú decides si participas, y puedes cambiar de opinión cuando quieras.</p>
+
+<div class="tarjeta">
+  <h3>Estado actual</h3>
+  {% if estado and estado.estado == 'ACEPTADO' %}
+    <p><span class="insignia insignia-ok">Vigente</span>
+       desde {{ estado.fecha_evento.strftime('%d/%m/%Y %H:%M') }}</p>
+    <form method="post" style="margin-top:14px">
+      <input type="hidden" name="decision" value="REVOCADO">
+      <button class="btn btn-peligro" type="submit">Revocar mi consentimiento</button>
+    </form>
+    <p class="tenue" style="margin-top:10px">Revocar no borra las respuestas que ya
+    enviaste; esas ya están seudonimizadas y forman parte de agregados publicados.
+    Lo que impide es que se te pidan nuevas respuestas.</p>
+  {% else %}
+    <p><span class="insignia insignia-neutra">{{ estado.estado if estado else 'Sin otorgar' }}</span></p>
+    <form method="post" style="margin-top:14px">
+      <input type="hidden" name="decision" value="ACEPTADO">
+      <button class="btn btn-primario" type="submit">Otorgar mi consentimiento</button>
+    </form>
+  {% endif %}
+</div>
+
+{% if aviso %}
+<div class="tarjeta">
+  <h3>Lo que estás aceptando (versión {{ aviso.version }})</h3>
+  <div class="tabla-envoltura">
+  <table>
+    <tr><th style="width:210px">Qué se captura</th><td>{{ aviso.datos_capturados }}</td></tr>
+    <tr><th>Quién NO accede</th><td>{{ aviso.quien_no_accede }}</td></tr>
+    <tr><th>Umbral mínimo</th><td>{{ aviso.explicacion_k }}</td></tr>
+    <tr><th>Privacidad diferencial</th><td>{{ aviso.explicacion_dp }}</td></tr>
+    <tr><th>Si revoco</th><td>{{ aviso.consecuencias_revocar }}</td></tr>
+    <tr><th>Retención</th><td>{{ aviso.politica_retencion }}</td></tr>
+    <tr><th>Contacto</th><td>{{ aviso.canal_contacto }}</td></tr>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<h2>Historial</h2>
+<p class="tenue">Revocar no borra: agrega un evento nuevo. Así queda constancia de
+qué consentiste y cuándo.</p>
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Fecha</th><th>Evento</th><th>Versión del aviso</th></tr></thead>
+  <tbody>
+  {% for h in historial %}
+    <tr>
+      <td>{{ h.fecha_evento.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{% if h.estado == 'ACEPTADO' %}<span class="insignia insignia-ok">Otorgado</span>
+          {% else %}<span class="insignia insignia-alto">Revocado</span>{% endif %}</td>
+      <td>{{ h.aviso_id }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="tenue">Sin eventos registrados.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

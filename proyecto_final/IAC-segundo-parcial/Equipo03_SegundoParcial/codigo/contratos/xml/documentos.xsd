@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema de las respuestas de documents-service.
+
+  Lo más importante de este esquema es lo que prohíbe: el tipo Documento
+  admite seudonimo_id y NO declara ningún elemento para el identificador de
+  empleado. Un documento que lo trajera no validaría, de modo que la
+  separación entre identidad y respuestas también queda escrita en el
+  contrato y no solo en el código.
+
+  El contenido es deliberadamente abierto (xs:any): cada tipo de documento
+  tiene su propia forma y eso es justamente lo que justifica MongoDB. Lo
+  que sí está cerrado es todo lo que lo rodea.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified" version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:complexType name="Documento">
+    <xs:sequence>
+      <xs:element name="documento_id"             type="IdDocumento"/>
+      <xs:element name="tipo"                     type="TipoDocumento"/>
+      <xs:element name="version"                  type="xs:positiveInteger"/>
+      <xs:element name="seudonimo_id"             type="IdSeudonimo" nillable="true" minOccurs="0"/>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"    nillable="true" minOccurs="0"/>
+      <xs:element name="campania_id"              type="IdCampania"  nillable="true" minOccurs="0"/>
+      <xs:element name="contenido">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="hash_contenido">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9a-f]{64}"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="etiquetas" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="etiqueta" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="creado_por"          type="IdUsuario" nillable="true" minOccurs="0"/>
+      <xs:element name="fecha_creacion"      type="xs:dateTime"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="documentos_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="documentos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="documento" type="Documento" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="documento_respuesta" type="Documento"/>
+
+  <xs:element name="documento_creado">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="documento_id"   type="IdDocumento"/>
+        <xs:element name="tipo"           type="TipoDocumento"/>
+        <xs:element name="version"        type="xs:positiveInteger"/>
+        <xs:element name="hash_contenido" type="xs:string"/>
+        <xs:element name="fecha_creacion" type="xs:dateTime"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema de las respuestas de users-service.
+
+  Nota sobre lo que NO aparece aquí: no hay ningún elemento que contenga
+  una respuesta de encuesta ni un valor de bienestar. Este servicio
+  administra cuentas, no datos de autorreporte, y el esquema lo refleja.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified" version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:complexType name="Permiso">
+    <xs:sequence>
+      <xs:element name="permiso_id"  type="xs:positiveInteger" minOccurs="0"/>
+      <xs:element name="codigo"      type="xs:string"/>
+      <xs:element name="descripcion" type="xs:string" minOccurs="0"/>
+      <xs:element name="sensible"    type="xs:boolean" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Usuario">
+    <xs:sequence>
+      <xs:element name="usuario_id"          type="IdUsuario"/>
+      <xs:element name="nombre"              type="xs:string"/>
+      <xs:element name="apellido_paterno"    type="xs:string"/>
+      <xs:element name="apellido_materno"    type="xs:string" nillable="true" minOccurs="0"/>
+      <xs:element name="correo"              type="Correo"/>
+      <xs:element name="activo"              type="xs:boolean"/>
+      <xs:element name="fecha_creacion"      type="xs:dateTime" nillable="true" minOccurs="0"/>
+      <xs:element name="fecha_ultimo_acceso" type="xs:dateTime" nillable="true" minOccurs="0"/>
+      <xs:element name="perfil_id"           type="xs:positiveInteger" nillable="true"/>
+      <xs:element name="perfil"              type="xs:string" nillable="true"/>
+      <!-- Alcance organizacional: nil significa toda la organizacion. -->
+      <xs:element name="unidad_alcance_id"   type="IdUnidad" nillable="true"/>
+      <xs:element name="permisos" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="permiso" type="Permiso" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="usuarios_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="usuarios">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="usuario" type="Usuario" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="usuario_respuesta" type="Usuario"/>
+
+  <xs:element name="usuario_creado">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="usuario_id" type="IdUsuario"/>
+        <xs:element name="creado"     type="xs:boolean"/>
+        <xs:element name="mensaje"    type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

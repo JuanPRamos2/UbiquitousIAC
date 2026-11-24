@@ -1,0 +1,59 @@
+# Ambiente STAGING — una sola VM e2-small con todo en el mismo host.
+#
+# Propósito: que la demostración en production no sea la primera vez que
+# el sistema corre fuera de una laptop. Staging usa la MISMA imagen que
+# production; lo que cambia es el tamaño y de dónde vienen los datos.
+#
+# Diferencias contra production:
+#   - Un solo proceso de trabajo de Gunicorn en lugar de cuatro, porque
+#     la máquina es compartida con la base de datos.
+#   - Datos anonimizados de prueba, nunca datos reales de la organización.
+#   - Sin respaldo: staging es desechable por definición.
+#   - Se apaga fuera del horario de trabajo del equipo.
+
+services:
+
+  datos:
+    volumes:
+      - ../../db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/02_volumen_sintetico.sql:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  cache:
+    command: >
+      redis-server
+      --appendonly no
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 192m
+
+  web:
+    environment:
+      APP_AMBIENTE: staging
+      GUNICORN_WORKERS: 1
+      NIVEL_BITACORA: INFO
+      MOSTRAR_ERRORES: "false"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # Staging sí expone la aplicación, pero detrás de un proxy, igual que
+  # production. Así se prueba la terminación de TLS y los encabezados
+  # antes de llegar a la demostración.
+  proxy:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/staging.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+    networks:
+      - publica
+    restart: unless-stopped

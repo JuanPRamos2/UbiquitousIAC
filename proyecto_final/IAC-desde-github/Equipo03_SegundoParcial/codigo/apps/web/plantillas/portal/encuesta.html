@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}{{ campania.campania }}{% endblock %}
+{% block contenido %}
+<h1>{{ campania.campania }}</h1>
+<p class="subtitulo">Cinco preguntas. Responde pensando en las últimas dos semanas.</p>
+
+<div class="aviso aviso-info">
+  Tu respuesta se guarda bajo el seudónimo <code>{{ seudonimo }}</code>, no bajo tu nombre.
+  Nadie en la organización puede consultar lo que contestaste: solo se publican
+  promedios por unidad, con ruido aplicado y únicamente cuando hay al menos cinco respuestas.
+</div>
+
+<form method="post">
+  {% for r in reactivos %}
+  <div class="reactivo">
+    <div class="dim">{{ r.dimension }}{% if r.invertido %} · escala invertida{% endif %}</div>
+    <div class="texto">{{ loop.index }}. {{ r.texto }}</div>
+    <div class="escala">
+      {% for v, etiqueta in [(1,'Nunca'),(2,'Casi nunca'),(3,'A veces'),(4,'Casi siempre'),(5,'Siempre')] %}
+      <label>
+        <input type="radio" name="r_{{ r.reactivo_id }}" value="{{ v }}" required>
+        <span>{{ v }}</span>
+        <span>{{ etiqueta }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div style="margin-top:20px;display:flex;gap:10px">
+    <button class="btn btn-primario" type="submit">Enviar mi respuesta</button>
+    <a class="btn" href="{{ url_for('portal.inicio') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

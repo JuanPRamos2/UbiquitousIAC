@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIBRERÍA UDEM - Arquitectura Animada (Opción B)</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- GSAP para animaciones cinéticas y secuencias -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>LIBRERÍA UDEM</h1>
+        <p>Arquitectura del Sistema</p>
+        <div class="modes">
+            <button id="btn-explore" class="active">Modo Explorar</button>
+            <button id="btn-learn">Modo Aprender</button>
+        </div>
+    </header>
+
+    <main id="app-container">
+        <!-- SVG Canvas: Se dibujará dinámicamente con JS -->
+        <svg id="architecture-canvas" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet">
+            <defs>
+                <!-- Filtros para brillos y sombras -->
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
+            <g id="layer-backgrounds"></g>
+            <g id="layer-connections"></g>
+            <g id="layer-nodes"></g>
+            <g id="layer-packets"></g>
+        </svg>
+
+        <!-- Tooltip interactivo -->
+        <div id="tooltip" class="hidden"></div>
+        
+        <!-- Panel de Aprendizaje -->
+        <div id="learning-panel" class="hidden">
+            <h3 id="learn-title">Concepto</h3>
+            <p id="learn-text">Explicación breve aquí.</p>
+            <button id="btn-next-step">Continuar &rarr;</button>
+        </div>
+
+        <!-- Controles de simulación rápida -->
+        <div id="simulation-controls">
+            <button onclick="simulations.api()">Petición API (JSON)</button>
+            <button onclick="simulations.electron()">Catálogo (XML)</button>
+            <button onclick="simulations.login()">Login & JWT</button>
+            <button onclick="simulations.cache()">Prueba Caché</button>
+            <button onclick="simulations.order()">Crear Pedido</button>
+            <button onclick="simulations.monolith()">Ver Monolito</button>
+        </div>
+    </main>
+
+    <footer>
+        <div id="timeline">
+            <div class="timeline-step" data-scene="0">01 Intro</div>
+            <div class="timeline-step" data-scene="1">02 Clientes</div>
+            <div class="timeline-step" data-scene="2">03 Cloud</div>
+            <div class="timeline-step" data-scene="3">04 Database</div>
+            <div class="timeline-step" data-scene="4">05 Redis</div>
+            <div class="timeline-step" data-scene="5">06 JWT</div>
+            <div class="timeline-step" data-scene="6">07 Pedidos</div>
+            <div class="timeline-step" data-scene="7">08 Monolito</div>
+            <div class="timeline-step" data-scene="8">09 Full</div>
+        </div>
+        <div class="playback-controls">
+            <button id="btn-prev">← Ant</button>
+            <button id="btn-replay">↺ Reiniciar</button>
+            <button id="btn-next">Sig →</button>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

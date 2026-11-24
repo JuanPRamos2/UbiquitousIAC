@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexum.com.mx/bienestar/contratos/Cobertura.schema.json",
+  "title": "Cobertura",
+  "description": "Generado desde el contrato OpenAPI de algorithms-service. No editar a mano: ejecutar contratos/generar_json.py.",
+  "properties": {
+    "campania_id": {
+      "type": "string"
+    },
+    "cobertura_porcentaje": {
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "no_evaluables": {
+      "items": {
+        "$ref": "#/$defs/UnidadNoEvaluable"
+      },
+      "type": "array"
+    },
+    "nota": {
+      "type": "string"
+    },
+    "unidades_convocadas": {
+      "type": "integer"
+    },
+    "unidades_evaluables": {
+      "type": "integer"
+    },
+    "unidades_no_evaluables": {
+      "type": "integer"
+    }
+  },
+  "type": "object",
+  "$defs": {
+    "Corrida": {
+      "properties": {
+        "campania_id": {
+          "type": "string"
+        },
+        "correlacion_id": {
+          "type": "string"
+        },
+        "corrida_id": {
+          "pattern": "^ALG-[0-9A-F]{12}$",
+          "type": "string"
+        },
+        "detecciones": {
+          "items": {
+            "$ref": "#/$defs/Deteccion"
+          },
+          "type": "array"
+        },
+        "ejecutado_por": {
+          "type": "string"
+        },
+        "epsilon_consumido": {
+          "description": "Siempre 0. El motor lee agregados ya publicados; si recalculara para evaluar, cada corrida gastaría presupuesto de privacidad y evaluar el riesgo costaría la capacidad de publicar resultados nuevos.",
+          "example": 0,
+          "format": "double",
+          "type": "number"
+        },
+        "fecha": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "no_evaluables": {
+          "items": {
+            "$ref": "#/$defs/UnidadNoEvaluable"
+          },
+          "type": "array"
+        },
+        "perfil_ejecutor": {
+          "type": "string"
+        },
+        "por_nivel": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "total_detecciones": {
+          "type": "integer"
+        },
+        "total_no_evaluables": {
+          "type": "integer"
+        },
+        "unidad_organizacional_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unidades_evaluadas": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Deteccion": {
+      "properties": {
+        "campania_id": {
+          "type": "string"
+        },
+        "deteccion_id": {
+          "type": "string"
+        },
+        "explicacion": {
+          "description": "Qué valor se observó, contra qué umbral y en qué campaña. Una detección sin explicación no se emite: nadie aprueba un plan de intervención porque un sistema lo diga.",
+          "type": "string"
+        },
+        "intervencion_sugerida": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nivel": {
+          "enum": [
+            "INFORMATIVO",
+            "ATENCION",
+            "PRIORITARIO"
+          ],
+          "type": "string"
+        },
+        "orden": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "regla_id": {
+          "type": "string"
+        },
+        "tipo_intervencion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unidad": {
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "type": "string"
+        },
+        "valor_observado": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Error": {
+      "properties": {
+        "error": {
+          "properties": {
+            "codigo": {
+              "description": "Codigo estable; el cliente programa contra esto, no contra el mensaje.",
+              "example": "SIN_PERMISO",
+              "type": "string"
+            },
+            "correlacion_id": {
+              "example": "a1b2c3d4e5f60718",
+              "type": "string"
+            },
+            "detalles": {
+              "items": {
+                "properties": {
+                  "campo": {
+                    "example": "correo",
+                    "type": "string"
+                  },
+                  "problema": {
+                    "example": "no es un correo valido",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "mensaje": {
+              "example": "El perfil Colaborador no tiene el permiso requerido.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "codigo",
+            "mensaje"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "Paginacion": {
+      "properties": {
+        "pagina": {
+          "example": 1,
+          "type": "integer"
+        },
+        "tamano": {
+          "example": 20,
+          "type": "integer"
+        },
+        "tiene_anterior": {
+          "example": false,
+          "type": "boolean"
+        },
+        "tiene_siguiente": {
+          "example": true,
+          "type": "boolean"
+        },
+        "total": {
+          "example": 143,
+          "type": "integer"
+        },
+        "total_paginas": {
+          "example": 8,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Regla": {
+      "properties": {
+        "activa": {
+          "type": "boolean"
+        },
+        "campanias_consecutivas": {
+          "description": "Cuántas campañas seguidas tiene que cumplirse. Una sola medición mala puede ser una semana mala; tres seguidas son un patrón.",
+          "type": "integer"
+        },
+        "comparador": {
+          "enum": [
+            "<",
+            "<=",
+            ">",
+            ">="
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "condicion_legible": {
+          "description": "La condición en palabras. No es decoración: es lo que permite que alguien sin acceso al código entienda por qué se disparó una detección, y lo que hace auditable al motor.",
+          "type": "string"
+        },
+        "detecciones_historicas": {
+          "type": "integer"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "dimension_id": {
+          "description": "Nulo cuando la regla evalúa el índice global.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "intervenciones_sugeridas": {
+          "description": "Tipos de intervención que la regla sugiere, en orden. Son organizacionales: rediseño de turno, revisión de carga, acompañamiento. Nunca acciones sobre una persona.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "nivel": {
+          "enum": [
+            "INFORMATIVO",
+            "ATENCION",
+            "PRIORITARIO"
+          ],
+          "type": "string"
+        },
+        "nombre": {
+          "example": "Carga percibida elevada de forma sostenida",
+          "type": "string"
+        },
+        "regla_id": {
+          "example": "RG-01",
+          "type": "string"
+        },
+        "umbral_valor": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Simulacion": {
+      "properties": {
+        "campania_id": {
+          "type": "string"
+        },
+        "comparador": {
+          "type": "string"
+        },
+        "con_advertencia_de_precision": {
+          "description": "Unidades cuyo valor está cerca del ruido. Mover el umbral unas décimas las mete o las saca por azar y no por su situación real, así que se cuentan aparte.",
+          "type": "integer"
+        },
+        "detectadas_con_umbral_actual": {
+          "type": "integer"
+        },
+        "detectadas_con_umbral_simulado": {
+          "type": "integer"
+        },
+        "entrarian": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "epsilon_consumido": {
+          "format": "double",
+          "type": "number"
+        },
+        "nombre": {
+          "type": "string"
+        },
+        "nota": {
+          "type": "string"
+        },
+        "regla_id": {
+          "type": "string"
+        },
+        "saldrian": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "umbral_actual": {
+          "format": "double",
+          "type": "number"
+        },
+        "umbral_simulado": {
+          "format": "double",
+          "type": "number"
+        },
+        "unidades_con_valor_publicado": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SolicitudEvaluar": {
+      "properties": {
+        "campania_id": {
+          "example": "CAMP-2026-S1",
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "description": "Sin este campo se evalúan todas las unidades con algún agregado publicado en la campaña, dentro del alcance del perfil.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "campania_id"
+      ],
+      "type": "object"
+    },
+    "SolicitudSimular": {
+      "properties": {
+        "campania_id": {
+          "example": "CAMP-2026-S1",
+          "type": "string"
+        },
+        "regla_id": {
+          "example": "RG-02",
+          "type": "string"
+        },
+        "umbral_valor": {
+          "description": "El umbral a probar. Sin este campo se usa el actual, lo que sirve para ver el estado sin cambiar nada.",
+          "example": 3.2,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "regla_id",
+        "campania_id"
+      ],
+      "type": "object"
+    },
+    "UnidadNoEvaluable": {
+      "description": "Unidad convocada que el motor no pudo evaluar. Esta lista es la parte que una implementación descuidada omite: una unidad cuyos agregados se suprimieron todos no aparece en las detecciones, y si no se reporta aquí, la organización concluye que ahí no hay problema.",
+      "properties": {
+        "motivo": {
+          "type": "string"
+        },
+        "plantilla_declarada": {
+          "type": "integer"
+        },
+        "publicados": {
+          "example": 0,
+          "type": "integer"
+        },
+        "suprimidos": {
+          "example": 3,
+          "type": "integer"
+        },
+        "unidad": {
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

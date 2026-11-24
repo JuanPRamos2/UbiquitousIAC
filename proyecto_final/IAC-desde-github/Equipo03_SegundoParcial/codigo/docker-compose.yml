@@ -1,0 +1,571 @@
+# Bienestar Nexum — todo el proyecto con un comando.
+#
+#     docker compose up -d --build
+#     docker compose ps
+#
+# POR QUÉ EXISTE ESTE ARCHIVO ADEMÁS DE infra/compose/
+# ----------------------------------------------------
+# En infra/compose/ viven cuatro archivos que se combinan para los tres
+# ambientes (developer, staging, production). Esa separación es la que
+# permite afirmar que lo probado en staging es lo que corre en production:
+# la imagen es la misma y solo cambian las variables.
+#
+# Pero para revisar el proyecto, o para que un integrante lo levante en su
+# máquina, encadenar tres archivos con --env-file es una fuente de errores
+# que no aporta nada. Este archivo es ese camino corto: valores de
+# developer escritos a la vista, un solo comando, y ninguna variable que
+# haya que recordar.
+#
+# NO sirve para staging ni production. Tiene contraseñas triviales a la
+# vista y publica los puertos de las bases de datos. Para cualquier cosa
+# que no sea la máquina de un integrante, se usa infra/compose/.
+#
+# LO QUE ESTE ARCHIVO NO RELAJA
+# -----------------------------
+# Los ocho microservicios y el sistema web se conectan a PostgreSQL con el
+# rol `bienestar_app`, NUNCA con el superusuario. Eso no es un detalle de
+# configuración: es la garantía central del proyecto. El rol de la
+# aplicación no tiene permiso de lectura sobre las respuestas individuales,
+# y la única ruta hacia los datos agregados pasa por una función que aplica
+# ruido de Laplace y descuenta presupuesto de épsilon. Un compose que
+# conectara los servicios como `postgres` dejaría esa garantía en el papel
+# y no en el motor, que es exactamente lo que el proyecto promete que no
+# ocurre.
+
+name: bienestar-nexum
+
+x-entorno-python: &entorno
+  APP_AMBIENTE: developer
+  PG_HOST: datos
+  PG_BASE: bienestar
+  # El rol de la aplicación. El superusuario solo lo usa el arranque de la
+  # base, dentro del contenedor de PostgreSQL, y nunca un servicio.
+  PG_USUARIO: bienestar_app
+  PG_CLAVE: desarrollo_local
+  REDIS_HOST: cache
+  MONGO_URI: mongodb://documentos:27017
+  MONGO_BASE: bienestar
+  # El MISMO secreto para los nueve componentes: por eso un token emitido
+  # por auth-service sirve en catalog-service y un logout revoca en todos.
+  JWT_SECRETO: secreto-solo-para-developer-32-bytes
+  JWT_MINUTOS: "15"
+  NIVEL_BITACORA: INFO
+  MOSTRAR_ERRORES: "true"
+
+services:
+
+  # ============================================================ datos
+  datos:
+    image: postgres:16.13
+    environment:
+      POSTGRES_DB: bienestar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: desarrollo_local
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      # Los scripts de arranque leen estas dos para crear el rol de la
+      # aplicación con su contraseña.
+      PG_USUARIO: bienestar_app
+      PG_CLAVE: desarrollo_local
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+      # Se montan archivo por archivo y no la carpeta: el entrypoint de
+      # PostgreSQL no entra a subdirectorios de initdb.d. El prefijo
+      # numérico es el orden de ejecución, y solo corre al crear el volumen.
+      #
+      # Las migraciones van TODAS, y el número del destino lo pone el
+      # número de la migración más un desplazamiento fijo. El esquema
+      # anterior iba 02, 03, 04, 05, 06, 06b, 06c, 06d: cada migración
+      # nueva obligaba a inventar un sufijo, y el día que a alguien se le
+      # ocurriera 06e antes que 06d, el orden cambiaba sin que se notara.
+      # Con dos dígitos hay sitio para ochenta migraciones sin renombrar
+      # nada, y el script de permisos queda en 90, inequívocamente al
+      # final.
+      #
+      # Que vayan TODAS no es decorativo: antes solo se montaba la 001, y
+      # una base recién creada arrancaba sin los códigos de bitácora del
+      # sistema web (002), sin la función que registra autoreportes (003)
+      # y sin el CRUD de catálogos (004). El sistema levantaba y fallaba
+      # al primer uso real, y la sonda de salud no lo detectaba. Hay una
+      # prueba que recorre la carpeta y falla si falta alguna: es la que
+      # avisó cuando se agregaron la 009 y la 010.
+      - ./db/migraciones/001_rol_motor_y_funciones_definer.sql:/docker-entrypoint-initdb.d/03_mig_001.sql:ro
+      - ./db/migraciones/002_acciones_del_sistema_web.sql:/docker-entrypoint-initdb.d/04_mig_002.sql:ro
+      - ./db/migraciones/003_registrar_autoreporte.sql:/docker-entrypoint-initdb.d/05_mig_003.sql:ro
+      - ./db/migraciones/004_catalogos_crud_y_permisos.sql:/docker-entrypoint-initdb.d/06_mig_004.sql:ro
+      - ./db/migraciones/005_acciones_de_reportes_y_evidencias.sql:/docker-entrypoint-initdb.d/07_mig_005.sql:ro
+      - ./db/migraciones/006_acciones_del_motor_de_reglas.sql:/docker-entrypoint-initdb.d/08_mig_006.sql:ro
+      - ./db/migraciones/007_resultados_de_bitacora.sql:/docker-entrypoint-initdb.d/09_mig_007.sql:ro
+      - ./db/migraciones/008_jerarquia_consistente_y_control_de_inferencia.sql:/docker-entrypoint-initdb.d/10_mig_008.sql:ro
+      - ./db/migraciones/009_exportacion_e_importacion_controlada.sql:/docker-entrypoint-initdb.d/11_mig_009.sql:ro
+      - ./db/migraciones/010_gobierno_de_parametros.sql:/docker-entrypoint-initdb.d/12_mig_010.sql:ro
+      - ./db/migraciones/011_sincronizacion_desde_clientes.sql:/docker-entrypoint-initdb.d/13_mig_011.sql:ro
+      - ./db/migraciones/012_integracion_corporativa_controlada.sql:/docker-entrypoint-initdb.d/14_mig_012.sql:ro
+      - ./db/migraciones/013_garantias_de_las_vias_de_entrada.sql:/docker-entrypoint-initdb.d/15_mig_013.sql:ro
+      - ./db/migraciones/014_supervision_de_componentes.sql:/docker-entrypoint-initdb.d/16_mig_014.sql:ro
+      - ./db/migraciones/015_acciones_del_ciclo_de_intervencion.sql:/docker-entrypoint-initdb.d/17_mig_015.sql:ro
+      - ./db/migraciones/016_acciones_de_consentimiento_apoyo_y_gobierno.sql:/docker-entrypoint-initdb.d/18_mig_016.sql:ro
+      - ./db/migraciones/017_endurecimiento_privacidad_node.sql:/docker-entrypoint-initdb.d/19_mig_017.sql:ro
+      # Los permisos van DESPUÉS de las migraciones: varias crean
+      # tablas y columnas sobre las que este script otorga
+      # privilegios.
+      - ./db/esquema/09_permisos.sh:/docker-entrypoint-initdb.d/90_permisos.sh:ro
+      # Datos sintéticos: 1,161 colaboradores en 16 unidades, cinco
+      # campañas, agregados ya publicados y un plan de intervención.
+      - ./db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/91_semilla.sql:ro
+      - ./db/semilla/03_campania_abierta_demo.sql:/docker-entrypoint-initdb.d/92_semilla.sql:ro
+      - ./db/semilla/04_agregados_y_riesgo_demo.sql:/docker-entrypoint-initdb.d/93_semilla.sql:ro
+      - ./db/semilla/05_intervencion_demo.sql:/docker-entrypoint-initdb.d/94_semilla.sql:ro
+    ports:
+      # Publicado solo porque esto es developer: permite abrir la base con
+      # psql o DBeaver para revisar los permisos. En production el compose
+      # de infra/ NO publica este puerto, y la ausencia está comentada ahí
+      # como deliberada.
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bienestar"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      # El arranque completo (esquema + 5 migraciones + semilla de 19,020
+      # respuestas) tarda. Sin este margen, los servicios se declaran
+      # caídos antes de que la base termine de poblarse.
+      start_period: 180s
+    networks: [interna]
+    restart: unless-stopped
+
+  cache:
+    image: redis:7.2-alpine
+    command: >
+      redis-server
+      --appendonly no
+      --maxmemory 256mb
+      --maxmemory-policy noeviction
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [interna]
+    restart: unless-stopped
+
+  documentos:
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_DATABASE: bienestar
+    volumes:
+      - datos_mongo:/data/db
+      # Índices y validadores $jsonSchema de las siete colecciones. El
+      # validador es la última barrera de la regla D-01: si una versión
+      # futura de un servicio mandara empleado_id por error, la base
+      # rechaza el documento en lugar de guardarlo.
+      - ./db/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    ports: ["27017:27017"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks: [interna]
+    restart: unless-stopped
+
+  # ===================================================== sistema web
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      <<: *entorno
+      ALMACEN_EVIDENCIAS: /var/lib/bienestar/evidencias
+      EVIDENCIA_TAMANO_MAXIMO: "8388608"
+      MICROSERVICIO_TIMEOUT: "2.5"
+      # A dónde llama el portal. Si un servicio no responde, cae a
+      # PostgreSQL y sigue operando; la pantalla /administracion/servicios
+      # permite demostrarlo apagándolos.
+      AUTH_SERVICE_URL: http://auth-service:8000
+      USERS_SERVICE_URL: http://users-service:8000
+      CATALOG_SERVICE_URL: http://catalog-service:8000
+      MAIN_PROCESS_SERVICE_URL: http://main-process-service:8000
+      DOCUMENTS_SERVICE_URL: http://documents-service:8000
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8000
+      QUERIES_SERVICE_URL: http://queries-service:8000
+      REPORTS_SERVICE_URL: http://reports-service:8000
+      ALGORITHMS_SERVICE_URL: http://algorithms-service:8000
+      TRENDS_SERVICE_URL: http://trends-service:8000
+      INTERVENTIONS_SERVICE_URL: http://interventions-service:8000
+      EXPORT_SERVICE_URL: http://export-service:8000
+      CONFIGURATION_SERVICE_URL: http://configuration-service:8000
+      MONITORING_SERVICE_URL: http://monitoring-service:8000
+      SYNC_SERVICE_URL: http://sync-service:8000
+      INTEGRATION_SERVICE_URL: http://integration-service:8000
+      CONSENT_SERVICE_URL: http://consent-service:8000
+      PRIVACY_SERVICE_URL: http://privacy-service:8000
+      SURVEY_SERVICE_URL: http://survey-service:8000
+      INDICATORS_SERVICE_URL: http://indicators-service:8000
+      SUPPORT_SERVICE_URL: http://support-service:8000
+      ORGANIZATIONAL_SERVICE_URL: http://organizational-service:8000
+      AUDIT_SERVICE_URL: http://audit-service:8000
+      DATA_GOVERNANCE_SERVICE_URL: http://data-governance-service:8000
+    volumes:
+      # Los archivos de evidencia sobreviven a un docker compose down. En
+      # el sistema de archivos del contenedor desaparecerían en el
+      # siguiente despliegue, que es justo lo que una evidencia no puede
+      # hacer.
+      - evidencias:/var/lib/bienestar/evidencias
+    ports: ["8000:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # ============================================ Integrante 1 (Python)
+  auth-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: auth-service/Dockerfile
+    environment: *entorno
+    ports: ["8101:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  users-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: users-service/Dockerfile
+    environment: *entorno
+    ports: ["8102:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # ============================================== Integrante 2 (Node)
+  # Las variables son las MISMAS que los servicios en Python: comun-node
+  # las lee con esos nombres a propósito, para que un solo juego de
+  # variables levante los ocho. Y se conecta con bienestar_app, igual que
+  # todos: el privilegio mínimo no se negocia por lenguaje.
+  catalog-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: catalog-service/Dockerfile
+    environment:
+      <<: *entorno
+      CATALOGO_CACHE_TTL_SEG: "300"
+    ports: ["8103:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  main-process-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: main-process-service/Dockerfile
+    environment: *entorno
+    ports: ["8104:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # ============================================ Integrante 3 (Python)
+  documents-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: documents-service/Dockerfile
+    environment: *entorno
+    ports: ["8105:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  notifications-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: notifications-service/Dockerfile
+    environment: *entorno
+    ports: ["8106:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # ================================= consultas y reportes (Python)
+  # queries-service NO depende de MongoDB: solo lee vistas de PostgreSQL y
+  # cachea en Redis. Declararlo lo dejaría esperando una base que no usa.
+  queries-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: queries-service/Dockerfile
+    environment: *entorno
+    ports: ["8107:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  reports-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: reports-service/Dockerfile
+    environment: *entorno
+    ports: ["8108:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # Motor de reglas. Guarda cada corrida en MongoDB, que es donde el
+  # proyecto almacena los resultados de algoritmos: sin ese registro, una
+  # deteccion de hace tres meses no se puede explicar, porque los umbrales
+  # pudieron cambiar desde entonces.
+  algorithms-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: algorithms-service/Dockerfile
+    environment: *entorno
+    ports: ["8109:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # trends-service no depende de MongoDB: lee las series de PostgreSQL y no
+  # archiva nada. Declarar una dependencia que no tiene lo dejaria sin
+  # arrancar por una caida que no le afecta.
+  trends-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: trends-service/Dockerfile
+    environment: *entorno
+    ports: ["8114:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # interventions-service tampoco depende de MongoDB: los planes, el
+  # seguimiento y las evaluaciones son relacionales y tienen integridad
+  # referencial contra las unidades y las campanias.
+  interventions-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: interventions-service/Dockerfile
+    environment: *entorno
+    ports: ["8115:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # export-service tampoco depende de MongoDB. El archivo generado vive en
+  # la misma fila que su registro, en PostgreSQL, asi que este servicio no
+  # necesita volumen: un archivo de agregados que pudiera existir sin su
+  # registro es justo lo que la tabla vino a evitar.
+  export-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: export-service/Dockerfile
+    environment: *entorno
+    ports: ["8121:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # configuration-service no depende de MongoDB: los parametros, sus
+  # limites y su historial son relacionales y tienen integridad
+  # referencial contra los perfiles.
+  configuration-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: configuration-service/Dockerfile
+    environment: *entorno
+    ports: ["8122:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # monitoring-service vigila a los demas, pero su propia sonda mira solo
+  # sus propias dependencias. Si declarara a los otros componentes como
+  # dependencias suyas, uno caido lo pondria en no_listo y el orquestador lo
+  # sacaria de servicio justo cuando hace falta verlo.
+  #
+  # MONITOREO_EN_DOCKER le dice que resuelva por nombre de servicio: dentro
+  # de la red interna todos escuchan en 8000, y los puertos 81xx solo
+  # existen publicados hacia la maquina.
+  monitoring-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: monitoring-service/Dockerfile
+    environment:
+      <<: *entorno
+      MONITOREO_EN_DOCKER: "true"
+    ports: ["8123:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # sync-service recibe lo que capturaron las aplicaciones cliente sin red.
+  # No depende de MongoDB: lo unico que guarda es la memoria de operaciones
+  # aplicadas, que es relacional y tiene integridad referencial contra las
+  # campanias.
+  sync-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: sync-service/Dockerfile
+    environment: *entorno
+    ports: ["8120:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  # integration-service es la puerta hacia el sistema corporativo. Escribe
+  # en el arbol organizacional, del que depende el alcance de todos los
+  # perfiles, asi que no se levanta sin la base sana.
+  integration-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: integration-service/Dockerfile
+    environment: *entorno
+    ports: ["8124:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  consent-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: consent-service/Dockerfile
+    environment: *entorno
+    ports: ["8110:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  privacy-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: privacy-service/Dockerfile
+    environment: *entorno
+    ports: ["8111:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  survey-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: survey-service/Dockerfile
+    environment: *entorno
+    ports: ["8112:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  indicators-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: indicators-service/Dockerfile
+    environment: *entorno
+    ports: ["8113:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  support-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: support-service/Dockerfile
+    environment: *entorno
+    ports: ["8116:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+      documentos: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  organizational-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: organizational-service/Dockerfile
+    environment: *entorno
+    ports: ["8117:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  audit-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: audit-service/Dockerfile
+    environment: *entorno
+    ports: ["8118:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+  data-governance-service:
+    build:
+      context: ./apps/microservicios
+      dockerfile: data-governance-service/Dockerfile
+    environment: *entorno
+    ports: ["8119:8000"]
+    depends_on:
+      datos: {condition: service_healthy}
+      cache: {condition: service_healthy}
+    networks: [interna]
+    restart: unless-stopped
+
+networks:
+  interna:
+    name: bienestar-interna
+
+volumes:
+  datos_pg:
+  datos_mongo:
+  evidencias:

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Estado de los microservicios{% endblock %}
+{% block contenido %}
+<h1>Estado de los microservicios</h1>
+<p class="subtitulo">Consulta del endpoint de salud de cada servicio.</p>
+
+{% set caidos = filas | selectattr('estado', 'equalto', 'CAIDO') | list %}
+{% if caidos %}
+<div class="aviso aviso-info">
+  <strong>{{ caidos|length }} servicio(s) no responden, y el portal sigue funcionando.</strong>
+  Eso es lo esperado: la arquitectura obligatoria exige que el sistema web
+  opere de manera independiente del módulo de microservicios.
+</div>
+{% else %}
+<div class="aviso aviso-ok">Los {{ filas|length }} microservicios responden.</div>
+{% endif %}
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Servicio</th><th>Estado</th><th>Tiempo</th><th>Dependencias</th><th>Detalle</th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+    <tr>
+      <td><strong>{{ f.servicio }}</strong><div class="tenue" style="font-size:12px">{{ f.url }}</div></td>
+      <td>
+        {% if f.estado == 'DISPONIBLE' %}<span class="insignia insignia-ok">Disponible</span>
+        {% elif f.estado == 'DEGRADADO' %}<span class="insignia insignia-medio">Degradado</span>
+        {% else %}<span class="insignia insignia-alto">Caído</span>{% endif %}
+      </td>
+      <td>{{ f.ms }} ms</td>
+      <td>
+        {% for nombre, d in f.dependencias.items() %}
+          <div>{{ nombre }}:
+            {% if d.ok %}<span style="color:var(--verde)">ok</span> <span class="tenue">{{ d.ms }} ms</span>
+            {% else %}<span style="color:var(--rojo)">falla</span>{% endif %}
+          </div>
+        {% else %}<span class="tenue">—</span>{% endfor %}
+      </td>
+      <td class="tenue" style="font-size:12px">{{ f.detalle }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p class="tenue" style="margin-top:14px">
+  Cada servicio expone <code>/health/live</code> (el proceso responde),
+  <code>/health/ready</code> (sus dependencias responden) y <code>/docs</code>
+  (su contrato en Swagger).
+</p>
+{% endblock %}

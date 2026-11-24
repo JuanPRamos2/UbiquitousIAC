@@ -1,0 +1,340 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexum.com.mx/bienestar/contratos/EstadoPresupuesto.schema.json",
+  "title": "EstadoPresupuesto",
+  "description": "Épsilon consumido y disponible por campaña y unidad. Es el dato que decide si todavía se puede publicar un agregado.",
+  "properties": {
+    "agotado": {
+      "description": "Cuando es verdadero, la base rechaza cualquier publicacion nueva de esa campania y unidad: el presupuesto es un tope real, no una advertencia.",
+      "type": "boolean"
+    },
+    "campania_id": {
+      "type": "string"
+    },
+    "consultas_realizadas": {
+      "type": "integer"
+    },
+    "epsilon_consumido": {
+      "format": "double",
+      "type": "number"
+    },
+    "epsilon_restante": {
+      "format": "double",
+      "type": "number"
+    },
+    "epsilon_total": {
+      "format": "double",
+      "type": "number"
+    },
+    "unidad_organizacional_id": {
+      "type": "string"
+    }
+  },
+  "type": "object",
+  "$defs": {
+    "Error": {
+      "properties": {
+        "error": {
+          "properties": {
+            "codigo": {
+              "description": "Codigo estable; el cliente programa contra esto, no contra el mensaje.",
+              "example": "SIN_PERMISO",
+              "type": "string"
+            },
+            "correlacion_id": {
+              "example": "a1b2c3d4e5f60718",
+              "type": "string"
+            },
+            "detalles": {
+              "items": {
+                "properties": {
+                  "campo": {
+                    "example": "correo",
+                    "type": "string"
+                  },
+                  "problema": {
+                    "example": "no es un correo valido",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "mensaje": {
+              "example": "El perfil Colaborador no tiene el permiso requerido.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "codigo",
+            "mensaje"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "EstadoCache": {
+      "description": "Aciertos y fallos por recurso. Sin números, un 'tenemos caché' no se puede defender en la demostración.",
+      "properties": {
+        "claves": {
+          "description": "Las primeras 50 claves vigentes.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "entradas": {
+          "type": "integer"
+        },
+        "por_recurso": {
+          "additionalProperties": {
+            "properties": {
+              "aciertos": {
+                "type": "integer"
+              },
+              "fallos": {
+                "type": "integer"
+              },
+              "tasa_acierto": {
+                "format": "double",
+                "type": "number"
+              },
+              "ttl_segundos": {
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "type": "object"
+        },
+        "redis_disponible": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "FilaParticipacion": {
+      "description": "Conteos de respuesta, no puntajes. Aun así se marca el grupo chico: un conteo de dos en una unidad de tres ya dice demasiado sobre quién respondió.",
+      "properties": {
+        "campania_id": {
+          "type": "string"
+        },
+        "cobertura_porcentaje": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "plantilla_declarada": {
+          "type": "integer"
+        },
+        "respuestas": {
+          "type": "integer"
+        },
+        "unidad": {
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FilaTablero": {
+      "description": "Una dimensión de bienestar ya publicada para una unidad. El valor viene del resultado protegido: trae ruido de Laplace y puede venir suprimido.",
+      "properties": {
+        "campania_id": {
+          "example": "CAMP-2026-S1",
+          "type": "string"
+        },
+        "dimension": {
+          "example": "CARGA",
+          "type": "string"
+        },
+        "epsilon_aplicado": {
+          "description": "Épsilon que ya se gastó cuando se publicó este valor. Consultarlo aquí no gasta nada más.",
+          "format": "double",
+          "type": "number"
+        },
+        "estado_publicacion": {
+          "description": "La base distingue el motivo en lugar de un generico 'suprimido': GRUPO_INSUFICIENTE es que no se alcanzo el umbral k, y PRESUPUESTO_PRIVACIDAD_AGOTADO es que la campania ya gasto su epsilon. En ambos casos valor_protegido viene nulo.",
+          "enum": [
+            "PUBLICADO",
+            "GRUPO_INSUFICIENTE",
+            "PRESUPUESTO_PRIVACIDAD_AGOTADO"
+          ],
+          "type": "string"
+        },
+        "mecanismo": {
+          "example": "LAPLACE",
+          "type": "string"
+        },
+        "participacion_protegida": {
+          "description": "Texto, no numero, y a proposito: devolver el conteo exacto de participantes de un grupo chico seria la via mas facil de deducir quien respondio.",
+          "enum": [
+            "suficiente",
+            "insuficiente",
+            "no disponible: presupuesto de privacidad agotado"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "precision_advertencia": {
+          "type": "boolean"
+        },
+        "secuencia": {
+          "example": 3,
+          "type": "integer"
+        },
+        "unidad": {
+          "example": "Centro de contacto turno B",
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "example": "UO-CC-TURNO-B",
+          "type": "string"
+        },
+        "valor_protegido": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Paginacion": {
+      "properties": {
+        "pagina": {
+          "example": 1,
+          "type": "integer"
+        },
+        "tamano": {
+          "example": 20,
+          "type": "integer"
+        },
+        "tiene_anterior": {
+          "example": false,
+          "type": "boolean"
+        },
+        "tiene_siguiente": {
+          "example": true,
+          "type": "boolean"
+        },
+        "total": {
+          "example": 143,
+          "type": "integer"
+        },
+        "total_paginas": {
+          "example": 8,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "PuntoTendencia": {
+      "description": "Un punto de la serie protegida de una unidad, tal como lo devuelve agregado.v_tendencia. La variación es una columna generada en la base, no un cálculo de este servicio: así dos componentes no pueden reportar variaciones distintas sobre los mismos datos.",
+      "properties": {
+        "campania_id": {
+          "type": "string"
+        },
+        "campania_nombre": {
+          "type": "string"
+        },
+        "dimension_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "escala_ruido": {
+          "description": "Escala del ruido de Laplace aplicado. Viaja en la respuesta porque es lo que permite juzgar si una diferencia entre dos puntos es real o cabe dentro del ruido.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "lectura": {
+          "description": "Lectura en palabras: la base compara la variación contra la escala del ruido y no reporta como cambio una diferencia que no se puede distinguir del azar.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "n_observaciones": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "secuencia": {
+          "type": "integer"
+        },
+        "unidad_nombre": {
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "type": "string"
+        },
+        "valor_protegido": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "variacion_absoluta": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "ResumenCatalogo": {
+      "properties": {
+        "campanias_abiertas": {
+          "type": "integer"
+        },
+        "instrumentos_activos": {
+          "type": "integer"
+        },
+        "reactivos_activos": {
+          "type": "integer"
+        },
+        "unidades_activas": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SolicitudInvalidar": {
+      "description": "Sin 'recurso' se invalida todo. Se invalida a propósito cuando se publica un agregado nuevo: el tablero debe reflejarlo de inmediato y no al minuto siguiente.",
+      "properties": {
+        "recurso": {
+          "enum": [
+            "tablero",
+            "tendencia",
+            "presupuesto",
+            "participacion",
+            "catalogo"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

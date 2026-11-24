@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexum.com.mx/bienestar/contratos/AcuseRespuesta.schema.json",
+  "title": "AcuseRespuesta",
+  "description": "Generado desde el contrato OpenAPI de main-process-service. No editar a mano: ejecutar contratos/generar_json.py.",
+  "type": "object",
+  "properties": {
+    "estado": {
+      "type": "string",
+      "enum": [
+        "REGISTRADA",
+        "DUPLICADA",
+        "SIN_CONSENTIMIENTO",
+        "CAMPANIA_CERRADA",
+        "FUERA_DE_PADRON"
+      ],
+      "description": "No es un booleano porque las cuatro negativas son distintas y el portal tiene que explicar cada una."
+    },
+    "mensaje": {
+      "type": "string"
+    },
+    "seudonimo_id": {
+      "type": "string",
+      "example": "SEUD-00042"
+    },
+    "campania_id": {
+      "type": "string"
+    },
+    "instrumento_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version_instrumento": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "documento_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "documento_pendiente": {
+      "type": "boolean",
+      "description": "La respuesta quedó en PostgreSQL pero el documento espejo en MongoDB no se pudo escribir. Se informa en lugar de fallar: la respuesta de la persona no se pierde por una caída de la base documental."
+    },
+    "evento_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "$defs": {
+    "Error": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "codigo",
+            "mensaje"
+          ],
+          "properties": {
+            "codigo": {
+              "type": "string",
+              "description": "Codigo estable; el cliente programa contra esto, no contra el mensaje.",
+              "example": "SIN_PERMISO"
+            },
+            "mensaje": {
+              "type": "string",
+              "example": "El perfil Colaborador no tiene el permiso requerido."
+            },
+            "detalles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "campo": {
+                    "type": "string",
+                    "example": "correo"
+                  },
+                  "problema": {
+                    "type": "string",
+                    "example": "no es un correo valido"
+                  }
+                }
+              }
+            },
+            "correlacion_id": {
+              "type": "string",
+              "example": "a1b2c3d4e5f60718"
+            }
+          }
+        }
+      }
+    },
+    "Paginacion": {
+      "type": "object",
+      "properties": {
+        "pagina": {
+          "type": "integer",
+          "example": 1
+        },
+        "tamano": {
+          "type": "integer",
+          "example": 20
+        },
+        "total": {
+          "type": "integer",
+          "example": 143
+        },
+        "total_paginas": {
+          "type": "integer",
+          "example": 8
+        },
+        "tiene_siguiente": {
+          "type": "boolean",
+          "example": true
+        },
+        "tiene_anterior": {
+          "type": "boolean",
+          "example": false
+        }
+      }
+    },
+    "SolicitudRespuesta": {
+      "type": "object",
+      "required": [
+        "campania_id",
+        "valores"
+      ],
+      "description": "La respuesta se registra contra el seudónimo de quien tiene la sesión: NO se admite empleado_id ni ningún otro identificador de persona, y la unidad se toma del padrón de la campaña y no de lo que mande el cliente.",
+      "properties": {
+        "campania_id": {
+          "type": "string",
+          "example": "CAMP-2026-S1"
+        },
+        "valores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Reactivo a valor, dentro de la escala de la versión del instrumento.",
+          "example": {
+            "R-01": 4,
+            "R-02": 3,
+            "R-03": 5
+          }
+        }
+      }
+    },
+    "GrupoEntregas": {
+      "type": "object",
+      "description": "Cuenta ENTREGAS, no puntajes. Contar entregas no revela ninguna respuesta, pero un conteo muy bajo sí revelaría que en esa unidad respondió prácticamente una persona, y por eso cada grupo viene marcado.",
+      "properties": {
+        "unidad_organizacional_id": {
+          "type": "string"
+        },
+        "campania_id": {
+          "type": "string"
+        },
+        "respuestas": {
+          "type": "integer"
+        },
+        "suficiente_para_publicar": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ResumenEntregas": {
+      "type": "object",
+      "properties": {
+        "total_grupos": {
+          "type": "integer"
+        },
+        "campania_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "umbral_aviso": {
+          "type": "integer",
+          "example": 5
+        },
+        "nota": {
+          "type": "string"
+        },
+        "agregados": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GrupoEntregas"
+          }
+        }
+      }
+    },
+    "AcuseParticipacion": {
+      "type": "object",
+      "description": "Comprobante de participación, no el contenido: que una persona sepa que respondió está bien; devolverle lo que contestó sería otra vía de salida para las respuestas.",
+      "properties": {
+        "campania_id": {
+          "type": "string"
+        },
+        "instrumento_id": {
+          "type": "string"
+        },
+        "version_instrumento": {
+          "type": "integer"
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reactivos_respondidos": {
+          "type": "integer"
+        }
+      }
+    },
+    "ParticipacionPropia": {
+      "type": "object",
+      "properties": {
+        "seudonimo_id": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "respuestas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcuseParticipacion"
+          }
+        }
+      }
+    },
+    "SolicitudApoyoAlta": {
+      "type": "object",
+      "required": [
+        "mensaje"
+      ],
+      "properties": {
+        "mensaje": {
+          "type": "string",
+          "minLength": 20,
+          "example": "Llevo tres semanas con doble turno y no logro recuperarme entre jornadas."
+        }
+      }
+    },
+    "EntradaHistorial": {
+      "type": "object",
+      "properties": {
+        "estado": {
+          "type": "string",
+          "enum": [
+            "ABIERTA",
+            "EN_PROCESO",
+            "CERRADA"
+          ]
+        },
+        "actor_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Quien MOVIÓ la solicitud, no quien la pidió: la rendición de cuentas de quien atiende es lo contrario de la privacidad de quien pide."
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "nota": {
+          "type": "string"
+        }
+      }
+    },
+    "SolicitudApoyo": {
+      "type": "object",
+      "description": "El especialista que la atiende ve el mensaje y el historial y no tiene forma de resolver quién lo escribió: eso es lo que hace que alguien se atreva a pedir apoyo.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "seudonimo_id": {
+          "type": "string"
+        },
+        "mensaje": {
+          "type": "string"
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "estado": {
+          "type": "string",
+          "enum": [
+            "ABIERTA",
+            "EN_PROCESO",
+            "CERRADA"
+          ]
+        },
+        "fecha_actualizacion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "historial": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EntradaHistorial"
+          }
+        },
+        "evento_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "CambioEstadoSolicitud": {
+      "type": "object",
+      "required": [
+        "estado"
+      ],
+      "description": "Transiciones dirigidas: ABIERTA puede pasar a EN_PROCESO o a CERRADA, EN_PROCESO solo a CERRADA, y CERRADA no vuelve a abrirse. Reabrir borraría el rastro de que se cerró; en su lugar se crea una solicitud nueva.",
+      "properties": {
+        "estado": {
+          "type": "string",
+          "enum": [
+            "ABIERTA",
+            "EN_PROCESO",
+            "CERRADA"
+          ]
+        },
+        "nota": {
+          "type": "string"
+        }
+      }
+    },
+    "EventoProceso": {
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "RESPUESTA_REGISTRADA",
+            "RESPUESTA_INCOMPLETA",
+            "SOLICITUD_CREADA",
+            "SOLICITUD_ESTADO_ACTUALIZADO",
+            "SOLICITUD_NO_ENCONTRADA"
+          ]
+        },
+        "seudonimo_id": {
+          "type": "string",
+          "description": "Trae el valor literal SIN_SEUDONIMO cuando el evento no pertenece a una persona."
+        },
+        "correlacion_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "detalle": {
+          "type": "object",
+          "description": "Campos declarados, no abiertos: un detalle libre sería el hueco por el que terminaría viajando un empleado_id."
+        }
+      }
+    }
+  }
+}

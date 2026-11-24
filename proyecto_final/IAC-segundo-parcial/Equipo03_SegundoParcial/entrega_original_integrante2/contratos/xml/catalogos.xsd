@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD oficial para catalog-service (Bienestar Nexum - Integrante 2).
+  Define los contratos XML para unidades organizacionales, instrumentos psicométricos,
+  versiones, reactivos y campañas de evaluación.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <!-- ===================== Unidades Organizacionales ===================== -->
+
+  <xs:complexType name="UnidadOrganizacional">
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="nombre"                  type="xs:string"/>
+      <xs:element name="padre_id"                type="IdUnidad" nillable="true" minOccurs="0"/>
+      <xs:element name="activa"                  type="xs:boolean"/>
+      <xs:element name="fecha_creacion"          type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion"     type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ===================== Instrumentos y Reactivos ===================== -->
+
+  <xs:complexType name="Instrumento">
+    <xs:sequence>
+      <xs:element name="instrumento_id"      type="xs:string"/>
+      <xs:element name="nombre"              type="xs:string"/>
+      <xs:element name="descripcion"         type="xs:string" minOccurs="0"/>
+      <xs:element name="activo"              type="xs:boolean"/>
+      <xs:element name="fecha_creacion"      type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Reactivo">
+    <xs:sequence>
+      <xs:element name="reactivo_id"         type="xs:positiveInteger"/>
+      <xs:element name="enunciado"           type="xs:string"/>
+      <xs:element name="dimension"           type="xs:string" minOccurs="0"/>
+      <xs:element name="escala_min"          type="xs:integer"/>
+      <xs:element name="escala_max"          type="xs:integer"/>
+      <xs:element name="activo"              type="xs:boolean"/>
+      <xs:element name="fecha_creacion"      type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ===================== Campañas ===================== -->
+
+  <xs:complexType name="Campania">
+    <xs:sequence>
+      <xs:element name="campania_id"             type="xs:positiveInteger"/>
+      <xs:element name="nombre"                  type="xs:string"/>
+      <xs:element name="instrumento_id"          type="xs:string"/>
+      <xs:element name="version_instrumento"     type="xs:positiveInteger"/>
+      <xs:element name="fecha_inicio"            type="xs:date"/>
+      <xs:element name="fecha_fin"               type="xs:date"/>
+      <xs:element name="activa"                  type="xs:boolean"/>
+      <xs:element name="fecha_creacion"          type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion"     type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ===================== Elementos Raíz ===================== -->
+
+  <xs:element name="catalogo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="data" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:choice maxOccurs="unbounded" minOccurs="0">
+                <xs:element name="item"       type="xs:anyType"/>
+                <xs:element name="unidad"     type="UnidadOrganizacional"/>
+                <xs:element name="instrumento" type="Instrumento"/>
+                <xs:element name="reactivo"   type="Reactivo"/>
+                <xs:element name="campania"   type="Campania"/>
+              </xs:choice>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

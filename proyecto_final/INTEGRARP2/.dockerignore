@@ -1,0 +1,11 @@
+**/*.zip
+**/*.pptx
+**/*.docx
+**/node_modules
+**/.pytest_cache
+integrante2_microservicios
+integrante2_microservicios_ricardo
+Integrante 2*
+segundo_parcial_microservicios
+Redis, Docker, consultas y pruebas
+.git

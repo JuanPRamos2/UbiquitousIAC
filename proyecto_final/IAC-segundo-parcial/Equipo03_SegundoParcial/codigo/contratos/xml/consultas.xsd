@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD de queries-service == consultas de lectura con caché.
+
+  LO QUE ESTE ESQUEMA TIENE QUE DEJAR CLARO
+  =========================================
+  Un valor de bienestar que sale de aquí NO es el promedio de la unidad:
+  es el promedio con ruido de Laplace, y puede venir sin valor porque se
+  suprimió. El esquema lo hace explícito de dos maneras:
+
+    * valor_protegido es nillable. Un agregado suprimido no es cero ni
+      cadena vacía: es "no hay dato publicable". Un cliente que tratara el
+      cero como un puntaje mostraría la peor unidad de la empresa donde en
+      realidad no hay dato.
+    * estado_publicacion distingue el motivo (grupo insuficiente contra
+      presupuesto agotado) en lugar de un genérico "suprimido". Son dos
+      situaciones con remedios opuestos: la primera se arregla esperando
+      más respuestas, la segunda no se arregla en esa campaña.
+
+  epsilon_aplicado viaja en cada fila a propósito. Es el costo de
+  privacidad que YA se pagó cuando ese valor se publicó; consultarlo aquí
+  no cuesta nada más, y tenerlo a la vista evita la tentación de pedir el
+  mismo agregado una y otra vez.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:simpleType name="ParticipacionProtegida">
+    <xs:annotation>
+      <xs:documentation>
+        Texto, no número, y a propósito: devolver el conteo exacto de
+        participantes de un grupo chico sería la vía más fácil de deducir
+        quién respondió.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="suficiente"/>
+      <xs:enumeration value="insuficiente"/>
+      <xs:enumeration value="no disponible: presupuesto de privacidad agotado"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RecursoConsulta">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="tablero"/>
+      <xs:enumeration value="tendencia"/>
+      <xs:enumeration value="presupuesto"/>
+      <xs:enumeration value="participacion"/>
+      <xs:enumeration value="catalogo"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!--
+    Tres situaciones, no dos. Ver la documentación de
+    precision_advertencia: el booleano no podía expresar «no hay valor».
+  -->
+  <xs:simpleType name="PrecisionAgregado">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="PRECISION_SUFICIENTE"/>
+      <xs:enumeration value="PRECISION_LIMITADA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ============================== tablero ============================= -->
+
+  <xs:complexType name="FilaTablero">
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad"                   type="xs:string"/>
+      <xs:element name="campania_id"              type="IdCampania"/>
+      <xs:element name="secuencia"                type="xs:positiveInteger"/>
+      <xs:element name="dimension"                type="xs:string"/>
+      <xs:element name="estado_publicacion"       type="EstadoPublicacion"/>
+      <xs:element name="participacion_protegida"  type="ParticipacionProtegida"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="precision_advertencia"    type="PrecisionAgregado"
+                  nillable="true">
+        <xs:annotation>
+          <xs:documentation>
+            Si el valor publicado soporta una decisión fina o no.
+
+            NO es booleano, y la diferencia tiene consecuencias. La vista
+            `agregado.v_tablero_unidad` entrega tres situaciones y no dos:
+            PRECISION_SUFICIENTE (el ruido es pequeño frente al valor),
+            PRECISION_LIMITADA (el ruido es grande: el dato se publica pero
+            no aguanta comparar décimas) y ningún valor —xsi:nil— cuando la
+            fila quedó suprimida y no hay nada sobre cuya precisión
+            advertir.
+
+            El esquema declaraba xs:boolean. Con eso, la tercera situación
+            no tenía cómo expresarse: una fila suprimida habría tenido que
+            mandar «false», que significa justo lo contrario —«este valor sí
+            aguanta una decisión fina»—. Lo encontró la aplicación de
+            escritorio, que valida contra este esquema antes de mostrar.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="valor_protegido"          type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="epsilon_aplicado"         type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="mecanismo"                type="xs:string"
+                  nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="tablero_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="filas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="fila" type="FilaTablero"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="desde_cache"   type="xs:boolean" minOccurs="0"/>
+        <xs:element name="ttl_segundos"  type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="consultado_en" type="xs:dateTime" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================= tendencia ============================ -->
+
+  <xs:complexType name="PuntoTendencia">
+    <xs:annotation>
+      <xs:documentation>
+        Un punto de la serie protegida de una unidad. El orden de los
+        elementos es el de las columnas de agregado.v_tendencia: xs:sequence
+        es sensible al orden, de modo que este tipo describe la respuesta
+        real y no una versión idealizada de ella.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad_nombre"            type="xs:string"/>
+      <xs:element name="dimension_id"             type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="secuencia"                type="xs:positiveInteger"/>
+      <xs:element name="campania_id"              type="IdCampania"/>
+      <xs:element name="campania_nombre"          type="xs:string"/>
+      <xs:element name="valor_protegido"          type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="n_observaciones"          type="xs:nonNegativeInteger"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="escala_ruido"             type="xs:decimal"
+                  nillable="true" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Escala del ruido de Laplace que se aplicó a este valor. Viaja en
+            la respuesta porque es lo que permite juzgar si una diferencia
+            entre dos puntos es real o cabe dentro del ruido.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="variacion_absoluta"       type="xs:decimal"
+                  nillable="true" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Columna generada en la base, no un cálculo del servicio: así dos
+            componentes distintos no pueden reportar variaciones distintas
+            sobre los mismos datos.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="lectura"                  type="xs:string"
+                  nillable="true" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Lectura en palabras de la variación (mejora, deterioro, sin
+            cambio apreciable). La calcula la base comparando la variación
+            contra la escala del ruido: una diferencia menor que el ruido no
+            se reporta como cambio, porque no se puede distinguir del azar.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="tendencia_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="puntos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="punto" type="PuntoTendencia"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="desde_cache"   type="xs:boolean" minOccurs="0"/>
+        <xs:element name="ttl_segundos"  type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="consultado_en" type="xs:dateTime" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== presupuesto de privacidad ==================== -->
+
+  <xs:complexType name="EstadoPresupuesto">
+    <xs:sequence>
+      <xs:element name="campania_id"              type="IdCampania"/>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad"                   type="xs:string" minOccurs="0"/>
+      <xs:element name="epsilon_total"            type="xs:decimal"/>
+      <xs:element name="epsilon_consumido"        type="xs:decimal"/>
+      <xs:element name="epsilon_restante"         type="xs:decimal"/>
+      <xs:element name="agotado"                  type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>
+            Cuando es verdadero la base rechaza cualquier publicación nueva
+            de esa campaña y unidad. El presupuesto es un tope real, no una
+            advertencia.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="consultas_realizadas"     type="xs:nonNegativeInteger"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="presupuesto_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="elementos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="elemento" type="EstadoPresupuesto"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="desde_cache"   type="xs:boolean" minOccurs="0"/>
+        <xs:element name="ttl_segundos"  type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="consultado_en" type="xs:dateTime" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================ participación ========================= -->
+
+  <xs:complexType name="FilaParticipacion">
+    <xs:sequence>
+      <xs:element name="campania_id"              type="IdCampania"/>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad"                   type="xs:string"/>
+      <xs:element name="respuestas"               type="xs:nonNegativeInteger"/>
+      <xs:element name="plantilla_declarada"      type="xs:nonNegativeInteger"/>
+      <xs:element name="cobertura_porcentaje"     type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="participacion_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="elementos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="elemento" type="FilaParticipacion"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="desde_cache"   type="xs:boolean" minOccurs="0"/>
+        <xs:element name="ttl_segundos"  type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="consultado_en" type="xs:dateTime" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ====================== resumen de catálogo ========================= -->
+
+  <xs:element name="catalogo_resumen">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="unidades_activas"     type="xs:nonNegativeInteger"/>
+        <xs:element name="instrumentos_activos" type="xs:nonNegativeInteger"/>
+        <xs:element name="campanias_abiertas"   type="xs:nonNegativeInteger"/>
+        <xs:element name="reactivos_activos"    type="xs:nonNegativeInteger"/>
+        <xs:element name="desde_cache"          type="xs:boolean" minOccurs="0"/>
+        <xs:element name="ttl_segundos"         type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="consultado_en"        type="xs:dateTime" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================== caché =============================== -->
+
+  <xs:complexType name="MetricaRecurso">
+    <xs:sequence>
+      <xs:element name="recurso"       type="RecursoConsulta"/>
+      <xs:element name="aciertos"      type="xs:nonNegativeInteger"/>
+      <xs:element name="fallos"        type="xs:nonNegativeInteger"/>
+      <xs:element name="tasa_acierto"  type="xs:decimal"/>
+      <xs:element name="ttl_segundos"  type="xs:positiveInteger"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="cache_estado">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="entradas" type="xs:nonNegativeInteger"/>
+        <xs:element name="por_recurso">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="recurso" type="MetricaRecurso"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="redis_disponible" type="xs:boolean"/>
+        <xs:element name="claves" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>
+              Las primeras 50 claves vigentes, para poder ver en la
+              demostración qué hay realmente en la caché.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="clave" type="xs:string"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="cache_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="recurso"          type="xs:string"/>
+        <xs:element name="entradas_borradas" type="xs:nonNegativeInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

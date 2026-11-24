@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Bienestar Laboral — Nexum{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231F3864'/%3E%3Cpath fill='%23E8EDF5' d='M8 22h16v2H8zm2-4h12v2H10zm2-4h8v2h-8z'/%3E%3C/svg%3E">
+{% block cabeza %}{% endblock %}
+</head>
+<body>
+
+{% if sesion %}
+<div id="app" class="on">
+  <aside class="side">
+    <div class="side-brand">
+      <div class="t">Bienestar Laboral</div>
+      <div class="s">Nexum Servicios Corporativos</div>
+    </div>
+    <nav>
+      {% for etiqueta, destino in menu %}
+        <a href="{{ url_for(destino) }}"
+           class="{{ 'sel' if request.endpoint == destino }}">{{ etiqueta }}</a>
+      {% endfor %}
+    </nav>
+    <div class="side-user">
+      <div class="n">{{ sesion.sub }}</div>
+      <div class="r">{{ sesion.perfil }}</div>
+      <form method="post" action="{{ url_for('sesion.salir') }}">
+        <button class="btn btn-ghost btn-sm" type="submit">Cerrar sesión</button>
+      </form>
+    </div>
+  </aside>
+  <main class="main">
+{% elif request.endpoint == 'sesion.entrar' %}
+<main class="login-page">
+{% else %}
+<header class="pub-nav">
+  <div class="wrap">
+    <a class="logo" href="{{ url_for('publico.inicio') }}">Bienestar Laboral<span>Nexum Servicios Corporativos</span></a>
+    <nav class="links">
+      <a href="{{ url_for('publico.inicio') }}#como">Cómo funciona</a>
+      <a href="{{ url_for('publico.inicio') }}#privacidad">Privacidad</a>
+      <a href="{{ url_for('publico.inicio') }}#normativa">Normativa</a>
+      <a href="{{ url_for('publico.aviso') }}">Aviso</a>
+      <a href="{{ url_for('sesion.entrar') }}" class="btn btn-sm">Iniciar sesión</a>
+    </nav>
+  </div>
+</header>
+<main class="pub-cuerpo">
+{% endif %}
+
+  {% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, texto in mensajes %}
+      <div class="aviso aviso-{{ categoria }}">{{ texto }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block contenido %}{% endblock %}
+
+{% if sesion %}
+  </main>
+</div>
+{% elif request.endpoint == 'sesion.entrar' %}
+</main>
+{% else %}
+</main>
+<footer class="pub-foot">
+  <div class="wrap">
+    <div><strong>Bienestar Laboral</strong> · Nexum Servicios Corporativos, S.A. de C.V.<br>Proyecto académico — Equipo 03</div>
+    <div>Monterrey, Nuevo León<br>
+      <a href="{{ url_for('publico.transparencia') }}">Transparencia</a> ·
+      <a href="{{ url_for('publico.aviso') }}">Aviso de privacidad</a>
+    </div>
+  </div>
+</footer>
+{% endif %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

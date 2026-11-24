@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes{% endblock %}
+{% block contenido %}
+<h1>Reportes</h1>
+<p class="subtitulo">Generar, descargar y verificar. Nada se recalcula.</p>
+
+{% if problema %}
+<div class="aviso aviso-alto">
+  <strong>No se pudo cargar.</strong>
+  <p>{{ problema }}</p>
+</div>
+{% endif %}
+
+<div class="aviso aviso-info">
+  Un reporte lee resultados <strong>ya publicados</strong>: generarlo no
+  consume presupuesto de épsilon, y por eso el campo
+  <code>epsilon_consumido</code> sale en cero en cada uno. Si algún día un
+  reporte tuviera que calcular, ese campo dejaría de ser cero y el cambio
+  sería imposible de pasar por alto.
+  <br><br>
+  Las filas suprimidas <strong>se exportan</strong>, con su motivo y sin
+  valor. Un CSV que las omitiera haría creer que la campaña tuvo menos
+  unidades de las que tuvo: se sumarían 8 de 8 unidades publicadas cuando en
+  realidad fueron 8 de 12.
+</div>
+
+<h2>Generar un reporte</h2>
+{% if tipos %}
+<form method="post" action="{{ url_for('reportes.generar') }}" class="formulario">
+  <div class="campo">
+    <label for="tipo">Tipo</label>
+    <select id="tipo" name="tipo" required>
+      <option value="">— elige el reporte —</option>
+      {% for t in tipos %}
+        <option value="{{ t.tipo }}"
+                data-parametro="{{ t.parametro or '' }}"
+                data-obligatorio="{{ 1 if t.parametro_obligatorio else 0 }}">
+          {{ t.titulo }}{% if t.parametro_obligatorio %} (exige {{ t.parametro }}){% endif %}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="parametro">Parámetro</label>
+    <select id="parametro" name="parametro">
+      <option value="">— ninguno —</option>
+      <optgroup label="Campañas">
+        {% for c in campanias %}
+          <option value="{{ c.campania_id }}">{{ c.campania_id }} — {{ c.nombre }}</option>
+        {% endfor %}
+      </optgroup>
+      <optgroup label="Unidades">
+        {% for u in unidades %}
+          <option value="{{ u.unidad_organizacional_id }}">{{ u.nombre }}</option>
+        {% endfor %}
+      </optgroup>
+    </select>
+    <small class="tenue">Qué parámetro admite cada reporte lo dice su
+      descripción abajo. El de resultados por campaña lo exige.</small>
+  </div>
+  <button class="btn btn-primario" type="submit">Generar</button>
+</form>
+
+<h2>Qué reporta cada uno</h2>
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Tipo</th><th>Qué trae, y cómo no debe leerse</th><th>Parámetro</th></tr></thead>
+  <tbody>
+  {% for t in tipos %}
+    <tr>
+      <td><strong>{{ t.titulo }}</strong>
+        <div class="tenue" style="font-size:12px"><code>{{ t.tipo }}</code></div></td>
+      <td class="tenue">{{ t.nota }}</td>
+      <td>
+        {% if t.parametro %}<code>{{ t.parametro }}</code>
+          {% if t.parametro_obligatorio %}<div class="tenue" style="font-size:12px">obligatorio</div>{% endif %}
+        {% else %}<span class="tenue">—</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% elif not problema %}
+<p class="tenue">Tu perfil no tiene permiso sobre ningún tipo de reporte.</p>
+{% endif %}
+
+<h2>Reportes generados</h2>
+<form method="get" action="{{ url_for('reportes.listar') }}" class="formulario-linea">
+  <select name="tipo">
+    <option value="">Todos los tipos</option>
+    {% for t in tipos %}
+      <option value="{{ t.tipo }}" {{ 'selected' if t.tipo == tipo_filtrado }}>{{ t.titulo }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-plano" type="submit">Filtrar</button>
+</form>
+
+{% if reportes %}
+<div class="tabla-envoltura">
+<table>
+  <thead>
+    <tr>
+      <th>Reporte</th><th>Generado</th><th>Filas</th><th>Sello</th>
+      <th>Descargar</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in reportes %}
+    <tr>
+      <td><strong>{{ r.titulo }}</strong>
+        <div class="tenue" style="font-size:12px">
+          <code>{{ r.reporte_id }}</code>
+          {% if r.parametro %} · {{ r.parametro }}{% endif %}
+        </div></td>
+      <td class="tenue" style="font-size:12px">
+        {{ r.fecha_generacion[:16] if r.fecha_generacion else '' }}<br>
+        {{ r.perfil_generador }}
+      </td>
+      <td>{{ r.total_filas }}
+        {% if r.filas_suprimidas %}
+          <div><span class="insignia insignia-medio"
+                     title="Filas sin valor por supresión: van en el archivo con su motivo">
+            {{ r.filas_suprimidas }} suprimidas</span></div>
+        {% endif %}
+      </td>
+      <td><code style="font-size:11px">{{ r.sello_sha256[:16] }}…</code>
+        <div class="tenue" style="font-size:11px">ε = {{ r.epsilon_consumido }}</div></td>
+      <td style="white-space:nowrap">
+        {% for f in formatos %}
+          <a class="btn btn-plano"
+             href="{{ url_for('reportes.descargar', reporte_id=r.reporte_id, formato=f) }}">{{ f|upper }}</a>
+        {% endfor %}
+      </td>
+    </tr>
+    {% if 'BITACORA_CONSULTAR' in permisos or 'PARAMETRO_ADMIN' in permisos %}
+    <tr>
+      <td colspan="5" style="padding-top:0">
+        <form method="post" action="{{ url_for('reportes.verificar', reporte_id=r.reporte_id) }}"
+              class="formulario-linea">
+          <input name="sello_sha256" maxlength="64" minlength="64"
+                 placeholder="Pega aquí el sello del archivo que recibiste"
+                 style="width:420px;font-family:monospace;font-size:12px">
+          <button class="btn btn-plano" type="submit">Verificar sello</button>
+        </form>
+      </td>
+    </tr>
+    {% endif %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if paginacion and paginacion.total_paginas > 1 %}
+<nav class="paginacion">
+  {% if paginacion.tiene_anterior %}
+    <a class="btn btn-plano" href="{{ url_for('reportes.listar', pagina=paginacion.pagina - 1, tipo=tipo_filtrado or None) }}">← Anterior</a>
+  {% endif %}
+  <span class="tenue">Página {{ paginacion.pagina }} de {{ paginacion.total_paginas }}
+    ({{ paginacion.total }} reportes)</span>
+  {% if paginacion.tiene_siguiente %}
+    <a class="btn btn-plano" href="{{ url_for('reportes.listar', pagina=paginacion.pagina + 1, tipo=tipo_filtrado or None) }}">Siguiente →</a>
+  {% endif %}
+</nav>
+{% endif %}
+
+{% elif not problema %}
+<p class="tenue">No hay reportes generados todavía.</p>
+{% endif %}
+
+<h2>Para qué sirve el sello</h2>
+<p class="tenue">
+  Al generar un reporte se calcula el SHA-256 de su contenido canónico y se
+  guarda con él. Eso cierra un círculo concreto: a un auditor le llegó un
+  archivo por correo y quiere saber si es el que salió del sistema. Pega el
+  sello aquí y el sistema responde si coincide, sin necesidad de volver a
+  subir el archivo.
+</p>
+<p class="tenue">
+  Un reporte <strong>no se edita</strong>. Si los datos cambian se genera
+  otro, con su propio sello; el viejo sigue siendo la foto de lo que se vio
+  ese día. La descarga queda registrada en la bitácora, porque es el momento
+  en que la información sale del sistema.
+</p>
+{% endblock %}

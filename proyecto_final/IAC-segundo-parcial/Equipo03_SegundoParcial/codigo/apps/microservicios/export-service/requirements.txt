@@ -1,0 +1,15 @@
+Flask==3.0.3
+gunicorn==22.0.0
+PyJWT==2.8.0
+redis==5.0.4
+psycopg2-binary==2.9.9
+# El generador de PDF vive en la capa comun pero importa reportlab dentro
+# de la funcion, asi que la dependencia se declara solo en los dos
+# servicios que de verdad generan PDF: este y reports-service. Ponerla en
+# comun obligaria a los once a instalarla.
+reportlab==4.2.2
+# Para validar el XML que ENTRA. fast-xml-parser y el analizador de la
+# biblioteca estandar aceptan cosas que el XSD no: aqui hace falta uno que
+# sepa validar contra esquema, porque un archivo que entra no se revisa
+# dos veces.
+lxml==5.2.2

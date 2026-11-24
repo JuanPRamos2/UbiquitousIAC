@@ -1,0 +1,1744 @@
+# ARCHIVO GENERADO — no editar a mano.
+#
+# Lo produce contratos/generar_openapi_node.py a partir de
+# comun/openapi.py, que es la misma definicion de seguridad, sobre de error
+# y codigos HTTP que usan los seis microservicios en Python. Para cambiar
+# este contrato se edita el generador y se vuelve a ejecutar:
+#
+#     python3 contratos/generar_openapi_node.py
+#
+openapi: 3.0.3
+info:
+  title: catalog-service — Bienestar Nexum
+  version: 1.0.0
+  description: "CRUD de unidades organizacionales, instrumentos, versiones, reactivos y\ncampañas sobre\
+    \ PostgreSQL. **Integrante 2 (Ricardo Arath Sánchez Aguirre).**\n\nTres decisiones que recorren todo\
+    \ el servicio:\n\n1. **La baja es lógica.** `DELETE` marca la entidad inactiva y la devuelve;\n  \
+    \ nunca borra. Un borrado real rompería las llaves foráneas de las\n   respuestas ya registradas,\
+    \ o dejaría huérfano el histórico de agregados.\n   Las únicas excepciones son las tablas de relación\
+    \ (`reactivo_version`,\n   `campania_unidad`), donde desasociar no destruye nada.\n\n2. **La autorización\
+    \ se expresa con permisos, no con perfiles.** El día que\n   el equipo cree un perfil nuevo (\"coordinador\
+    \ de turno\") basta con\n   asignarle permisos en `usuarios.perfil_permiso` y estas rutas lo aceptan\n\
+    \   sin recompilar. Si la lista fuera de perfiles, habría que editar el\n   código y volver a desplegar.\n\
+    \n3. **Leer el catálogo también exige token.** El catálogo revela la\n   estructura organizacional\
+    \ de la empresa, incluida la plantilla declarada\n   de cada unidad.\n\nLa caché en Redis se invalida\
+    \ en cada mutación y cada listado informa, en\nla cabecera `X-Cache` y en el campo `desde_cache`,\
+    \ si la respuesta salió de\nla caché o de la base.\n\nTodas las respuestas existen en JSON y en XML:\
+    \ `Accept: application/xml` o\n`?formato=xml`. El XML valida contra `contratos/xml/catalogos.xsd`.\n"
+  contact:
+    name: Equipo 03 — Proyecto 4
+    email: equipo03@udem.edu.mx
+servers:
+- url: http://localhost:8103
+  description: developer
+- url: https://api.bienestar-nexum.mx
+  description: production
+tags:
+- name: Unidades
+  description: Árbol organizacional.
+- name: Instrumentos
+  description: Instrumentos psicométricos.
+- name: Versiones
+  description: Versiones y sus reactivos.
+- name: Reactivos
+  description: Preguntas del instrumento.
+- name: Campanias
+  description: Campañas de medición.
+- name: Apoyo
+  description: Catálogos de solo lectura.
+security:
+- bearerAuth: []
+paths:
+  /api/v1/catalogos/unidades:
+    get:
+      tags:
+      - Unidades
+      summary: Listar unidades
+      description: 'Lectura abierta a los cinco perfiles, cada uno por un motivo distinto: el colaborador
+        para ver los reactivos que va a responder, el líder y el especialista para interpretar un agregado,
+        el auditor para revisar qué instrumento se aplicó, el administrador para operar. Aun así exige
+        token: el catálogo revela la estructura de la empresa.'
+      parameters:
+      - &id009
+        name: pagina
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Numero de pagina, empezando en 1.
+      - &id010
+        name: tamano
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Elementos por pagina. El tope de 100 evita que una sola peticion pida un volumen
+          que tumbe el servicio.
+      - &id011
+        name: formato
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - xml
+        description: Alternativa al encabezado Accept, util para probar desde el navegador.
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Alias de 'pagina'.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        description: Alias de 'tamano'.
+      - &id008
+        name: formato
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - xml
+        description: Alternativa a la cabecera Accept, para poder pedir XML desde la barra de direcciones
+          del navegador durante la demostracion.
+      responses:
+        '200':
+          description: Página de unidades
+          headers:
+            X-Cache:
+              description: ACIERTO si la respuesta salió de Redis.
+              schema:
+                type: string
+                enum:
+                - ACIERTO
+                - FALLO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaUnidades'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<unidades_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <unidades>…</unidades>\n  <paginacion>…</paginacion>\n</unidades_respuesta>"
+        '400': &id001
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401': &id002
+          $ref: '#/components/responses/NoAutenticado'
+        '403': &id003
+          $ref: '#/components/responses/SinPermiso'
+        '404': &id004
+          $ref: '#/components/responses/NoEncontrado'
+        '422': &id005
+          $ref: '#/components/responses/ValidacionFallida'
+        '429': &id006
+          $ref: '#/components/responses/LimiteExcedido'
+        '500': &id007
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      tags:
+      - Unidades
+      summary: Crear unidad
+      description: Exige el permiso UNIDAD_ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnidadOrganizacional'
+              required:
+              - unidad_organizacional_id
+              - nombre
+            example:
+              unidad_organizacional_id: UO-CC-TURNO-C
+              nombre: Call Center - Turno C
+              tipo: TURNO
+              unidad_padre_id: UO-OPERACIONES
+              plantilla_declarada: 18
+      responses:
+        '201':
+          description: Unidad creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganizacional'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<unidad_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <unidad>…</unidad>\n</unidad_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/unidades/{id}:
+    get:
+      tags:
+      - Unidades
+      summary: Consultar un unidad
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: UO-CC-TURNO-B
+      - *id008
+      responses:
+        '200':
+          description: Unidad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganizacional'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<unidad_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <unidad>…</unidad>\n</unidad_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    put:
+      tags:
+      - Unidades
+      summary: Modificar un unidad
+      description: Exige el permiso UNIDAD_ADMIN.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnidadOrganizacional'
+      responses:
+        '200':
+          description: Unidad modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganizacional'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<unidad_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <unidad>…</unidad>\n</unidad_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    delete:
+      tags:
+      - Unidades
+      summary: Baja LÓGICA de un unidad
+      description: 'No borra: marca la entidad inactiva y la devuelve. Un DELETE real rompería las llaves
+        foráneas de las respuestas ya registradas, o dejaría huérfano el histórico de agregados. Responde
+        200 con la entidad, no 204 sin cuerpo, para que el cliente vea que sigue existiendo y que lo que
+        cambió fue el campo de actividad.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Unidad marcado inactivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganizacional'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<unidad_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <unidad>…</unidad>\n</unidad_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/instrumentos:
+    get:
+      tags:
+      - Instrumentos
+      summary: Listar instrumentos
+      description: 'Lectura abierta a los cinco perfiles, cada uno por un motivo distinto: el colaborador
+        para ver los reactivos que va a responder, el líder y el especialista para interpretar un agregado,
+        el auditor para revisar qué instrumento se aplicó, el administrador para operar. Aun así exige
+        token: el catálogo revela la estructura de la empresa.'
+      parameters:
+      - *id009
+      - *id010
+      - *id011
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Alias de 'pagina'.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        description: Alias de 'tamano'.
+      - *id008
+      responses:
+        '200':
+          description: Página de instrumentos
+          headers:
+            X-Cache:
+              description: ACIERTO si la respuesta salió de Redis.
+              schema:
+                type: string
+                enum:
+                - ACIERTO
+                - FALLO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaInstrumentos'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<instrumentos_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <instrumentos>…</instrumentos>\n  <paginacion>…</paginacion>\n</instrumentos_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    post:
+      tags:
+      - Instrumentos
+      summary: Crear instrumento
+      description: Exige el permiso INSTRUMENTO_ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Instrumento'
+              required:
+              - instrumento_id
+              - nombre
+              - tipo
+              - fuente_id
+            example:
+              instrumento_id: INST-CLIMA
+              nombre: Encuesta breve de clima
+              tipo: CLIMA
+              fuente_id: FUENTE-AUTOREPORTE
+      responses:
+        '201':
+          description: Instrumento creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<instrumento_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <instrumento>…</instrumento>\n</instrumento_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/instrumentos/{id}:
+    get:
+      tags:
+      - Instrumentos
+      summary: Consultar un instrumento
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: INST-BIENESTAR
+      - *id008
+      responses:
+        '200':
+          description: Instrumento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<instrumento_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <instrumento>…</instrumento>\n</instrumento_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    put:
+      tags:
+      - Instrumentos
+      summary: Modificar un instrumento
+      description: Exige el permiso INSTRUMENTO_ADMIN.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Instrumento'
+      responses:
+        '200':
+          description: Instrumento modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<instrumento_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <instrumento>…</instrumento>\n</instrumento_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    delete:
+      tags:
+      - Instrumentos
+      summary: Baja LÓGICA de un instrumento
+      description: 'No borra: marca la entidad inactiva y la devuelve. Un DELETE real rompería las llaves
+        foráneas de las respuestas ya registradas, o dejaría huérfano el histórico de agregados. Responde
+        200 con la entidad, no 204 sin cuerpo, para que el cliente vea que sigue existiendo y que lo que
+        cambió fue el campo de actividad.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Instrumento marcado inactivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<instrumento_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <instrumento>…</instrumento>\n</instrumento_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/reactivos:
+    get:
+      tags:
+      - Reactivos
+      summary: Listar reactivos
+      description: 'Lectura abierta a los cinco perfiles, cada uno por un motivo distinto: el colaborador
+        para ver los reactivos que va a responder, el líder y el especialista para interpretar un agregado,
+        el auditor para revisar qué instrumento se aplicó, el administrador para operar. Aun así exige
+        token: el catálogo revela la estructura de la empresa.'
+      parameters:
+      - *id009
+      - *id010
+      - *id011
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Alias de 'pagina'.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        description: Alias de 'tamano'.
+      - *id008
+      responses:
+        '200':
+          description: Página de reactivos
+          headers:
+            X-Cache:
+              description: ACIERTO si la respuesta salió de Redis.
+              schema:
+                type: string
+                enum:
+                - ACIERTO
+                - FALLO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaReactivos'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<reactivos_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <reactivos>…</reactivos>\n  <paginacion>…</paginacion>\n</reactivos_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    post:
+      tags:
+      - Reactivos
+      summary: Crear reactivo
+      description: Exige el permiso INSTRUMENTO_ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reactivo'
+              required:
+              - reactivo_id
+              - texto
+            example:
+              reactivo_id: R-21
+              texto: Puedo desconectarme al terminar mi jornada.
+              dimension_id: DIM-RECUP
+              invertido: false
+      responses:
+        '201':
+          description: Reactivo creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reactivo'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<reactivo_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <reactivo>…</reactivo>\n</reactivo_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/reactivos/{id}:
+    get:
+      tags:
+      - Reactivos
+      summary: Consultar un reactivo
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: R-01
+      - *id008
+      responses:
+        '200':
+          description: Reactivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reactivo'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<reactivo_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <reactivo>…</reactivo>\n</reactivo_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    put:
+      tags:
+      - Reactivos
+      summary: Modificar un reactivo
+      description: Exige el permiso INSTRUMENTO_ADMIN.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reactivo'
+      responses:
+        '200':
+          description: Reactivo modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reactivo'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<reactivo_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <reactivo>…</reactivo>\n</reactivo_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    delete:
+      tags:
+      - Reactivos
+      summary: Baja LÓGICA de un reactivo
+      description: 'No borra: marca la entidad inactiva y la devuelve. Un DELETE real rompería las llaves
+        foráneas de las respuestas ya registradas, o dejaría huérfano el histórico de agregados. Responde
+        200 con la entidad, no 204 sin cuerpo, para que el cliente vea que sigue existiendo y que lo que
+        cambió fue el campo de actividad.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Reactivo marcado inactivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reactivo'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<reactivo_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <reactivo>…</reactivo>\n</reactivo_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/campanias:
+    get:
+      tags:
+      - Campanias
+      summary: Listar campanias
+      description: 'Lectura abierta a los cinco perfiles, cada uno por un motivo distinto: el colaborador
+        para ver los reactivos que va a responder, el líder y el especialista para interpretar un agregado,
+        el auditor para revisar qué instrumento se aplicó, el administrador para operar. Aun así exige
+        token: el catálogo revela la estructura de la empresa.'
+      parameters:
+      - *id009
+      - *id010
+      - *id011
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Alias de 'pagina'.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        description: Alias de 'tamano'.
+      - *id008
+      responses:
+        '200':
+          description: Página de campanias
+          headers:
+            X-Cache:
+              description: ACIERTO si la respuesta salió de Redis.
+              schema:
+                type: string
+                enum:
+                - ACIERTO
+                - FALLO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaCampanias'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<campanias_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <campanias>…</campanias>\n  <paginacion>…</paginacion>\n</campanias_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    post:
+      tags:
+      - Campanias
+      summary: Crear campania
+      description: Exige el permiso CAMPANIA_ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Campania'
+              required:
+              - campania_id
+              - nombre
+              - instrumento_id
+              - version_instrumento
+              - fecha_inicio
+              - fecha_fin
+            example:
+              campania_id: CAMP-2026-S6
+              nombre: Medición semestral 6
+              instrumento_id: INST-BIENESTAR
+              version_instrumento: 1
+              fecha_inicio: '2026-11-01'
+              fecha_fin: '2026-11-15'
+      responses:
+        '201':
+          description: Campania creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campania'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<campania_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <campania>…</campania>\n</campania_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/campanias/{id}:
+    get:
+      tags:
+      - Campanias
+      summary: Consultar un campania
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: CAMP-2026-S1
+      - *id008
+      responses:
+        '200':
+          description: Campania
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campania'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<campania_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <campania>…</campania>\n</campania_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    put:
+      tags:
+      - Campanias
+      summary: Modificar un campania
+      description: Exige el permiso CAMPANIA_ADMIN.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Campania'
+      responses:
+        '200':
+          description: Campania modificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campania'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<campania_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <campania>…</campania>\n</campania_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    delete:
+      tags:
+      - Campanias
+      summary: Baja LÓGICA de un campania
+      description: 'No borra: marca la entidad inactiva y la devuelve. Un DELETE real rompería las llaves
+        foráneas de las respuestas ya registradas, o dejaría huérfano el histórico de agregados. Responde
+        200 con la entidad, no 204 sin cuerpo, para que el cliente vea que sigue existiendo y que lo que
+        cambió fue el campo de actividad.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Campania marcado inactivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campania'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<campania_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <campania>…</campania>\n</campania_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/instrumentos/{id}/versiones:
+    get:
+      tags:
+      - Versiones
+      summary: Versiones de un instrumento
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: INST-BIENESTAR
+      - *id008
+      responses:
+        '200':
+          description: Versiones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaVersiones'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<versiones_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <versiones>…</versiones>\n</versiones_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    post:
+      tags:
+      - Versiones
+      summary: Crear una versión
+      description: 'Exige INSTRUMENTO_ADMIN. Una versión nueva no modifica las respuestas ya registradas
+        con la versión anterior: por eso se versiona en lugar de editar los reactivos en su lugar.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionInstrumento'
+            example:
+              version: 2
+              fecha_vigencia_desde: '2027-01-01'
+              escala_min: 1
+              escala_max: 7
+              publicada: false
+      responses:
+        '201':
+          description: Versión creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInstrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<version_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <version>…</version>\n</version_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/instrumentos/{id}/versiones/{version}:
+    get:
+      tags:
+      - Versiones
+      summary: Consultar una versión
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+      - *id008
+      responses:
+        '200':
+          description: Versión
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInstrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<version_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <version>…</version>\n</version_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    put:
+      tags:
+      - Versiones
+      summary: Modificar una versión
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionInstrumento'
+      responses:
+        '200':
+          description: Versión modificada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInstrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<version_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <version>…</version>\n</version_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    delete:
+      tags:
+      - Versiones
+      summary: Baja lógica de una versión
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Versión marcada inactiva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInstrumento'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<version_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <version>…</version>\n</version_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/instrumentos/{instrumento_id}/versiones/{version}/reactivos:
+    get:
+      tags:
+      - Versiones
+      summary: Reactivos de una versión, en su orden
+      description: 'Es la consulta que usa el portal para pintar el cuestionario: trae el texto, el orden,
+        si el reactivo es obligatorio y con qué escala se responde.'
+      parameters:
+      - name: instrumento_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: INST-BIENESTAR
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+        example: 1
+      - *id008
+      responses:
+        '200':
+          description: Reactivos de la versión
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaReactivosVersion'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<reactivos_version_respuesta xmlns=\"\
+                http://nexum.com.mx/bienestar/v1\">\n  <reactivos>…</reactivos>\n</reactivos_version_respuesta>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    post:
+      tags:
+      - Versiones
+      summary: Asociar un reactivo a la versión
+      parameters:
+      - name: instrumento_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - reactivo_id
+              - orden
+              properties:
+                reactivo_id:
+                  type: string
+                  example: R-21
+                orden:
+                  type: integer
+                  example: 21
+                obligatorio:
+                  type: boolean
+                  default: true
+            example:
+              reactivo_id: R-21
+              orden: 21
+              obligatorio: true
+      responses:
+        '201':
+          description: Reactivo asociado
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/instrumentos/{instrumento_id}/versiones/{version}/reactivos/{reactivo_id}:
+    delete:
+      tags:
+      - Versiones
+      summary: Desasociar un reactivo de la versión
+      description: 'Aquí sí hay borrado real, y es correcto: la tabla es de relación. Quitar un reactivo
+        de una versión no borra el reactivo ni ninguna respuesta ya registrada.'
+      parameters:
+      - name: instrumento_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: reactivo_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Reactivo desasociado
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/dimensiones:
+    get:
+      tags:
+      - Apoyo
+      summary: Dimensiones del instrumento
+      description: 'Solo lectura: las dimensiones las define la metodología del instrumento, no la operación
+        del sistema.'
+      parameters:
+      - *id008
+      responses:
+        '200':
+          description: Dimensiones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dimensiones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Dimension'
+                  total:
+                    type: integer
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/catalogos/fuentes:
+    get:
+      tags:
+      - Apoyo
+      summary: Fuentes de dato autorizadas y vedadas
+      description: 'Solo lectura, y por una razón de gobernanza: la tabla incluye filas con autorizada=false
+        (correo, chat, GPS, teclado, navegación) que dejan por escrito lo que el sistema no puede medir.
+        Un endpoint de escritura permitiría autorizarlas.'
+      parameters:
+      - *id008
+      responses:
+        '200':
+          description: Fuentes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fuentes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FuenteAutorizada'
+                  total:
+                    type: integer
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token emitido por auth-service o por el sistema web. Ambos firman con el mismo secreto
+        y comparten Redis, de modo que un cierre de sesion revoca en todos los componentes.
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - codigo
+          - mensaje
+          properties:
+            codigo:
+              type: string
+              description: Codigo estable; el cliente programa contra esto, no contra el mensaje.
+              example: SIN_PERMISO
+            mensaje:
+              type: string
+              example: El perfil Colaborador no tiene el permiso requerido.
+            detalles:
+              type: array
+              items:
+                type: object
+                properties:
+                  campo:
+                    type: string
+                    example: correo
+                  problema:
+                    type: string
+                    example: no es un correo valido
+            correlacion_id:
+              type: string
+              example: a1b2c3d4e5f60718
+    Paginacion:
+      type: object
+      properties:
+        pagina:
+          type: integer
+          example: 1
+        tamano:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 143
+        total_paginas:
+          type: integer
+          example: 8
+        tiene_siguiente:
+          type: boolean
+          example: true
+        tiene_anterior:
+          type: boolean
+          example: false
+    UnidadOrganizacional:
+      type: object
+      description: 'Unidad del árbol organizacional. No desaparece nunca: se marca inactiva. Un DELETE
+        rompería las llaves foráneas de las respuestas ya registradas.'
+      properties:
+        unidad_organizacional_id:
+          type: string
+          example: UO-CC-TURNO-B
+        nombre:
+          type: string
+          example: Call Center - Turno B
+        descripcion:
+          type: string
+          nullable: true
+        tipo:
+          type: string
+          enum:
+          - DIRECCION
+          - AREA
+          - DEPARTAMENTO
+          - TURNO
+          - EQUIPO
+        unidad_padre_id:
+          type: string
+          nullable: true
+          description: Nulo solo en la raíz.
+        nivel_jerarquico:
+          type: integer
+        plantilla_declarada:
+          type: integer
+          description: 'Personas declaradas en la unidad. Es el denominador de la cobertura y el insumo
+            del umbral k: una unidad con plantilla de tres nunca podrá publicar un agregado.'
+        activa:
+          type: boolean
+        fecha_creacion:
+          type: string
+          format: date-time
+        fecha_actualizacion:
+          type: string
+          format: date-time
+    Instrumento:
+      type: object
+      properties:
+        instrumento_id:
+          type: string
+          example: INST-BIENESTAR
+        nombre:
+          type: string
+        descripcion:
+          type: string
+          nullable: true
+        tipo:
+          type: string
+          enum:
+          - NOM035
+          - CLIMA
+          - BREVE
+          - PERSONALIZADO
+        fuente_id:
+          type: string
+          example: FUENTE-AUTOREPORTE
+          description: 'Fuente autorizada. Obligatorio: un instrumento psicométrico sin fuente declarada
+            no se puede defender ante una revisión.'
+        activo:
+          type: boolean
+        fecha_creacion:
+          type: string
+          format: date-time
+        fecha_actualizacion:
+          type: string
+          format: date-time
+    VersionInstrumento:
+      type: object
+      description: 'La escala vive aquí y no en el reactivo: el mismo reactivo puede medirse 1-5 en una
+        versión y 1-7 en la siguiente, y los agregados de campañas viejas tienen que seguir interpretándose
+        con la escala vigente cuando se respondieron.'
+      properties:
+        instrumento_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        fecha_vigencia_desde:
+          type: string
+          format: date
+        fecha_vigencia_hasta:
+          type: string
+          format: date
+          nullable: true
+        escala_min:
+          type: integer
+          example: 1
+        escala_max:
+          type: integer
+          example: 5
+        publicada:
+          type: boolean
+        activa:
+          type: boolean
+        fecha_creacion:
+          type: string
+          format: date-time
+        fecha_actualizacion:
+          type: string
+          format: date-time
+    Reactivo:
+      type: object
+      properties:
+        reactivo_id:
+          type: string
+          pattern: ^R-[0-9]{2,3}$
+          example: R-01
+        texto:
+          type: string
+        dimension_id:
+          type: string
+          nullable: true
+          example: DIM-CARGA
+        invertido:
+          type: boolean
+          description: 'Reactivo de redacción inversa: una respuesta alta significa peor, no mejor. Sin
+            este campo el índice se sumaría al revés y el resultado se vería plausible estando mal.'
+        activo:
+          type: boolean
+        fecha_creacion:
+          type: string
+          format: date-time
+        fecha_actualizacion:
+          type: string
+          format: date-time
+    ReactivoDeVersion:
+      type: object
+      description: 'Reactivo tal como aparece DENTRO de una versión: con su orden, si es obligatorio y
+        con qué escala se responde. Es lo que el portal necesita para pintar el cuestionario.'
+      properties:
+        reactivo_id:
+          type: string
+        texto:
+          type: string
+        dimension_id:
+          type: string
+          nullable: true
+        invertido:
+          type: boolean
+        activo:
+          type: boolean
+        orden:
+          type: integer
+          minimum: 1
+        obligatorio:
+          type: boolean
+        escala_min:
+          type: integer
+        escala_max:
+          type: integer
+    Campania:
+      type: object
+      properties:
+        campania_id:
+          type: string
+          example: CAMP-2026-S1
+        nombre:
+          type: string
+        instrumento_id:
+          type: string
+        version_instrumento:
+          type: integer
+        fecha_inicio:
+          type: string
+          format: date
+        fecha_fin:
+          type: string
+          format: date
+        estado:
+          type: string
+          enum:
+          - BORRADOR
+          - ABIERTA
+          - CERRADA
+          - CANCELADA
+          description: 'Cuatro estados, no un booleano: BORRADOR permite preparar una campaña sin que
+            nadie la pueda responder, y CANCELADA la cierra sin pretender que produjo resultados.'
+        secuencia:
+          type: integer
+          description: Orden en la serie histórica. Permite hablar de tendencia sin depender de las fechas,
+            que pueden moverse.
+        fecha_creacion:
+          type: string
+          format: date-time
+        fecha_actualizacion:
+          type: string
+          format: date-time
+    Dimension:
+      type: object
+      properties:
+        dimension_id:
+          type: string
+          example: DIM-CARGA
+        nombre:
+          type: string
+        descripcion:
+          type: string
+          nullable: true
+        orden:
+          type: integer
+    FuenteAutorizada:
+      type: object
+      description: 'Incluye filas con autorizada=false (correo, chat, GPS, teclado, navegación): están
+        ahí para dejar por escrito lo que el sistema NO puede medir. Por eso el catálogo es de solo lectura:
+        un endpoint de escritura permitiría autorizarlas.'
+      properties:
+        fuente_id:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: string
+          nullable: true
+        autorizada:
+          type: boolean
+        motivo:
+          type: string
+          nullable: true
+    ListaUnidades:
+      type: object
+      properties:
+        unidades:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnidadOrganizacional'
+        paginacion: &id012
+          $ref: '#/components/schemas/Paginacion'
+        desde_cache:
+          type: boolean
+          description: La respuesta salió de Redis.
+    ListaInstrumentos:
+      type: object
+      properties:
+        instrumentos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instrumento'
+        paginacion: *id012
+        desde_cache:
+          type: boolean
+          description: La respuesta salió de Redis.
+    ListaVersiones:
+      type: object
+      properties:
+        versiones:
+          type: array
+          items:
+            $ref: '#/components/schemas/VersionInstrumento'
+        paginacion: *id012
+        desde_cache:
+          type: boolean
+          description: La respuesta salió de Redis.
+    ListaReactivos:
+      type: object
+      properties:
+        reactivos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reactivo'
+        paginacion: *id012
+        desde_cache:
+          type: boolean
+          description: La respuesta salió de Redis.
+    ListaCampanias:
+      type: object
+      properties:
+        campanias:
+          type: array
+          items:
+            $ref: '#/components/schemas/Campania'
+        paginacion: *id012
+        desde_cache:
+          type: boolean
+          description: La respuesta salió de Redis.
+    ListaReactivosVersion:
+      type: object
+      properties:
+        reactivos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReactivoDeVersion'
+        paginacion: *id012
+        desde_cache:
+          type: boolean
+          description: La respuesta salió de Redis.
+  responses:
+    SolicitudInvalida:
+      description: Parametro mal formado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: PARAMETRO_INVALIDO
+              mensaje: '''tamano'' debe estar entre 1 y 100.'
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>PARAMETRO_INVALIDO</codigo>\n    <mensaje>'tamano' debe estar entre\
+            \ 1 y 100.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    NoAutenticado:
+      description: Falta el token, es invalido, expiro o la sesion fue revocada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: SESION_REVOCADA
+              mensaje: La sesion fue cerrada o revocada.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>SESION_REVOCADA</codigo>\n    <mensaje>La sesion fue cerrada o revocada.</mensaje>\n\
+            \    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n  </error>\n</error_respuesta>"
+    SinPermiso:
+      description: El perfil no tiene el permiso necesario.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: SIN_PERMISO
+              mensaje: El perfil Colaborador no tiene ninguno de los permisos requeridos.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>SIN_PERMISO</codigo>\n    <mensaje>El perfil Colaborador no tiene\
+            \ ninguno de los permisos requeridos.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    NoEncontrado:
+      description: El recurso no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: RECURSO_NO_ENCONTRADO
+              mensaje: La ruta solicitada no existe en este servicio.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>RECURSO_NO_ENCONTRADO</codigo>\n    <mensaje>La ruta solicitada\
+            \ no existe en este servicio.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    ValidacionFallida:
+      description: La solicitud trae campos invalidos. Se devuelven TODOS los problemas de una vez, no
+        solo el primero.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: VALIDACION
+              mensaje: La solicitud tiene campos invalidos.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>VALIDACION</codigo>\n    <mensaje>La solicitud tiene campos invalidos.</mensaje>\n\
+            \    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n  </error>\n</error_respuesta>"
+    LimiteExcedido:
+      description: Se rebaso el limite de consumo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: LIMITE_EXCEDIDO
+              mensaje: Mas de 120 peticiones por 60 segundos.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>LIMITE_EXCEDIDO</codigo>\n    <mensaje>Mas de 120 peticiones por\
+            \ 60 segundos.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    ErrorInterno:
+      description: Falla no prevista. Fuera de developer no se devuelve el detalle.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: ERROR_INTERNO
+              mensaje: Error interno del servicio. El evento quedo registrado.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>ERROR_INTERNO</codigo>\n    <mensaje>Error interno del servicio.\
+            \ El evento quedo registrado.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"

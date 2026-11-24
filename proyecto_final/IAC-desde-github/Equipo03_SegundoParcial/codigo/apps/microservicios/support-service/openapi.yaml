@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: support-service — Bienestar Nexum
+  version: 1.0.0
+  description: Servicio de gestion confidencial de solicitudes de apoyo emocional asignadas exclusivamente a especialistas (Puerto 8116).
+paths:
+  /api/v1/apoyo/solicitudes:
+    post:
+      summary: Crea una solicitud voluntaria de apoyo confidencial mediante seudonimo
+      security:
+        - bearerAuth: []
+      responses:
+        201:
+          description: Solicitud de apoyo creada exitosamente
+        400:
+          $ref: "#/components/responses/SolicitudInvalida"
+        401:
+          $ref: "#/components/responses/NoAutenticado"
+        403:
+          $ref: "#/components/responses/SinPermiso"
+    get:
+      summary: Lista solicitudes de apoyo para atencion por parte de especialistas autorizados
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum:
+              - ABIERTA
+              - EN_PROCESO
+              - CERRADA
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+        - name: tamano
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Listado de solicitudes de apoyo
+        401:
+          $ref: "#/components/responses/NoAutenticado"
+        403:
+          $ref: "#/components/responses/SinPermiso"
+  /api/v1/apoyo/solicitudes/{id}:
+    get:
+      summary: Consulta el detalle y bitacora de atencion de una solicitud
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Detalle de la solicitud de apoyo
+        404:
+          $ref: "#/components/responses/NoEncontrado"
+  /api/v1/apoyo/solicitudes/{id}/estado:
+    put:
+      summary: Actualiza el estado de atencion de la solicitud con notas confidenciales
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Estado actualizado
+        400:
+          $ref: "#/components/responses/SolicitudInvalida"
+        409:
+          description: Transicion de estado no permitida
+  /api/v1/apoyo/solicitudes/{id}/mensajes:
+    post:
+      summary: Registra comunicacion o nota protegida entre especialista y solicitante
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: Mensaje agregado
+        400:
+          $ref: "#/components/responses/SolicitudInvalida"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT emitido por auth-service.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - codigo
+            - mensaje
+            - detalles
+            - correlacion_id
+          properties:
+            codigo:
+              type: string
+            mensaje:
+              type: string
+            detalles:
+              type: array
+              items:
+                type: object
+            correlacion_id:
+              type: string
+    SolicitudApoyo:
+      type: object
+      properties:
+        id:
+          type: string
+        seudonimo_id:
+          type: string
+        mensaje:
+          type: string
+        fecha:
+          type: string
+          format: date-time
+        estado:
+          type: string
+          enum:
+            - ABIERTA
+            - EN_PROCESO
+            - CERRADA
+        fecha_actualizacion:
+          type: string
+          format: date-time
+          nullable: true
+        historial:
+          type: array
+          items:
+            type: object
+  responses:
+    SolicitudInvalida:
+      description: Parametro mal formado o invalido.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NoAutenticado:
+      description: Falta el token, es invalido, expiro o la sesion fue revocada.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    SinPermiso:
+      description: El perfil no tiene el permiso necesario.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NoEncontrado:
+      description: El recurso solicitado no existe.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidacionFallida:
+      description: La solicitud trae campos invalidos.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    LimiteExcedido:
+      description: Se rebaso el limite de consumo.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ErrorInterno:
+      description: Falla no prevista del servicio.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"

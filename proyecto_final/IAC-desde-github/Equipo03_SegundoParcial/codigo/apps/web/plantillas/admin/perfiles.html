@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block titulo %}Perfiles{% endblock %}
+{% block contenido %}
+<h1>Perfiles</h1>
+<p class="subtitulo">Un perfil nuevo es una fila, no un despliegue.</p>
+
+<div class="aviso aviso-info">
+  El control de acceso de la plataforma es dirigido por datos: cada permiso
+  es una fila de <code>usuarios.permiso</code> y cada asignación una fila de
+  <code>usuarios.perfil_permiso</code>. Los veinticuatro microservicios y este
+  portal consultan esa tabla <strong>en cada petición</strong>, de modo que
+  un perfil creado aquí empieza a autorizar sin recompilar ni volver a
+  desplegar nada, y un permiso retirado deja de servir de inmediato en lugar
+  de esperar a que caduquen los tokens ya emitidos.
+</div>
+
+<div class="tabla-envoltura">
+<table>
+  <thead>
+    <tr>
+      <th>Perfil</th><th>Nombre</th><th>Cuentas</th><th>Permisos</th>
+      <th>Estado</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for p in perfiles %}
+    <tr>
+      <td><code>{{ p.codigo }}</code>
+        <div class="tenue" style="font-size:12px">#{{ p.perfil_id }}</div></td>
+      <td>{{ p.nombre }}
+        {% if p.descripcion %}<div class="tenue" style="font-size:12px">{{ p.descripcion }}</div>{% endif %}</td>
+      <td>{{ p.usuarios }}</td>
+      <td>{{ p.permisos }}
+        {% if p.permisos_sensibles %}
+          <span class="insignia insignia-medio" title="Permisos con acceso a agregados de bienestar, bitácora o parámetros de privacidad">{{ p.permisos_sensibles }} sensibles</span>
+        {% endif %}
+        {% if p.permisos == 0 %}
+          <span class="tenue" style="font-size:12px">— no autoriza nada todavía</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if p.activo %}<span class="insignia insignia-bajo">activo</span>
+        {% else %}<span class="insignia">inactivo</span>{% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        <a class="btn btn-plano" href="{{ url_for('perfiles.matriz', perfil_id=p.perfil_id) }}">Permisos</a>
+        <form method="post" action="{{ url_for('perfiles.cambiar_estado', perfil_id=p.perfil_id) }}" style="display:inline">
+          <input type="hidden" name="activo" value="{{ 0 if p.activo else 1 }}">
+          <button class="btn btn-plano" type="submit">{{ 'Desactivar' if p.activo else 'Activar' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Crear un perfil</h2>
+<p class="tenue">
+  Nace sin permisos, a propósito: un perfil que naciera con un conjunto
+  «razonable» por omisión concedería accesos que nadie decidió conceder.
+</p>
+<form method="post" action="{{ url_for('perfiles.crear') }}" class="formulario">
+  <div class="campo">
+    <label for="codigo">Código</label>
+    <input id="codigo" name="codigo" required maxlength="30"
+           placeholder="COORDINADOR_TURNO" pattern="[A-Za-z][A-Za-z0-9_]{2,29}">
+    <small class="tenue">En MAYÚSCULAS. Viaja en los tokens y en la bitácora,
+      así que su forma se acota.</small>
+  </div>
+  <div class="campo">
+    <label for="nombre">Nombre legible</label>
+    <input id="nombre" name="nombre" required maxlength="80"
+           placeholder="Coordinador de turno">
+  </div>
+  <div class="campo">
+    <label for="descripcion">Para qué sirve</label>
+    <input id="descripcion" name="descripcion" maxlength="200"
+           placeholder="Opera una unidad y consulta sus agregados protegidos">
+  </div>
+  <button class="btn btn-primario" type="submit">Crear perfil</button>
+</form>
+
+<h2>Por qué no se borran</h2>
+<p class="tenue">
+  Un perfil con cuentas asignadas no se puede borrar sin romper llaves
+  foráneas, y uno sin cuentas sigue apareciendo en la bitácora histórica:
+  borrarlo dejaría líneas de auditoría apuntando a un perfil que ya no se
+  puede explicar. Por eso se desactiva y se conserva.
+</p>
+{% endblock %}

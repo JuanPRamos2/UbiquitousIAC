@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexum.com.mx/bienestar/contratos/Validacion.schema.json",
+  "title": "Validacion",
+  "description": "Generado desde el contrato OpenAPI de auth-service. No editar a mano: ejecutar contratos/generar_json.py.",
+  "properties": {
+    "expira": {
+      "type": "integer"
+    },
+    "jti": {
+      "type": "string"
+    },
+    "perfil": {
+      "type": "string"
+    },
+    "perfil_id": {
+      "type": "integer"
+    },
+    "unidad_alcance": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "usuario_id": {
+      "type": "string"
+    },
+    "valido": {
+      "type": "boolean"
+    }
+  },
+  "type": "object",
+  "$defs": {
+    "Error": {
+      "properties": {
+        "error": {
+          "properties": {
+            "codigo": {
+              "description": "Codigo estable; el cliente programa contra esto, no contra el mensaje.",
+              "example": "SIN_PERMISO",
+              "type": "string"
+            },
+            "correlacion_id": {
+              "example": "a1b2c3d4e5f60718",
+              "type": "string"
+            },
+            "detalles": {
+              "items": {
+                "properties": {
+                  "campo": {
+                    "example": "correo",
+                    "type": "string"
+                  },
+                  "problema": {
+                    "example": "no es un correo valido",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "mensaje": {
+              "example": "El perfil Colaborador no tiene el permiso requerido.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "codigo",
+            "mensaje"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "Paginacion": {
+      "properties": {
+        "pagina": {
+          "example": 1,
+          "type": "integer"
+        },
+        "tamano": {
+          "example": 20,
+          "type": "integer"
+        },
+        "tiene_anterior": {
+          "example": false,
+          "type": "boolean"
+        },
+        "tiene_siguiente": {
+          "example": true,
+          "type": "boolean"
+        },
+        "total": {
+          "example": 143,
+          "type": "integer"
+        },
+        "total_paginas": {
+          "example": 8,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Sesion": {
+      "properties": {
+        "emitido_en": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "expira_en": {
+          "example": 900,
+          "type": "integer"
+        },
+        "tipo_token": {
+          "enum": [
+            "Bearer"
+          ],
+          "type": "string"
+        },
+        "token_acceso": {
+          "description": "Vigencia corta (15 minutos).",
+          "type": "string"
+        },
+        "token_renovacion": {
+          "description": "Vigencia larga (7 dias). Al usarse se rota: la sesion anterior queda revocada.",
+          "type": "string"
+        },
+        "usuario": {
+          "properties": {
+            "correo": {
+              "format": "email",
+              "type": "string"
+            },
+            "nombre": {
+              "example": "Mariana Solis",
+              "type": "string"
+            },
+            "perfil": {
+              "example": "Especialista de bienestar",
+              "type": "string"
+            },
+            "perfil_id": {
+              "example": 3,
+              "type": "integer"
+            },
+            "unidad_alcance": {
+              "description": "null significa toda la organizacion.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "usuario_id": {
+              "example": "USR-00003",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "SolicitudLogin": {
+      "properties": {
+        "contrasena": {
+          "example": "demo123",
+          "format": "password",
+          "minLength": 1,
+          "type": "string"
+        },
+        "correo": {
+          "example": "mariana.solis@nexum.com.mx",
+          "format": "email",
+          "type": "string"
+        }
+      },
+      "required": [
+        "correo",
+        "contrasena"
+      ],
+      "type": "object"
+    },
+    "SolicitudRenovar": {
+      "properties": {
+        "token_renovacion": {
+          "description": "Token de renovacion recibido al iniciar sesion. Un token de ACCESO aqui se rechaza: si sirviera, robarlo permitiria extender la sesion sin limite.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "token_renovacion"
+      ],
+      "type": "object"
+    }
+  }
+}

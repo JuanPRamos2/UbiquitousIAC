@@ -1,0 +1,56 @@
+# Variables reales de ambiente: solo se versionan los .ejemplo
+infra/ambientes/*.env
+!infra/ambientes/*.env.ejemplo
+
+# Secretos
+infra/secretos/*
+!infra/secretos/LEEME.txt
+
+# Certificados
+*.pem
+*.key
+*.crt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Artefactos locales
+*.log
+.DS_Store
+
+# Artefactos de empaquetado de Python. Se generan al instalar la
+# biblioteca comun en modo editable y no son parte del codigo.
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Base de datos de Redis volcada por una corrida local
+dump.rdb
+
+# Archivos de evidencia cargados en desarrollo: son datos, no codigo, y
+# un PDF de prueba en el historial del repositorio no se puede quitar.
+var/
+*.parcial
+
+# Android: artefactos del IDE y de la compilación.
+# local.properties lleva la ruta del SDK de cada máquina; versionarlo
+# rompe el proyecto en la computadora del siguiente.
+apps/movil/local.properties
+apps/movil/.gradle/
+apps/movil/build/
+apps/movil/app/build/
+apps/movil/.idea/
+apps/movil/gradle/wrapper/gradle-wrapper.jar
+*.iml
+
+# Evidencias regeneradas con la ventana sobre una pantalla virtual.
+# Las capturas SÍ se versionan: son la evidencia de que la aplicación
+# corrió. Lo que no va es el ruido de la sesión gráfica.
+.Xauthority

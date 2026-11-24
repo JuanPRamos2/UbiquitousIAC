@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="catalogos.xsd"/>
+
+  <xs:complexType name="CuestionarioItem">
+    <xs:sequence>
+      <xs:element name="cuestionario_id" type="xs:string"/>
+      <xs:element name="nombre"          type="xs:string"/>
+      <xs:element name="descripcion"     type="xs:string" nillable="true" minOccurs="0"/>
+      <xs:element name="tipo"            type="xs:string"/>
+      <xs:element name="version"         type="xs:positiveInteger" nillable="true" minOccurs="0"/>
+      <xs:element name="escala_min"      type="xs:integer" nillable="true" minOccurs="0"/>
+      <xs:element name="escala_max"      type="xs:integer" nillable="true" minOccurs="0"/>
+      <xs:element name="activo"          type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="cuestionarios_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="cuestionarios">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="cuestionario" type="CuestionarioItem"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="cuestionario_detalle">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="cuestionario_id" type="xs:string"/>
+        <xs:element name="nombre"          type="xs:string"/>
+        <xs:element name="descripcion"     type="xs:string" nillable="true" minOccurs="0"/>
+        <xs:element name="tipo"            type="xs:string"/>
+        <xs:element name="version"         type="xs:positiveInteger" nillable="true" minOccurs="0"/>
+        <xs:element name="escala_min"      type="xs:integer" nillable="true" minOccurs="0"/>
+        <xs:element name="escala_max"      type="xs:integer" nillable="true" minOccurs="0"/>
+        <xs:element name="activo"          type="xs:boolean"/>
+        <xs:element name="reactivos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="reactivo" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="reactivo_id"  type="IdReactivo"/>
+                    <xs:element name="texto"        type="xs:string"/>
+                    <xs:element name="dimension_id" type="xs:string" nillable="true" minOccurs="0"/>
+                    <xs:element name="invertido"    type="xs:boolean"/>
+                    <xs:element name="orden"        type="xs:positiveInteger"/>
+                    <xs:element name="obligatorio"  type="xs:boolean"/>
+                    <xs:element name="escala_min"   type="xs:integer"/>
+                    <xs:element name="escala_max"   type="xs:integer"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total_reactivos" type="xs:nonNegativeInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="borrador_encuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="cuestionario_id"      type="xs:string"/>
+        <xs:element name="seudonimo_id"         type="IdSeudonimo"/>
+        <xs:element name="campania_id"          type="xs:string" nillable="true" minOccurs="0"/>
+        <xs:element name="respuestas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="respuesta" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="reactivo_id" type="IdReactivo"/>
+                    <xs:element name="valor"       type="xs:integer"/>
+                    <xs:element name="comentario"  type="xs:string" nillable="true" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="fecha_actualizacion" type="xs:dateTime"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="borrador_guardado">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="mensaje"              type="xs:string"/>
+        <xs:element name="cuestionario_id"      type="xs:string"/>
+        <xs:element name="seudonimo_id"         type="IdSeudonimo"/>
+        <xs:element name="campania_id"          type="xs:string" nillable="true" minOccurs="0"/>
+        <xs:element name="respuestas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="respuesta" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="fecha_actualizacion" type="xs:dateTime"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="registro_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="resultado"        type="xs:string"/>
+        <xs:element name="mensaje"          type="xs:string"/>
+        <xs:element name="campania_id"      type="xs:string"/>
+        <xs:element name="cuestionario_id"  type="xs:string"/>
+        <xs:element name="total_respuestas" type="xs:nonNegativeInteger"/>
+        <xs:element name="fecha_registro"   type="xs:dateTime"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

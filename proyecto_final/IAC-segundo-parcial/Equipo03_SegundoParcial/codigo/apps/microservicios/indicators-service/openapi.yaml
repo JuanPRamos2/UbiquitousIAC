@@ -1,0 +1,197 @@
+openapi: 3.0.3
+info:
+  title: indicators-service — Bienestar Nexum
+  version: 1.0.0
+  description: Servicio de calculo y agregacion de indicadores organizacionales de estres, carga y bienestar con garantia k >= 5 (Puerto 8113).
+paths:
+  /api/v1/indicadores:
+    get:
+      summary: Lista el catalogo de metricas e indicadores de bienestar autorizados
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Catalogo de indicadores
+        401:
+          $ref: "#/components/responses/NoAutenticado"
+        403:
+          $ref: "#/components/responses/SinPermiso"
+  /api/v1/indicadores/agregados:
+    get:
+      summary: Consulta indicadores agregados por campania y unidad con umbral k >= 5
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: campania_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: unidad_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Indicadores agregados protegidos
+        400:
+          $ref: "#/components/responses/SolicitudInvalida"
+        403:
+          $ref: "#/components/responses/SinPermiso"
+  /api/v1/indicadores/historico:
+    get:
+      summary: Consulta evolucion temporal e historico de indicadores para una unidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unidad_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: dimension_id
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Serie historica de indicadores
+        400:
+          $ref: "#/components/responses/SolicitudInvalida"
+  /api/v1/indicadores/calcular:
+    post:
+      summary: Dispara procesamiento y consolidacion de indicadores agregados
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Calculo completado
+        401:
+          $ref: "#/components/responses/NoAutenticado"
+        403:
+          $ref: "#/components/responses/SinPermiso"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT emitido por auth-service.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - codigo
+            - mensaje
+            - detalles
+            - correlacion_id
+          properties:
+            codigo:
+              type: string
+            mensaje:
+              type: string
+            detalles:
+              type: array
+              items:
+                type: object
+            correlacion_id:
+              type: string
+    Indicador:
+      type: object
+      properties:
+        clave:
+          type: string
+        nombre:
+          type: string
+        dimension:
+          type: string
+        unidad_medida:
+          type: string
+        umbral_alerta:
+          type: number
+    AgregadoIndicador:
+      type: object
+      properties:
+        clave:
+          type: string
+        nombre:
+          type: string
+        valor:
+          type: number
+          nullable: true
+        muestra_n:
+          type: integer
+        suprimido_por_umbral:
+          type: boolean
+        nivel_riesgo:
+          type: string
+  responses:
+    SolicitudInvalida:
+      description: Parametro mal formado o invalido.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NoAutenticado:
+      description: Falta el token, es invalido, expiro o la sesion fue revocada.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    SinPermiso:
+      description: El perfil no tiene el permiso necesario.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NoEncontrado:
+      description: El recurso solicitado no existe.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidacionFallida:
+      description: La solicitud trae campos invalidos.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    LimiteExcedido:
+      description: Se rebaso el limite de consumo.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ErrorInterno:
+      description: Falla no prevista del servicio.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        application/xml:
+          schema:
+            $ref: "#/components/schemas/Error"

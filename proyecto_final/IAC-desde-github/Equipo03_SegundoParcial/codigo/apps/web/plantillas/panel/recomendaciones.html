@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Recomendaciones{% endblock %}
+{% block contenido %}
+<h1>Recomendaciones organizacionales</h1>
+<p class="subtitulo">Derivadas de reglas declaradas, no de un modelo opaco.</p>
+
+<div class="aviso aviso-info">
+  Cada recomendación apunta a una <strong>unidad</strong>, nunca a una persona.
+  El sistema no puede sugerir intervenciones sobre un individuo porque el modelo
+  de datos no admite un empleado como objetivo de una intervención.
+</div>
+
+{% for f in filas %}
+<div class="tarjeta">
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <h3 style="margin:0">{{ f.unidad }}</h3>
+    <span class="insignia {{ 'insignia-alto' if f.nivel == 'PRIORITARIO' else 'insignia-medio' }}">{{ f.nivel }}</span>
+  </div>
+  <p class="tenue" style="margin:6px 0 10px">Regla {{ f.regla_id }} &middot; campaña {{ f.campania_id }}</p>
+  <p>{{ f.explicacion }}</p>
+  <p><strong>{{ f.intervencion_sugerida }}</strong><br>
+     <span class="tenue">{{ f.descripcion }}</span></p>
+</div>
+{% else %}
+<div class="aviso aviso-ok">Ninguna unidad activó una regla de riesgo en las campañas evaluadas.</div>
+{% endfor %}
+{% endblock %}

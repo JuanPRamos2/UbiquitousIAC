@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD de main-process-service == el proceso principal del negocio:
+  responder una campaña y pedir apoyo.
+
+  REGLA D=01 (la razón de ser de este esquema)
+  ============================================
+  Ningún elemento de este archivo declara empleado_id ni ningún otro
+  identificador directo de persona. El único identificador de persona que
+  aparece es IdSeudonimo, y solo donde el dueño del dato es quien pregunta
+  (sus propias respuestas, su propia solicitud). La correspondencia entre
+  seudónimo y persona no sale de PostgreSQL y no tiene representación en
+  ningún contrato XML del proyecto.
+
+  Que la ausencia sea deliberada es la parte que importa: un esquema que
+  simplemente "no lo menciona" no prueba nada, mientras que un esquema
+  cerrado (sin xs:any y sin tipos abiertos) hace que un documento que
+  traiga empleado_id FALLE la validación en lugar de pasar inadvertido.
+
+  ORIGEN Y CORRECCIONES
+  =====================
+  Parte del esquema del Integrante 2 y lo corrige contra lo que el servicio
+  realmente responde. La versión original declaraba campania_id y
+  reactivo_id como enteros (en la base son CAMP-2026-S1 y R-01), envolvía
+  las listas en un elemento genérico "data" con hijos "item" (aquí se usa
+  la convención del equipo: envoltura plural, hijo singular, igual que
+  usuarios.xsd y documentos.xsd), declaraba una paginación propia en lugar
+  de reutilizar el tipo Paginacion de comun.xsd, y no cubría las rutas de
+  respuestas propias ni de eventos de proceso.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <!-- ===================== tipos simples del proceso ==================== -->
+
+  <xs:simpleType name="EstadoSolicitud">
+    <xs:annotation>
+      <xs:documentation>
+        Tres estados y transiciones dirigidas: ABIERTA puede pasar a
+        EN_PROCESO o a CERRADA, EN_PROCESO solo a CERRADA, y CERRADA no
+        vuelve a abrirse. Reabrir una solicitud cerrada borraría el rastro
+        de que se cerró; en su lugar se crea una solicitud nueva.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ABIERTA"/>
+      <xs:enumeration value="EN_PROCESO"/>
+      <xs:enumeration value="CERRADA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TipoEventoProceso">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="RESPUESTA_REGISTRADA"/>
+      <xs:enumeration value="RESPUESTA_INCOMPLETA"/>
+      <xs:enumeration value="SOLICITUD_CREADA"/>
+      <xs:enumeration value="SOLICITUD_ESTADO_ACTUALIZADO"/>
+      <xs:enumeration value="SOLICITUD_NO_ENCONTRADA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="EstadoRegistroRespuesta">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="REGISTRADA"/>
+      <xs:enumeration value="DUPLICADA"/>
+      <xs:enumeration value="SIN_CONSENTIMIENTO"/>
+      <xs:enumeration value="CAMPANIA_CERRADA"/>
+      <xs:enumeration value="FUERA_DE_PADRON"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ============== registro de la respuesta a una campaña ============== -->
+
+  <xs:element name="proceso_respuesta">
+    <xs:annotation>
+      <xs:documentation>
+        Acuse del registro de un autoreporte. No devuelve los valores
+        respondidos: el acuse confirma la participación, y el contenido de
+        la respuesta no vuelve a salir de la base por esta vía.
+
+        'estado' no es un booleano porque las cuatro negativas son
+        distintas y el portal tiene que explicar cada una: ya respondiste
+        (RN=01), no hay consentimiento vigente (RN=02), la campaña está
+        cerrada, o tu unidad no está en el padrón.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="estado"              type="EstadoRegistroRespuesta"/>
+        <xs:element name="mensaje"             type="xs:string"/>
+        <xs:element name="seudonimo_id"        type="IdSeudonimo"/>
+        <xs:element name="campania_id"         type="IdCampania"/>
+        <xs:element name="instrumento_id"      type="xs:string"
+                    nillable="true" minOccurs="0"/>
+        <xs:element name="version_instrumento" type="xs:positiveInteger"
+                    nillable="true" minOccurs="0"/>
+        <xs:element name="documento_id"        type="xs:string"
+                    nillable="true" minOccurs="0"/>
+        <xs:element name="documento_pendiente" type="xs:boolean" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>
+              Verdadero cuando la respuesta quedó registrada en PostgreSQL
+              pero el documento espejo en MongoDB no se pudo escribir. Se
+              informa en lugar de fallar la operación: la respuesta de la
+              persona no se pierde por una caída de la base documental.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="evento_id"           type="xs:string"
+                    nillable="true" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== resumen de entregas ========================== -->
+
+  <xs:complexType name="GrupoEntregas">
+    <xs:annotation>
+      <xs:documentation>
+        Cuenta ENTREGAS, no puntajes: cuántas personas respondieron por
+        unidad y campaña. Los puntajes solo salen del mecanismo de
+        agregación protegida de PostgreSQL, que aplica umbral k y ruido de
+        Laplace. Contar entregas no revela ninguna respuesta, pero un
+        conteo muy bajo sí revelaría que en esa unidad respondió
+        prácticamente una persona, y por eso cada grupo viene marcado.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="campania_id"              type="IdCampania"/>
+      <xs:element name="respuestas"               type="xs:nonNegativeInteger"/>
+      <xs:element name="suficiente_para_publicar" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="agregados_resumen">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="total_grupos" type="xs:nonNegativeInteger"/>
+        <xs:element name="campania_id"  type="IdCampania"
+                    nillable="true" minOccurs="0"/>
+        <xs:element name="umbral_aviso" type="xs:positiveInteger"/>
+        <xs:element name="nota"         type="xs:string"/>
+        <xs:element name="agregados">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="agregado" type="GrupoEntregas"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= comprobante de participación propia ============== -->
+
+  <xs:complexType name="AcuseParticipacion">
+    <xs:sequence>
+      <xs:element name="campania_id"           type="IdCampania"/>
+      <xs:element name="instrumento_id"        type="xs:string" minOccurs="0"/>
+      <xs:element name="version_instrumento"   type="xs:positiveInteger"
+                  minOccurs="0"/>
+      <xs:element name="fecha"                 type="xs:dateTime"/>
+      <xs:element name="reactivos_respondidos" type="xs:nonNegativeInteger">
+        <xs:annotation>
+          <xs:documentation>
+            Cuántos reactivos se contestaron, no qué se contestó. El
+            contrato de esta ruta es el comprobante de participación, no el
+            contenido de las respuestas.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="participacion_propia">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="seudonimo_id" type="IdSeudonimo"/>
+        <xs:element name="total"        type="xs:nonNegativeInteger"/>
+        <xs:element name="respuestas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="respuesta" type="AcuseParticipacion"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== solicitudes de apoyo ========================= -->
+
+  <xs:complexType name="EntradaHistorial">
+    <xs:sequence>
+      <xs:element name="estado"   type="EstadoSolicitud"/>
+      <xs:element name="actor_id" type="IdUsuario" nillable="true" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Quien MOVIÓ la solicitud, no quien la pidió. Es un usuario
+            operador (un especialista), y su identidad sí se registra:
+            la rendición de cuentas de quien atiende es lo contrario de la
+            privacidad de quien pide.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="fecha"    type="xs:dateTime"/>
+      <xs:element name="nota"     type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SolicitudApoyo">
+    <xs:annotation>
+      <xs:documentation>
+        La solicitud se identifica por seudónimo, nunca por persona. El
+        especialista que la atiende ve el mensaje y el historial, y no
+        tiene forma de resolver quién lo escribió: eso es lo que hace que
+        alguien se atreva a pedir apoyo.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="id"                  type="xs:string"/>
+      <xs:element name="seudonimo_id"         type="IdSeudonimo" minOccurs="0"/>
+      <xs:element name="mensaje"             type="xs:string"/>
+      <xs:element name="fecha"               type="xs:dateTime"/>
+      <xs:element name="estado"              type="EstadoSolicitud"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="historial" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="entrada" type="EntradaHistorial"
+                        minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="evento_id" type="xs:string"
+                  nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="solicitud_apoyo" type="SolicitudApoyo"/>
+
+  <xs:element name="solicitudes_apoyo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="solicitudes">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="solicitud" type="SolicitudApoyo"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== eventos de proceso =========================== -->
+
+  <xs:complexType name="EventoProceso">
+    <xs:sequence>
+      <xs:element name="tipo"           type="TipoEventoProceso"/>
+      <xs:element name="seudonimo_id"   type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Trae el valor literal SIN_SEUDONIMO cuando el evento no
+            pertenece a una persona (por ejemplo el cambio de estado que
+            hace un especialista). Se marca explícitamente en lugar de
+            dejarlo nulo porque el validador de la colección exige el
+            campo, y un nulo silencioso se confundiría con un error de
+            escritura.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="correlacion_id" type="xs:string"/>
+      <xs:element name="timestamp"      type="xs:dateTime"/>
+      <xs:element name="detalle"        minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Detalle del evento. Se declaran los campos admitidos en lugar
+            de abrirlo con xs:any: un detalle abierto sería exactamente el
+            hueco por el que terminaría viajando un empleado_id.
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="campania_id"         type="IdCampania" minOccurs="0"/>
+            <xs:element name="instrumento_id"      type="xs:string"  minOccurs="0"/>
+            <xs:element name="version_instrumento" type="xs:positiveInteger"
+                        minOccurs="0"/>
+            <xs:element name="documento_id"        type="xs:string"  minOccurs="0"/>
+            <xs:element name="solicitud_id"        type="xs:string"  minOccurs="0"/>
+            <xs:element name="nuevo_estado"        type="EstadoSolicitud"
+                        minOccurs="0"/>
+            <xs:element name="actor_id"            type="IdUsuario"
+                        nillable="true" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="eventos_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="total" type="xs:nonNegativeInteger"/>
+        <xs:element name="eventos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="evento" type="EventoProceso"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bienestar-comun"
+version = "1.0.0"
+description = "Libreria compartida por los microservicios de Bienestar Nexum"
+requires-python = ">=3.11"
+dependencies = [
+    "Flask>=3.0",
+    "PyJWT>=2.8",
+    "redis>=5.0",
+    "psycopg2-binary>=2.9",
+]
+
+[tool.setuptools]
+packages = ["comun"]
+
+[tool.setuptools.package-data]
+comun = ["estaticos/swagger/*"]

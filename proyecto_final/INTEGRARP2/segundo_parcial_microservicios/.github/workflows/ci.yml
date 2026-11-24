@@ -1,0 +1,137 @@
+# Integración continua.
+#
+# Lo que esta tubería comprueba en cada cambio:
+#   1. Que los cuatro archivos de compose son válidos y combinan bien.
+#   2. Que production sigue sin publicar el puerto de la base de datos.
+#   3. Que la cadena de arranque de la base corre de principio a fin.
+#   4. Que el rol de la aplicación sigue sin poder leer respuestas
+#      individuales. Esta es la prueba que protege la garantía central
+#      del proyecto: si alguien "arregla" un permiso por comodidad, la
+#      tubería falla.
+
+name: verificacion
+
+on:
+  push:
+    branches: [main, desarrollo]
+  pull_request:
+
+jobs:
+
+  compose:
+    name: Configuración de los tres ambientes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar variables de ejemplo
+        run: |
+          for a in developer staging production; do
+            cp "infra/ambientes/$a.env.ejemplo" "infra/ambientes/$a.env"
+          done
+          # Valores mínimos para que la resolución no falle en la revisión.
+          sed -i 's/^VERSION=.*/VERSION=ci/'            infra/ambientes/staging.env
+          sed -i 's/^VERSION=.*/VERSION=ci/'            infra/ambientes/production.env
+          sed -i 's/^PG_CLAVE_SUPER=.*/PG_CLAVE_SUPER=ci/' infra/ambientes/staging.env
+          sed -i 's/^PG_CLAVE=.*/PG_CLAVE=ci/'          infra/ambientes/staging.env
+          sed -i 's/^PG_CLAVE=.*/PG_CLAVE=ci/'          infra/ambientes/production.env
+          echo "PG_CLAVE_SUPER=ci" >> infra/ambientes/production.env
+          mkdir -p infra/secretos && echo ci > infra/secretos/pg_clave_super.txt
+
+      - name: Los tres ambientes resuelven
+        run: |
+          for a in developer staging production; do
+            echo "== $a =="
+            docker compose --env-file "infra/ambientes/$a.env" \
+              -f infra/compose/docker-compose.base.yml \
+              -f "infra/compose/docker-compose.$a.yml" config > "/tmp/$a.yml"
+          done
+
+      - name: production no expone la base de datos
+        run: |
+          if docker compose --env-file infra/ambientes/production.env \
+               -f infra/compose/docker-compose.base.yml \
+               -f infra/compose/docker-compose.production.yml \
+               config --format json \
+             | python3 -c "import json,sys; d=json.load(sys.stdin); \
+sys.exit(1 if d['services']['datos'].get('ports') else 0)"; then
+            echo "OK: el servicio de datos no publica puertos en production"
+          else
+            echo "FALLA: production está publicando el puerto de la base de datos" >&2
+            exit 1
+          fi
+
+      - name: production exige versión explícita
+        run: |
+          sed -i 's/^VERSION=.*/VERSION=/' infra/ambientes/production.env
+          if ./scripts/ambiente.sh production estado 2>/dev/null; then
+            echo "FALLA: production aceptó desplegarse sin VERSION" >&2
+            exit 1
+          fi
+          echo "OK: production rechaza desplegarse sin VERSION"
+
+  base_de_datos:
+    name: Cadena de arranque y menor privilegio
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.13
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: bienestar_ci
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: ci
+      POSTGRES_USER: postgres
+      PG_USUARIO: bienestar_app
+      PG_CLAVE: ci_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar cliente de PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Ejecutar la cadena de arranque completa
+        run: ./scripts/arranque_base.sh bienestar_ci --con-semilla
+
+      - name: La aplicación NO puede leer respuestas individuales
+        run: |
+          export PGPASSWORD=ci_app
+          if psql -h localhost -U bienestar_app -d bienestar_ci \
+               -c "SELECT 1 FROM autoreporte.respuesta_detalle LIMIT 1" 2>/dev/null; then
+            echo "FALLA: la aplicación puede leer respuestas individuales" >&2
+            exit 1
+          fi
+          echo "OK: acceso directo a respuestas individuales denegado"
+
+      - name: La aplicación NO puede borrar la bitácora
+        run: |
+          export PGPASSWORD=ci_app
+          if psql -h localhost -U bienestar_app -d bienestar_ci \
+               -c "DELETE FROM auditoria.bitacora" 2>/dev/null; then
+            echo "FALLA: la aplicación puede borrar la bitácora" >&2
+            exit 1
+          fi
+          echo "OK: borrado de bitácora denegado"
+
+      - name: La aplicación SÍ puede obtener el agregado protegido
+        run: |
+          export PGPASSWORD=ci_app
+          estado=$(psql -h localhost -U bienestar_app -d bienestar_ci -tAc \
+            "SELECT estado FROM agregado.fn_calcular_agregado_protegido(
+               'CAMP-2026-S1','UO-OPS-CC-T1',NULL,'USR-00003')")
+          echo "estado = $estado"
+          [[ "$estado" == "PUBLICADO" || "$estado" == "SUPRIMIDO_POR_UMBRAL" ]]
+
+      - name: Las seis garantías de gobernanza se cumplen
+        run: |
+          export PGPASSWORD=ci_app
+          fallas=$(psql -h localhost -U bienestar_app -d bienestar_ci -tAc \
+            "SELECT count(*) FROM gobernanza.fn_verificar_garantias() WHERE NOT cumple")
+          echo "garantías incumplidas = $fallas"
+          [[ "$fallas" == "0" ]]

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <!-- Nada se respalda ni se transfiere: ahí viven el token y el
+         borrador de la encuesta. -->
+    <cloud-backup><exclude domain="root" path="."/></cloud-backup>
+    <device-transfer><exclude domain="root" path="."/></device-transfer>
+</data-extraction-rules>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Consultas y reportes — Nexum</title>
+  <link rel="stylesheet" href="css/estilos.css?v=7">
+  <style>
+    .panel { max-width: 960px; margin: 32px auto; padding: 0 20px; }
+    form { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin: 16px 0; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+    #estado { margin: 8px 0 20px; line-height: 1.45; }
+    #grafica { min-height: 360px; }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>Consultas y reportes</h1>
+    <p>Esta pantalla entra con el login del sistema y dibuja un reporte real de campañas.</p>
+    <form id="acceso">
+      <label>Correo <input id="correo" value="mariana.solis@nexum.com.mx"></label>
+      <label>Contraseña <input id="contrasena" type="password" value="demo123"></label>
+      <button type="submit">Entrar</button>
+    </form>
+    <p id="estado"></p>
+    <div id="grafica"></div>
+  </main>
+  <script src="vendor/highcharts.min.js"></script>
+  <script src="js/consultas-reportes.js"></script>
+</body>
+</html>

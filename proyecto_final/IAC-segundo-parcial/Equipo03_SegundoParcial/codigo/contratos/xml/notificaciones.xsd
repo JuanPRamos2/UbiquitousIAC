@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema de las respuestas de notifications-service.
+
+  El tipo Notificacion no declara ningún elemento numérico de bienestar, y
+  el servicio rechaza en tiempo de ejecución cualquier mensaje que contenga
+  una cifra decimal. Las dos barreras existen por lo mismo: publicar un
+  valor por esta vía saltaría el mecanismo de privacidad diferencial y el
+  presupuesto de épsilon.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified" version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:complexType name="Notificacion">
+    <xs:sequence>
+      <xs:element name="notificacion_id"          type="IdNotificacion"/>
+      <xs:element name="lote_id"                  type="xs:string" minOccurs="0"/>
+      <xs:element name="tipo"                     type="TipoNotificacion"/>
+      <xs:element name="titulo"                   type="xs:string"/>
+      <xs:element name="mensaje"                  type="xs:string"/>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"   nillable="true" minOccurs="0"/>
+      <xs:element name="campania_id"              type="IdCampania" nillable="true" minOccurs="0"/>
+      <xs:element name="destinatario_usuario_id"  type="IdUsuario"/>
+      <xs:element name="leida"                    type="xs:boolean"/>
+      <xs:element name="fecha_lectura"            type="xs:dateTime" nillable="true" minOccurs="0"/>
+      <xs:element name="enviada_por"              type="IdUsuario"   nillable="true" minOccurs="0"/>
+      <xs:element name="fecha_creacion"           type="xs:dateTime"/>
+      <xs:element name="fecha_expiracion"         type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="notificaciones_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="notificaciones">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="notificacion" type="Notificacion"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion"/>
+        <xs:element name="sin_leer"   type="xs:nonNegativeInteger" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="notificaciones_enviadas">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="lote_id"  type="xs:string"/>
+        <xs:element name="tipo"     type="TipoNotificacion"/>
+        <xs:element name="enviadas" type="xs:nonNegativeInteger"/>
+        <xs:element name="destinatarios">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="destinatario" type="IdUsuario"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="expira" type="xs:dateTime"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,344 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "organizational-service — Bienestar Nexum",
+    "version": "1.0.0",
+    "description": "Servicio de administracion de jerarquias organizacionales y control de plantilla minima k >= 5 para prevencion de inferencia (Puerto 8117)."
+  },
+  "paths": {
+    "/api/v1/organizacion/unidades": {
+      "get": {
+        "summary": "Lista unidades organizacionales disponibles o activas",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado de unidades"
+          },
+          "401": {
+            "$ref": "#/components/responses/NoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SinPermiso"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crea una nueva unidad organizacional (exige plantilla declarada >= 5)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Unidad creada exitosamente"
+          },
+          "400": {
+            "$ref": "#/components/responses/SolicitudInvalida"
+          },
+          "403": {
+            "$ref": "#/components/responses/SinPermiso"
+          },
+          "409": {
+            "$ref": "#/components/responses/ValidacionFallida"
+          }
+        }
+      }
+    },
+    "/api/v1/organizacion/unidades/{id}": {
+      "get": {
+        "summary": "Obtiene detalle de una unidad organizacional",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de la unidad"
+          },
+          "404": {
+            "$ref": "#/components/responses/NoEncontrado"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualiza los atributos de una unidad organizacional",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unidad actualizada"
+          },
+          "400": {
+            "$ref": "#/components/responses/SolicitudInvalida"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Baja logica de la unidad (valida que no tenga dependencias hijas activas)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unidad desactivada"
+          },
+          "409": {
+            "description": "Tiene dependencias hijas activas"
+          }
+        }
+      }
+    },
+    "/api/v1/organizacion/unidades/{id}/arbol": {
+      "get": {
+        "summary": "Recupera la jerarquia y arbol subordinado completo usando CTE recursivo",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arbol jerarquico de unidades subordinadas"
+          },
+          "404": {
+            "$ref": "#/components/responses/NoEncontrado"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token JWT emitido por auth-service."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "codigo",
+              "mensaje",
+              "detalles",
+              "correlacion_id"
+            ],
+            "properties": {
+              "codigo": {
+                "type": "string"
+              },
+              "mensaje": {
+                "type": "string"
+              },
+              "detalles": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "correlacion_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "UnidadOrganizacional": {
+        "type": "object",
+        "properties": {
+          "unidad_id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "padre_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "nivel": {
+            "type": "integer"
+          },
+          "plantilla_declarada": {
+            "type": "integer"
+          },
+          "activa": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "responses": {
+      "SolicitudInvalida": {
+        "description": "Parametro mal formado o invalido.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NoAutenticado": {
+        "description": "Falta el token, es invalido, expiro o la sesion fue revocada.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "SinPermiso": {
+        "description": "El perfil no tiene el permiso necesario.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NoEncontrado": {
+        "description": "El recurso solicitado no existe.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ValidacionFallida": {
+        "description": "La solicitud trae campos invalidos.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "LimiteExcedido": {
+        "description": "Se rebaso el limite de consumo.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ErrorInterno": {
+        "description": "Falla no prevista del servicio.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

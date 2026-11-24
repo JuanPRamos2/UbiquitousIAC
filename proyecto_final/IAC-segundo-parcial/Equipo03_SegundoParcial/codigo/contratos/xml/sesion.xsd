@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Esquema de las respuestas de auth-service. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified" version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:element name="sesion">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="token_acceso"     type="xs:string"/>
+        <xs:element name="token_renovacion" type="xs:string"/>
+        <xs:element name="tipo_token">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="Bearer"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="expira_en"  type="xs:positiveInteger"/>
+        <xs:element name="emitido_en" type="xs:dateTime"/>
+        <xs:element name="usuario">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="usuario_id"     type="IdUsuario"/>
+              <xs:element name="nombre"         type="xs:string"/>
+              <xs:element name="correo"         type="Correo"/>
+              <xs:element name="perfil"         type="xs:string"/>
+              <xs:element name="perfil_id"      type="xs:positiveInteger"/>
+              <xs:element name="unidad_alcance" type="IdUnidad" nillable="true"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="validacion">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="valido"         type="xs:boolean"/>
+        <xs:element name="usuario_id"     type="IdUsuario"/>
+        <xs:element name="perfil"         type="xs:string"/>
+        <xs:element name="perfil_id"      type="xs:positiveInteger"/>
+        <xs:element name="unidad_alcance" type="IdUnidad" nillable="true"/>
+        <xs:element name="jti"            type="xs:string"/>
+        <xs:element name="expira"         type="xs:long"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="logout">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="revocado" type="xs:boolean"/>
+        <xs:element name="jti"      type="xs:string"/>
+        <xs:element name="mensaje"  type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!--
+    Permisos vigentes del perfil que trae la sesion.
+
+    Existe como raiz propia porque los permisos NO viajan dentro del token
+    ni dentro de <sesion>: se consultan contra usuarios.perfil_permiso en
+    cada peticion. Si viajaran en el token, quitarle un permiso a un perfil
+    no tendria efecto hasta que el token expirara, y un token de quince
+    minutos significa quince minutos de permiso ya revocado.
+
+    La envoltura plural <permisos> con hijos <permiso> sigue la convencion
+    de todo el contrato: una lista vacia es un elemento <permisos/> sin
+    hijos, que es distinto de que el elemento no venga.
+  -->
+  <xs:element name="permisos_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="perfil" type="xs:string"/>
+        <xs:element name="permisos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="permiso" type="xs:string"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD de algorithms-service == el motor de reglas de riesgo.
+
+  DOS COSAS QUE ESTE ESQUEMA OBLIGA A DECIR
+  =========================================
+  1. Una detección SIEMPRE trae su explicación. El elemento no es opcional:
+     minOccurs vale 1. Una respuesta que trajera la regla disparada y el
+     valor observado pero no el texto que lo explica no valida, y eso es
+     deliberado — nadie aprueba un plan de intervención sobre un equipo
+     porque un sistema diga que sí, y el especialista que lo propone tiene
+     que poder defender por qué.
+
+  2. Las unidades que el motor NO pudo evaluar viajan en la respuesta. El
+     elemento `no_evaluables` es parte de la corrida, no un extra. Una
+     unidad cuyos agregados se suprimieron todos no aparece entre las
+     detecciones, y si la respuesta no la mencionara, quien la lea
+     concluiría que ahí no hay riesgo cuando lo que hay es falta de datos
+     publicables. Es la diferencia entre "no detectamos nada" y "no
+     pudimos ver".
+
+  epsilon_consumido vale siempre 0 y está declarado como obligatorio: es la
+  prueba, por corrida, de que evaluar el riesgo no gastó presupuesto de
+  privacidad. El motor lee agregados ya publicados en lugar de recalcular.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <!-- ===================== tipos simples del motor ====================== -->
+
+  <xs:simpleType name="IdRegla">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="RG-[0-9]{2}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="IdCorrida">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="ALG-[0-9A-F]{12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="NivelRiesgo">
+    <xs:annotation>
+      <xs:documentation>
+        Tres niveles y no un booleano de "hay riesgo": lo que se hace con
+        una unidad en ATENCION (observar la siguiente campaña) es distinto
+        de lo que se hace con una en PRIORITARIO (proponer un plan ahora).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="INFORMATIVO"/>
+      <xs:enumeration value="ATENCION"/>
+      <xs:enumeration value="PRIORITARIO"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="Comparador">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="&lt;"/>
+      <xs:enumeration value="&lt;="/>
+      <xs:enumeration value="&gt;"/>
+      <xs:enumeration value="&gt;="/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ========================== catálogo de reglas ======================= -->
+
+  <xs:complexType name="Regla">
+    <xs:sequence>
+      <xs:element name="regla_id" type="IdRegla"/>
+      <xs:element name="nombre"   type="xs:string"/>
+      <xs:element name="condicion_legible" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            La condición en palabras. Es obligatoria: una regla cuyo efecto
+            solo se puede entender leyendo el código no es auditable, y el
+            motor tiene que poder revisarlo alguien que no programa.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="dimension_id" type="xs:string"
+                  nillable="true" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Nulo cuando la regla evalúa el índice global en lugar de una
+            dimensión concreta.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="dimension"    type="xs:string"/>
+      <xs:element name="umbral_valor" type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="comparador"   type="Comparador"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="campanias_consecutivas" type="xs:positiveInteger">
+        <xs:annotation>
+          <xs:documentation>
+            Cuántas campañas seguidas tiene que cumplirse la condición. Una
+            sola medición mala puede ser una semana mala; tres seguidas son
+            un patrón.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="nivel"  type="NivelRiesgo"/>
+      <xs:element name="activa" type="xs:boolean"/>
+      <xs:element name="detecciones_historicas" type="xs:nonNegativeInteger"/>
+      <xs:element name="intervenciones_sugeridas" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Tipos de intervención, en orden. Son ORGANIZACIONALES: rediseño
+            de turno, revisión de carga, acompañamiento. El esquema no tiene
+            dónde poner una acción sobre una persona, porque el sistema no
+            produce resultados individuales de los que una acción así
+            pudiera derivarse.
+          </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="intervencion_sugerida" type="xs:string"
+                        minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="reglas_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reglas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="regla" type="Regla"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================ detecciones =========================== -->
+
+  <xs:complexType name="Deteccion">
+    <xs:sequence>
+      <xs:element name="deteccion_id" type="xs:string" minOccurs="0"/>
+      <xs:element name="regla_id"     type="IdRegla"/>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad"       type="xs:string" minOccurs="0"/>
+      <xs:element name="campania_id"  type="IdCampania" minOccurs="0"/>
+      <xs:element name="nivel"        type="NivelRiesgo"/>
+      <xs:element name="valor_observado" type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="explicacion"  type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            OBLIGATORIO. Qué valor se observó, contra qué umbral y en qué
+            campaña. Una respuesta sin este texto no valida contra este
+            esquema, y es a propósito.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="tipo_intervencion" type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="intervencion_sugerida" type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="descripcion" type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="orden" type="xs:integer"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="fecha_deteccion" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="detecciones_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="detecciones">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="deteccion" type="Deteccion"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== unidades no evaluables ======================= -->
+
+  <xs:complexType name="UnidadNoEvaluable">
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad"              type="xs:string"/>
+      <xs:element name="plantilla_declarada" type="xs:nonNegativeInteger"/>
+      <xs:element name="publicados"          type="xs:nonNegativeInteger"/>
+      <xs:element name="suprimidos"          type="xs:nonNegativeInteger"/>
+      <xs:element name="motivo"              type="xs:string"
+                  nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ============================== corrida ============================= -->
+
+  <xs:complexType name="ConteoPorNivel">
+    <xs:sequence>
+      <xs:element name="INFORMATIVO" type="xs:nonNegativeInteger" minOccurs="0"/>
+      <xs:element name="ATENCION"    type="xs:nonNegativeInteger" minOccurs="0"/>
+      <xs:element name="PRIORITARIO" type="xs:nonNegativeInteger" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="corrida_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="corrida_id"  type="IdCorrida"/>
+        <xs:element name="campania_id" type="IdCampania"/>
+        <xs:element name="unidad_organizacional_id" type="IdUnidad"
+                    nillable="true" minOccurs="0"/>
+        <xs:element name="unidades_evaluadas" type="xs:nonNegativeInteger"/>
+        <xs:element name="detecciones" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="deteccion" type="Deteccion"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total_detecciones" type="xs:nonNegativeInteger"/>
+        <xs:element name="por_nivel" type="ConteoPorNivel" minOccurs="0"/>
+        <xs:element name="no_evaluables" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="no_evaluable" type="UnidadNoEvaluable"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total_no_evaluables" type="xs:nonNegativeInteger"/>
+        <xs:element name="epsilon_consumido" type="xs:decimal">
+          <xs:annotation>
+            <xs:documentation>
+              Siempre 0, y obligatorio: es la prueba por corrida de que
+              evaluar el riesgo no gastó presupuesto de privacidad.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="ejecutado_por"   type="IdUsuario"/>
+        <xs:element name="perfil_ejecutor" type="xs:string"/>
+        <xs:element name="fecha"           type="xs:dateTime"/>
+        <xs:element name="correlacion_id"  type="xs:string" minOccurs="0"/>
+        <xs:element name="advertencia_persistencia" type="xs:string"
+                    minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>
+              Presente SOLO cuando la evaluación se hizo pero no se pudo
+              archivar porque MongoDB no respondió. El resultado que se
+              entrega es válido; lo que falta es su registro en el
+              historial, y por eso no aparecerá en /corridas. Es opcional a
+              propósito: una corrida normal no lo trae, de modo que su
+              presencia significa algo.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!--
+    Listado del historial de corridas.
+
+    Los elementos traen el RESUMEN de cada corrida y no sus detecciones: la
+    consulta del historial se usa para encontrar una corrida, y cargar las
+    detecciones de todas las corridas de la página haría una respuesta de
+    varios megabytes para después tirar casi todo. El detalle completo se
+    pide con /corridas/{id}, que devuelve <corrida_respuesta>.
+  -->
+  <xs:element name="corridas_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="corridas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="corrida" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="corrida_id"  type="IdCorrida"/>
+                    <xs:element name="campania_id" type="IdCampania"/>
+                    <xs:element name="unidad_organizacional_id" type="IdUnidad"
+                                nillable="true" minOccurs="0"/>
+                    <xs:element name="unidades_evaluadas"
+                                type="xs:nonNegativeInteger"/>
+                    <xs:element name="total_detecciones"
+                                type="xs:nonNegativeInteger"/>
+                    <xs:element name="por_nivel" type="ConteoPorNivel"
+                                minOccurs="0"/>
+                    <xs:element name="total_no_evaluables"
+                                type="xs:nonNegativeInteger"/>
+                    <xs:element name="epsilon_consumido" type="xs:decimal"/>
+                    <xs:element name="ejecutado_por"   type="IdUsuario"/>
+                    <xs:element name="perfil_ejecutor" type="xs:string"/>
+                    <xs:element name="fecha"           type="xs:dateTime"/>
+                    <xs:element name="correlacion_id"  type="xs:string"
+                                minOccurs="0"/>
+                    <xs:element name="advertencia_persistencia"
+                                type="xs:string" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================= cobertura ============================ -->
+
+  <xs:element name="cobertura_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="campania_id"            type="IdCampania"/>
+        <xs:element name="unidades_convocadas"    type="xs:nonNegativeInteger"/>
+        <xs:element name="unidades_evaluables"    type="xs:nonNegativeInteger"/>
+        <xs:element name="unidades_no_evaluables" type="xs:nonNegativeInteger"/>
+        <xs:element name="cobertura_porcentaje"   type="xs:decimal"
+                    nillable="true" minOccurs="0"/>
+        <xs:element name="no_evaluables" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="no_evaluable" type="UnidadNoEvaluable"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="nota" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================ simulación ============================ -->
+
+  <xs:complexType name="UnidadSimulada">
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad"          type="xs:string"/>
+      <xs:element name="valor_protegido" type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="precision_advertencia" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="simulacion_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="regla_id"    type="IdRegla"/>
+        <xs:element name="nombre"      type="xs:string"/>
+        <xs:element name="campania_id" type="IdCampania"/>
+        <xs:element name="comparador"  type="Comparador"/>
+        <xs:element name="umbral_actual"  type="xs:decimal"/>
+        <xs:element name="umbral_simulado" type="xs:decimal"/>
+        <xs:element name="unidades_con_valor_publicado"
+                    type="xs:nonNegativeInteger"/>
+        <xs:element name="detectadas_con_umbral_actual"
+                    type="xs:nonNegativeInteger"/>
+        <xs:element name="detectadas_con_umbral_simulado"
+                    type="xs:nonNegativeInteger"/>
+        <xs:element name="entrarian" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="entrarian" type="UnidadSimulada"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="saldrian" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="saldrian" type="UnidadSimulada"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="con_advertencia_de_precision"
+                    type="xs:nonNegativeInteger">
+          <xs:annotation>
+            <xs:documentation>
+              Unidades cuyo valor está cerca del ruido. Mover el umbral unas
+              décimas las mete o las saca por azar y no por su situación
+              real, así que se cuentan aparte en lugar de sumarlas sin más.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="nota" type="xs:string"/>
+        <xs:element name="epsilon_consumido" type="xs:decimal"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

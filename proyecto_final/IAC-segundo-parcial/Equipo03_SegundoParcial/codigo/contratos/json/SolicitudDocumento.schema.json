@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexum.com.mx/bienestar/contratos/SolicitudDocumento.schema.json",
+  "title": "SolicitudDocumento",
+  "description": "Generado desde el contrato OpenAPI de documents-service. No editar a mano: ejecutar contratos/generar_json.py.",
+  "properties": {
+    "campania_id": {
+      "type": "string"
+    },
+    "contenido": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "etiquetas": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "seudonimo_id": {
+      "pattern": "^SEUD-[0-9]{5}$",
+      "type": "string"
+    },
+    "tipo": {
+      "enum": [
+        "EVIDENCIA_CONSENTIMIENTO",
+        "AVISO_PRIVACIDAD",
+        "REPORTE_ORGANIZACIONAL"
+      ],
+      "type": "string"
+    },
+    "unidad_organizacional_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo",
+    "contenido"
+  ],
+  "type": "object",
+  "$defs": {
+    "Documento": {
+      "description": "Nota: este esquema NO admite empleado_id. El servicio rechaza con 422 cualquier documento que lo traiga, aunque venga anidado.",
+      "properties": {
+        "campania_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contenido": {
+          "additionalProperties": true,
+          "description": "Forma libre: cada tipo de documento tiene la suya, y eso es lo que justifica MongoDB.",
+          "type": "object"
+        },
+        "documento_id": {
+          "pattern": "^DOC-[0-9A-F]{12}$",
+          "type": "string"
+        },
+        "etiquetas": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "fecha_creacion": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "hash_contenido": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "seudonimo_id": {
+          "description": "Unico identificador de persona admitido.",
+          "pattern": "^SEUD-[0-9]{5}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tipo": {
+          "enum": [
+            "EVIDENCIA_CONSENTIMIENTO",
+            "AVISO_PRIVACIDAD",
+            "REPORTE_ORGANIZACIONAL"
+          ],
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Error": {
+      "properties": {
+        "error": {
+          "properties": {
+            "codigo": {
+              "description": "Codigo estable; el cliente programa contra esto, no contra el mensaje.",
+              "example": "SIN_PERMISO",
+              "type": "string"
+            },
+            "correlacion_id": {
+              "example": "a1b2c3d4e5f60718",
+              "type": "string"
+            },
+            "detalles": {
+              "items": {
+                "properties": {
+                  "campo": {
+                    "example": "correo",
+                    "type": "string"
+                  },
+                  "problema": {
+                    "example": "no es un correo valido",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "mensaje": {
+              "example": "El perfil Colaborador no tiene el permiso requerido.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "codigo",
+            "mensaje"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "Paginacion": {
+      "properties": {
+        "pagina": {
+          "example": 1,
+          "type": "integer"
+        },
+        "tamano": {
+          "example": 20,
+          "type": "integer"
+        },
+        "tiene_anterior": {
+          "example": false,
+          "type": "boolean"
+        },
+        "tiene_siguiente": {
+          "example": true,
+          "type": "boolean"
+        },
+        "total": {
+          "example": 143,
+          "type": "integer"
+        },
+        "total_paginas": {
+          "example": 8,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

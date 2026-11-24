@@ -1,0 +1,28 @@
+Monterrey GPS Tracker
+Rastreo en tiempo real: GPSApp, microservicio Flask y mapa web.
+
+1. Instalar dependencias (una sola vez)
+
+   python3 -m venv .venv
+   .venv/bin/pip install -r requirements.txt
+
+2. Terminal del microservicio
+
+   .venv/bin/python microservice/app.py
+
+   Mapa:        http://localhost:5900/
+   WebSocket:   ws://localhost:5900/ws
+   Health:      http://localhost:5900/health
+   Recorridos:  http://localhost:5900/recorridos
+
+3. Terminal del simulador
+
+   .venv/bin/python gpsapp/simulator.py -n 3
+
+   Sin red para trazar calles nuevas:
+
+   .venv/bin/python gpsapp/simulator.py -n 3 --offline
+
+Cada vehículo tiene su propia velocidad. Frena en semáforos en rojo,
+baja la velocidad en los topes y vuelve a acelerar. El recorrido queda
+guardado en data/recorridos/.

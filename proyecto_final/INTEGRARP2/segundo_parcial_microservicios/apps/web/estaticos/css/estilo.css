@@ -1,0 +1,136 @@
+/* Sistema web — Bienestar Nexum
+   Hoja de estilos propia, sin marcos externos. Sobria a propósito:
+   una herramienta de bienestar laboral que parece un tablero de
+   vigilancia genera la desconfianza que el proyecto busca evitar. */
+
+:root{
+  --tinta:#16202e; --tenue:#5a6675; --linea:#dce1e8; --papel:#f6f7f9;
+  --marino:#1f3864; --marino-claro:#e8edf6;
+  --verde:#2e7d32; --verde-claro:#e8f5e9;
+  --ambar:#8a5a00; --ambar-claro:#fbf0dc;
+  --rojo:#b00020; --rojo-claro:#fdecea;
+  --radio:8px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--tinta); background:#fff;
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+a{color:var(--marino)}
+.contenedor{max-width:1120px;margin:0 auto;padding:0 20px}
+
+/* ---------------------------------------------------------- barra */
+.barra{border-bottom:1px solid var(--linea);background:#fff;position:sticky;top:0;z-index:10}
+.barra-interna{display:flex;align-items:center;gap:18px;height:62px}
+.marca{font-weight:700;text-decoration:none;color:var(--marino);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.marca-punto{width:10px;height:10px;border-radius:50%;background:var(--verde);display:inline-block}
+.etiqueta-ambiente{
+  font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;
+  background:var(--ambar-claro);color:var(--ambar);padding:3px 8px;border-radius:999px;
+}
+.nav{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.nav a{
+  text-decoration:none;color:var(--tenue);font-size:14px;padding:7px 10px;border-radius:6px;
+}
+.nav a:hover{background:var(--papel);color:var(--tinta)}
+.nav a.activo{background:var(--marino-claro);color:var(--marino);font-weight:600}
+.sesion{display:flex;align-items:center;gap:10px}
+.sesion form{margin:0}
+.perfil{font-size:13px;color:var(--tenue);white-space:nowrap}
+
+/* --------------------------------------------------------- botones */
+.btn{
+  display:inline-block;border:1px solid var(--linea);background:#fff;color:var(--tinta);
+  padding:8px 14px;border-radius:var(--radio);font-size:14px;cursor:pointer;text-decoration:none;
+  font-family:inherit;
+}
+.btn:hover{background:var(--papel)}
+.btn-primario{background:var(--marino);border-color:var(--marino);color:#fff}
+.btn-primario:hover{background:#16294a}
+.btn-peligro{border-color:var(--rojo);color:var(--rojo)}
+.btn-peligro:hover{background:var(--rojo-claro)}
+.btn-plano{border-color:transparent;color:var(--tenue)}
+
+/* --------------------------------------------------------- bloques */
+.principal{padding:28px 20px 60px}
+h1{font-size:28px;margin:0 0 6px}
+h2{font-size:20px;margin:30px 0 12px}
+h3{font-size:16px;margin:20px 0 8px}
+.subtitulo{color:var(--tenue);margin:0 0 24px}
+.tenue{color:var(--tenue);font-size:14px}
+
+.tarjeta{border:1px solid var(--linea);border-radius:var(--radio);padding:20px;background:#fff;margin-bottom:18px}
+.rejilla{display:grid;gap:18px}
+.rejilla-2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.rejilla-3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+
+.dato{border:1px solid var(--linea);border-radius:var(--radio);padding:16px;background:var(--papel)}
+.dato .cifra{font-size:30px;font-weight:700;line-height:1.1}
+.dato .rotulo{font-size:13px;color:var(--tenue);margin-top:4px}
+
+/* ---------------------------------------------------------- avisos */
+.aviso{padding:12px 16px;border-radius:var(--radio);margin-bottom:16px;font-size:15px;border:1px solid}
+.aviso-ok{background:var(--verde-claro);border-color:#bcdcbe;color:#1d5620}
+.aviso-error{background:var(--rojo-claro);border-color:#f3c2bd;color:#8a0018}
+.aviso-info{background:var(--marino-claro);border-color:#c3d0e6;color:var(--marino)}
+
+.insignia{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px}
+.insignia-ok{background:var(--verde-claro);color:#1d5620}
+.insignia-alto{background:var(--rojo-claro);color:#8a0018}
+.insignia-medio{background:var(--ambar-claro);color:var(--ambar)}
+.insignia-neutra{background:var(--papel);color:var(--tenue)}
+
+/* ---------------------------------------------------------- tablas */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--marino);color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:13px}
+td{padding:9px 12px;border-bottom:1px solid var(--linea);vertical-align:top}
+tr:nth-child(even) td{background:#fafbfc}
+.tabla-envoltura{overflow-x:auto;border:1px solid var(--linea);border-radius:var(--radio)}
+code{background:var(--papel);padding:2px 5px;border-radius:4px;font-size:13px}
+
+/* ------------------------------------------------------ formularios */
+label{display:block;font-size:14px;font-weight:600;margin-bottom:5px}
+input[type=text],input[type=email],input[type=password],input[type=number],select,textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--linea);border-radius:6px;
+  font:inherit;font-size:15px;background:#fff;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--marino-claro);border-color:var(--marino)}
+.campo{margin-bottom:16px}
+.fila-campos{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+
+/* --------------------------------------------------- escala Likert */
+.reactivo{border:1px solid var(--linea);border-radius:var(--radio);padding:16px;margin-bottom:12px}
+.reactivo .dim{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--tenue);margin-bottom:5px}
+.reactivo .texto{font-size:16px;margin-bottom:12px}
+.escala{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.escala label{
+  display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;
+  border:1px solid var(--linea);border-radius:6px;padding:9px 4px;font-weight:400;
+  font-size:12px;color:var(--tenue);text-align:center;margin:0;
+}
+.escala input{margin:0}
+.escala label:has(input:checked){background:var(--marino-claro);border-color:var(--marino);color:var(--marino);font-weight:600}
+
+/* ----------------------------------------------------------- login */
+.caja-entrar{max-width:420px;margin:56px auto}
+.credenciales{background:var(--papel);border:1px dashed var(--linea);border-radius:var(--radio);padding:14px;margin-top:22px;font-size:13px}
+.credenciales table{font-size:13px}
+.credenciales th{background:transparent;color:var(--tenue);padding:4px 8px}
+.credenciales td{padding:4px 8px;border-bottom:none}
+.credenciales tr:nth-child(even) td{background:transparent}
+
+/* -------------------------------------------------------- portada */
+.portada{padding:46px 0 34px;border-bottom:1px solid var(--linea);margin-bottom:30px}
+.portada h1{font-size:34px;max-width:760px}
+.portada p{max-width:660px;color:var(--tenue);font-size:17px}
+
+/* ------------------------------------------------------------- pie */
+.pie{border-top:1px solid var(--linea);padding:22px 0;color:var(--tenue);font-size:13px;margin-top:40px}
+.pie p{margin:3px 0}
+
+@media (max-width:700px){
+  .barra-interna{height:auto;flex-wrap:wrap;padding:10px 0;gap:10px}
+  .escala{grid-template-columns:repeat(5,1fr);gap:4px}
+  .escala label{font-size:10px;padding:7px 2px}
+}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Matriz de perfiles y permisos{% endblock %}
+{% block contenido %}
+<h1>Matriz de perfiles y permisos</h1>
+<p class="subtitulo">Calculada desde la base en cada carga, no copiada de un documento.</p>
+
+<div class="aviso aviso-info">
+  Esta es la misma matriz del documento de actores, pero viva: si alguien
+  cambia un permiso en la base, esta pantalla lo refleja sin que nadie
+  actualice un archivo. Los permisos marcados como sensibles aparecen
+  resaltados.
+</div>
+
+<div class="tabla-envoltura">
+<table>
+  <thead>
+    <tr>
+      <th style="min-width:230px">Permiso</th>
+      {% for p in perfiles %}<th style="writing-mode:vertical-rl;transform:rotate(180deg);padding:10px 6px">{{ p.nombre }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for perm in permisos %}
+    <tr>
+      <td>
+        <code>{{ perm.codigo }}</code>
+        {% if perm.sensible %}<span class="insignia insignia-medio" style="margin-left:5px">sensible</span>{% endif %}
+        <div class="tenue" style="font-size:12px">{{ perm.descripcion }}</div>
+      </td>
+      {% for p in perfiles %}
+        <td style="text-align:center">
+          {% if (p.perfil_id, perm.permiso_id) in matriz %}
+            <span style="color:var(--verde);font-weight:700">●</span>
+          {% else %}
+            <span class="tenue">—</span>
+          {% endif %}
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+# Definición común a los tres ambientes.
+# Nunca se usa sola: siempre se combina con un archivo de ambiente.
+#   docker compose -f docker-compose.base.yml -f docker-compose.developer.yml up
+#
+# Aquí no hay contraseñas ni puertos publicados. Eso lo decide cada ambiente.
+
+name: bienestar-nexum
+
+services:
+
+  datos:
+    image: postgres:16.13
+    environment:
+      POSTGRES_DB: ${PG_BASE:-bienestar}
+      POSTGRES_USER: ${PG_SUPERUSUARIO:-postgres}
+      POSTGRES_PASSWORD: ${PG_CLAVE_SUPER:?falta PG_CLAVE_SUPER}
+      # Fuerza cifrado moderno de contraseñas en lugar del md5 heredado.
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      # Los scripts de arranque necesitan saber qué rol crear.
+      PG_USUARIO: ${PG_USUARIO:-bienestar_app}
+      PG_CLAVE: ${PG_CLAVE:?falta PG_CLAVE}
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+      # Se montan archivo por archivo, no la carpeta: el entrypoint de
+      # Postgres no entra a subdirectorios de initdb.d. El orden numérico
+      # es el orden de ejecución, y solo ocurre al crear el volumen.
+      - ../../db/esquema/00_rol_aplicacion.sh:/docker-entrypoint-initdb.d/00_rol_aplicacion.sh:ro
+      - ../../db/esquema/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
+      # Las migraciones van TODAS, y el número del destino lo pone el
+      # número de la migración más un desplazamiento fijo. El esquema
+      # anterior iba 02, 03, 04, 05, 06, 06b, 06c, 06d: cada migración
+      # nueva obligaba a inventar un sufijo, y el día que a alguien se le
+      # ocurriera 06e antes que 06d, el orden cambiaba sin que se notara.
+      # Con dos dígitos hay sitio para ochenta migraciones sin renombrar
+      # nada, y el script de permisos queda en 90, inequívocamente al
+      # final.
+      #
+      # Que vayan TODAS no es decorativo: antes solo se montaba la 001, y
+      # una base recién creada arrancaba sin los códigos de bitácora del
+      # sistema web (002), sin la función que registra autoreportes (003)
+      # y sin el CRUD de catálogos (004). El sistema levantaba y fallaba
+      # al primer uso real, y la sonda de salud no lo detectaba. Hay una
+      # prueba que recorre la carpeta y falla si falta alguna: es la que
+      # avisó cuando se agregaron la 009 y la 010.
+      - ../../db/migraciones/001_rol_motor_y_funciones_definer.sql:/docker-entrypoint-initdb.d/03_mig_001.sql:ro
+      - ../../db/migraciones/002_acciones_del_sistema_web.sql:/docker-entrypoint-initdb.d/04_mig_002.sql:ro
+      - ../../db/migraciones/003_registrar_autoreporte.sql:/docker-entrypoint-initdb.d/05_mig_003.sql:ro
+      - ../../db/migraciones/004_catalogos_crud_y_permisos.sql:/docker-entrypoint-initdb.d/06_mig_004.sql:ro
+      - ../../db/migraciones/005_acciones_de_reportes_y_evidencias.sql:/docker-entrypoint-initdb.d/07_mig_005.sql:ro
+      - ../../db/migraciones/006_acciones_del_motor_de_reglas.sql:/docker-entrypoint-initdb.d/08_mig_006.sql:ro
+      - ../../db/migraciones/007_resultados_de_bitacora.sql:/docker-entrypoint-initdb.d/09_mig_007.sql:ro
+      - ../../db/migraciones/008_jerarquia_consistente_y_control_de_inferencia.sql:/docker-entrypoint-initdb.d/10_mig_008.sql:ro
+      - ../../db/migraciones/009_exportacion_e_importacion_controlada.sql:/docker-entrypoint-initdb.d/11_mig_009.sql:ro
+      - ../../db/migraciones/010_gobierno_de_parametros.sql:/docker-entrypoint-initdb.d/12_mig_010.sql:ro
+      - ../../db/migraciones/011_sincronizacion_desde_clientes.sql:/docker-entrypoint-initdb.d/13_mig_011.sql:ro
+      - ../../db/migraciones/012_integracion_corporativa_controlada.sql:/docker-entrypoint-initdb.d/14_mig_012.sql:ro
+      - ../../db/migraciones/013_garantias_de_las_vias_de_entrada.sql:/docker-entrypoint-initdb.d/15_mig_013.sql:ro
+      - ../../db/migraciones/014_supervision_de_componentes.sql:/docker-entrypoint-initdb.d/16_mig_014.sql:ro
+      - ../../db/migraciones/015_acciones_del_ciclo_de_intervencion.sql:/docker-entrypoint-initdb.d/17_mig_015.sql:ro
+      - ../../db/migraciones/016_acciones_de_consentimiento_apoyo_y_gobierno.sql:/docker-entrypoint-initdb.d/18_mig_016.sql:ro
+      - ../../db/migraciones/017_endurecimiento_privacidad_node.sql:/docker-entrypoint-initdb.d/19_mig_017.sql:ro
+      # Los permisos van DESPUÉS de las migraciones: varias crean
+      # tablas y columnas sobre las que este script otorga
+      # privilegios.
+      - ../../db/esquema/09_permisos.sh:/docker-entrypoint-initdb.d/90_permisos.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_SUPERUSUARIO:-postgres} -d ${PG_BASE:-bienestar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - privada
+    restart: unless-stopped
+
+  cache:
+    image: redis:7.2-alpine
+    command: >
+      redis-server
+      --appendonly no
+      --maxmemory ${REDIS_MAXMEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - privada
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile
+    image: bienestar-nexum/web:${VERSION:-local}
+    environment:
+      APP_AMBIENTE: ${APP_AMBIENTE:?falta APP_AMBIENTE}
+      PG_HOST: datos
+      PG_PUERTO: 5432
+      PG_BASE: ${PG_BASE:-bienestar}
+      PG_USUARIO: ${PG_USUARIO:-bienestar_app}
+      PG_CLAVE: ${PG_CLAVE:?falta PG_CLAVE}
+      REDIS_HOST: cache
+      REDIS_PUERTO: 6379
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+      JWT_SECRETO: ${JWT_SECRETO:-}
+      JWT_MINUTOS: ${JWT_MINUTOS:-15}
+      NIVEL_BITACORA: ${NIVEL_BITACORA:-INFO}
+      MOSTRAR_ERRORES: ${MOSTRAR_ERRORES:-false}
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+      - publica
+    restart: unless-stopped
+
+volumes:
+  datos_pg:
+
+networks:
+  # Refleja la segmentación de red del documento de arquitectura de
+  # hardware: la base de datos vive en una red sin salida a Internet.
+  privada:
+    internal: true
+  publica:

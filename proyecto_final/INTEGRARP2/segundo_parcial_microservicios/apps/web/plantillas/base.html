@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Bienestar Nexum{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+{% block cabeza %}{% endblock %}
+</head>
+<body>
+
+<header class="barra">
+  <div class="contenedor barra-interna">
+    <a class="marca" href="{{ url_for('publico.inicio') }}">
+      <span class="marca-punto"></span> Bienestar Nexum
+    </a>
+    {% if ambiente != 'production' %}
+      <span class="etiqueta-ambiente">{{ ambiente }}</span>
+    {% endif %}
+    <nav class="nav">
+      {% if sesion %}
+        {% for etiqueta, destino in menu %}
+          <a href="{{ url_for(destino) }}"
+             class="{{ 'activo' if request.endpoint == destino }}">{{ etiqueta }}</a>
+        {% endfor %}
+      {% else %}
+        <a href="{{ url_for('publico.transparencia') }}">Transparencia</a>
+        <a href="{{ url_for('publico.aviso') }}">Aviso de privacidad</a>
+      {% endif %}
+    </nav>
+    <div class="sesion">
+      {% if sesion %}
+        <span class="perfil">{{ sesion.perfil }}</span>
+        <form method="post" action="{{ url_for('sesion.salir') }}">
+          <button class="btn btn-plano" type="submit">Salir</button>
+        </form>
+      {% else %}
+        <a class="btn btn-primario" href="{{ url_for('sesion.entrar') }}">Entrar</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<main class="contenedor principal">
+  {% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, texto in mensajes %}
+      <div class="aviso aviso-{{ categoria }}">{{ texto }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block contenido %}{% endblock %}
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <p>Equipo 03 &middot; Proyecto 4 &middot; Integración de Aplicaciones Computacionales &middot; UDEM</p>
+    <p class="tenue">Organización ficticia con fines académicos. Los datos mostrados son sintéticos.</p>
+  </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

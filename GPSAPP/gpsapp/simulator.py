@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 import websocket
 
 from routing import RoutePlanner, bearing, compress, haversine
+from traffic import TOPE_KMH, choose_target, place_features
 
 
 class Cursor:
@@ -65,12 +66,17 @@ class Cursor:
 
 
 class Vehicle:
-    def __init__(self, vehicle_id: str, route: dict, cruise_kmh: float) -> None:
+    def __init__(self, vehicle_id: str, route: dict, cruise_kmh: float, accel_mps2: float, brake_mps2: float) -> None:
         self.vehicle_id = vehicle_id
         self.cruise_kmh = cruise_kmh
-        self.speed_kmh = cruise_kmh
+        self.accel_kmh_s = accel_mps2 * 3.6
+        self.brake_mps2 = brake_mps2
+        self.brake_kmh_s = brake_mps2 * 3.6
+        self.speed_kmh = 0.0
+        self.motion = "acelerando"
         self.trip_id = 1
         self.arrived = False
+        self.features = []
         self._place(route)
 
     def _place(self, route: dict) -> None:
@@ -78,6 +84,9 @@ class Vehicle:
         self.cursor = Cursor(route["points"])
         self.pos = self.cursor.position()
         self.heading = bearing(self.cursor.points[0], self.cursor.points[1])
+        self.features = place_features(self.vehicle_id, self.cursor.points, self.cursor.seg_lens)
+        self.speed_kmh = 0.0
+        self.motion = "acelerando"
 
     def new_trip(self, route: dict) -> None:
         self.trip_id += 1
@@ -85,15 +94,54 @@ class Vehicle:
         self._place(route)
 
     def tick(self, dt: float, scale: float) -> None:
-        factor = 1 + random.uniform(-0.04, 0.04)
-        step = (self.cruise_kmh * 1000 / 3600) * dt * scale * factor
-        done = self.cursor.advance(step)
+        elapsed = dt * scale
+        desired, reason, stop_room = choose_target(
+            self.speed_kmh,
+            self.cursor.traveled,
+            self.features,
+            self.brake_mps2,
+            self.cruise_kmh,
+            time.time(),
+        )
+        self._approach(desired, reason, elapsed)
+        step = (self.speed_kmh / 3.6) * elapsed
+        if stop_room is not None:
+            step = min(step, max(0.0, stop_room))
+            if stop_room <= 1.2:
+                step = 0.0
+                self.speed_kmh = 0.0
+                self.motion = "detenido"
+        done = self.cursor.advance(step) if step > 0 else self.cursor.traveled >= self.cursor.total
         new_pos = self.cursor.position()
         if haversine(self.pos, new_pos) >= 3:
             self.heading = bearing(self.pos, new_pos)
         self.pos = new_pos
-        self.speed_kmh = self.cruise_kmh * factor
         self.arrived = done
+
+    def _approach(self, desired: float, reason: str, elapsed: float) -> None:
+        if self.speed_kmh < desired - 0.3:
+            self.speed_kmh = min(desired, self.speed_kmh + self.accel_kmh_s * elapsed)
+            self.motion = "acelerando" if self.speed_kmh < self.cruise_kmh - 1.5 else "en crucero"
+            return
+        if self.speed_kmh > desired + 0.3:
+            self.speed_kmh = max(desired, self.speed_kmh - self.brake_kmh_s * elapsed)
+            if desired <= 0.4 and self.speed_kmh < 1:
+                self.speed_kmh = 0.0
+                self.motion = "detenido"
+            elif reason == "tope" and self.speed_kmh <= TOPE_KMH + 3:
+                self.motion = "en tope"
+            else:
+                self.motion = "frenando"
+            return
+        self.speed_kmh = desired
+        if desired <= 0.4:
+            self.motion = "detenido"
+        elif reason == "tope":
+            self.motion = "en tope"
+        elif self.speed_kmh < self.cruise_kmh - 1.5:
+            self.motion = "acelerando"
+        else:
+            self.motion = "en crucero"
 
     def payload(self) -> dict:
         lat, lon = self.pos
@@ -106,7 +154,27 @@ class Vehicle:
             "trip_id": self.trip_id,
             "route_name": self.route["name"],
             "streets": self.route.get("summary") or "",
+            "motion": self.motion,
         }
+
+    def features_payload(self) -> dict:
+        now = time.time()
+        return {
+            "type": "features",
+            "vehicle_id": self.vehicle_id,
+            "trip_id": self.trip_id,
+            "features": [feature.describe(now) for feature in self.features],
+        }
+
+    def signal_changes(self, now: float) -> list[dict]:
+        changes = []
+        for feature in self.features:
+            if feature.kind != "semaforo":
+                continue
+            state = feature.poll(now)
+            if state:
+                changes.append({"id": feature.id, "state": state})
+        return changes
 
 
 def connect_and_hello(url: str, scale: float) -> websocket.WebSocket:
@@ -198,10 +266,18 @@ def build_fleet(planner: RoutePlanner, count: int) -> list[Vehicle]:
     with ThreadPoolExecutor(max_workers=workers) as pool:
         routes = list(pool.map(lambda _: planner.next_route(), range(count)))
     fleet = []
-    for index, route in enumerate(routes, start=1):
-        # Velocidades distintas a propósito: no salen todos al mismo ritmo.
-        cruise = 34 + ((index * 19) % 34) + random.uniform(-1.5, 1.5)
-        fleet.append(Vehicle(f"V{index:03d}", route, cruise))
+    # Crucero, aceleración y frenado distintos: no se comportan igual.
+    profiles = (
+        (30, 1.4, 2.4),
+        (38, 1.7, 2.8),
+        (46, 2.0, 3.1),
+        (54, 2.3, 3.4),
+        (62, 2.6, 3.8),
+    )
+    for index, route in enumerate(routes):
+        cruise, accel, brake = profiles[index % len(profiles)]
+        cruise += random.uniform(-1.5, 1.5)
+        fleet.append(Vehicle(f"V{index + 1:03d}", route, cruise, accel, brake))
     return fleet
 
 
@@ -222,8 +298,11 @@ def print_plan(fleet: list[Vehicle], url: str, interval: float, scale: float) ->
         print(f"  {vehicle.vehicle_id}   {vehicle.route['name']}", flush=True)
         if vehicle.route.get("summary"):
             print(f"         {vehicle.route['summary']}", flush=True)
+        lights = sum(1 for feature in vehicle.features if feature.kind == "semaforo")
+        bumps = sum(1 for feature in vehicle.features if feature.kind == "tope")
         print(
-            f"         {km:.1f} km · {vehicle.cruise_kmh:.0f} km/h · {source_label(vehicle.route['source'])}",
+            f"         {km:.1f} km · crucero {vehicle.cruise_kmh:.0f} km/h · "
+            f"{lights} semáforos · {bumps} topes · {source_label(vehicle.route['source'])}",
             flush=True,
         )
     print(flush=True)
@@ -236,7 +315,7 @@ def print_status(fleet: list[Vehicle]) -> None:
         lat, lon = vehicle.pos
         print(
             f"  {vehicle.vehicle_id}  {lat:8.5f}, {lon:9.5f}  "
-            f"{vehicle.speed_kmh:4.0f} km/h  {vehicle.heading:5.0f}°  "
+            f"{vehicle.speed_kmh:4.0f} km/h  {vehicle.motion:<12}  {vehicle.heading:5.0f}°  "
             f"{vehicle.cursor.traveled / 1000:4.1f} km  {vehicle.route['name']}",
             flush=True,
         )
@@ -260,10 +339,13 @@ def run(count: int, url: str, interval: float, scale: float, offline: bool) -> N
     holder = [connect_and_hello(url, scale)]
     try:
         for vehicle in fleet:
+            publish(holder, url, scale, vehicle.features_payload())
             publish(holder, url, scale, vehicle.payload())
         next_tick = time.perf_counter()
         last_report = 0.0
         while True:
+            signal_batch = []
+            now = time.time()
             for vehicle in fleet:
                 if vehicle.arrived:
                     route = planner.next_route()
@@ -272,10 +354,14 @@ def run(count: int, url: str, interval: float, scale: float, offline: bool) -> N
                         flush=True,
                     )
                     vehicle.new_trip(route)
+                    publish(holder, url, scale, vehicle.features_payload())
                     publish(holder, url, scale, vehicle.payload())
                     continue
                 vehicle.tick(interval, scale)
                 publish(holder, url, scale, vehicle.payload())
+                signal_batch.extend(vehicle.signal_changes(now))
+            if signal_batch:
+                publish(holder, url, scale, {"type": "signals", "signals": signal_batch})
             drain(holder[0])
             now = time.perf_counter()
             if now - last_report >= 2:
@@ -305,8 +391,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--scale",
         type=float,
-        default=20,
-        help="Aceleración del reloj. 1 es tiempo real. El campo speed no cambia.",
+        default=1,
+        help="1 = tiempo real: el auto recorre en el mapa los metros que indica speed. Sube el valor solo si quieres ver el viaje más rápido.",
     )
     parser.add_argument(
         "--offline",

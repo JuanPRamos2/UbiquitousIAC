@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexum.com.mx/bienestar/contratos/SolicitudEnvio.schema.json",
+  "title": "SolicitudEnvio",
+  "description": "Indica 'destinatarios' o 'unidad_organizacional_id'. Si se indica la unidad, se resuelven los usuarios con alcance ahi.",
+  "properties": {
+    "campania_id": {
+      "type": "string"
+    },
+    "destinatarios": {
+      "items": {
+        "pattern": "^USR-[0-9]{5}$",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "mensaje": {
+      "description": "No puede contener cifras decimales: publicar un valor de bienestar por esta via saltaria el mecanismo de privacidad diferencial y el presupuesto de epsilon.",
+      "minLength": 10,
+      "type": "string"
+    },
+    "tipo": {
+      "enum": [
+        "CAMPANIA_ABIERTA",
+        "RECORDATORIO_ENCUESTA",
+        "CONDICION_DETECTADA",
+        "PLAN_APROBADO",
+        "CONSENTIMIENTO_POR_VENCER"
+      ],
+      "type": "string"
+    },
+    "titulo": {
+      "minLength": 5,
+      "type": "string"
+    },
+    "unidad_organizacional_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo",
+    "titulo",
+    "mensaje"
+  ],
+  "type": "object",
+  "$defs": {
+    "Error": {
+      "properties": {
+        "error": {
+          "properties": {
+            "codigo": {
+              "description": "Codigo estable; el cliente programa contra esto, no contra el mensaje.",
+              "example": "SIN_PERMISO",
+              "type": "string"
+            },
+            "correlacion_id": {
+              "example": "a1b2c3d4e5f60718",
+              "type": "string"
+            },
+            "detalles": {
+              "items": {
+                "properties": {
+                  "campo": {
+                    "example": "correo",
+                    "type": "string"
+                  },
+                  "problema": {
+                    "example": "no es un correo valido",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "mensaje": {
+              "example": "El perfil Colaborador no tiene el permiso requerido.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "codigo",
+            "mensaje"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "Notificacion": {
+      "properties": {
+        "campania_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "destinatario_usuario_id": {
+          "pattern": "^USR-[0-9]{5}$",
+          "type": "string"
+        },
+        "fecha_creacion": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "fecha_expiracion": {
+          "description": "Las notificaciones se borran solas a los 90 dias por indice TTL de MongoDB: minimizacion de datos.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "fecha_lectura": {
+          "format": "date-time",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "leida": {
+          "type": "boolean"
+        },
+        "lote_id": {
+          "type": "string"
+        },
+        "mensaje": {
+          "type": "string"
+        },
+        "notificacion_id": {
+          "pattern": "^NTF-[0-9A-F]{12}$",
+          "type": "string"
+        },
+        "tipo": {
+          "enum": [
+            "CAMPANIA_ABIERTA",
+            "RECORDATORIO_ENCUESTA",
+            "CONDICION_DETECTADA",
+            "PLAN_APROBADO",
+            "CONSENTIMIENTO_POR_VENCER"
+          ],
+          "type": "string"
+        },
+        "titulo": {
+          "type": "string"
+        },
+        "unidad_organizacional_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Paginacion": {
+      "properties": {
+        "pagina": {
+          "example": 1,
+          "type": "integer"
+        },
+        "tamano": {
+          "example": 20,
+          "type": "integer"
+        },
+        "tiene_anterior": {
+          "example": false,
+          "type": "boolean"
+        },
+        "tiene_siguiente": {
+          "example": true,
+          "type": "boolean"
+        },
+        "total": {
+          "example": 143,
+          "type": "integer"
+        },
+        "total_paginas": {
+          "example": 8,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

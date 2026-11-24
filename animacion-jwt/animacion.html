@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualización Interactiva: JSON Web Tokens</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --text-main: #ffffff;
+            --text-dim: #a3a3a3;
+            
+            /* Colores Neon Matemáticos estilo 3B1B */
+            --color-header: #ff3366; 
+            --color-payload: #b829ff; 
+            --color-signature: #00ccff; 
+            --color-client: #00ff66; 
+            --color-auth: #ffcc00; 
+            
+            --color-bg-grid: rgba(255, 255, 255, 0.04);
+            
+            --font-text: 'Inter', sans-serif;
+            --font-code: 'Fira Code', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                linear-gradient(var(--color-bg-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--color-bg-grid) 1px, transparent 1px);
+            background-size: 50px 50px;
+            background-position: center center;
+        }
+
+        #top-ui {
+            padding: 20px 40px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(13,13,13,0.95) 0%, transparent 100%);
+            z-index: 10;
+            position: relative;
+        }
+
+        #subtitle {
+            font-size: 1.4rem;
+            font-weight: 400;
+            line-height: 1.4;
+            min-height: 80px;
+            max-width: 900px;
+            margin: 0 auto;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        #subtitle strong {
+            color: var(--color-signature);
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.2rem;
+        }
+
+        #controls-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1000px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 50;
+            background: rgba(15, 15, 15, 0.85);
+            padding: 15px 30px;
+            border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        button {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-family: var(--font-text);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+
+        button:hover { background: rgba(255,255,255,0.15); border-color: var(--text-main); }
+
+        #scrubber-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        
+        input[type=range]:focus { outline: none; }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--color-signature);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7px;
+            box-shadow: 0 0 15px var(--color-signature);
+            transition: transform 0.1s;
+        }
+        
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        #canvas {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #connections {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .connection-line {
+            stroke: rgba(255, 255, 255, 0.15);
+            stroke-width: 2;
+            stroke-dasharray: 6 6;
+        }
+
+        .node {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(15, 15, 15, 0.95);
+            border: 2px solid;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            cursor: help;
+            transition: transform 0.2s;
+        }
+        .node:hover { transform: translate(-50%, -50%) scale(1.05); }
+        .node .icon { font-size: 2.5rem; margin-bottom: 5px; }
+        .node .label { font-size: 0.9rem; font-weight: 600; text-align: center; }
+
+        #node-client { left: 20%; top: 50%; border-color: var(--color-client); }
+        #node-auth { left: 50%; top: 20%; border-color: var(--color-auth); }
+        #node-ms { left: 80%; top: 50%; border-color: #fff; }
+
+        .packet {
+            position: absolute;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            background: #1a1a1a;
+            border: 1px solid;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            opacity: 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        #pkt-creds { border-color: var(--text-dim); color: #fff; }
+        #pkt-refresh { border-color: var(--color-auth); color: var(--color-auth); }
+
+        #jwt-stage {
+            position: absolute;
+            top: 52%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%; height: 60%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 10; pointer-events: none;
+        }
+
+        .jwt-parts-container {
+            display: flex; gap: 40px; margin-bottom: 30px;
+        }
+
+        .jwt-part {
+            background: rgba(10, 10, 10, 0.95);
+            border: 1px solid; border-radius: 12px;
+            padding: 20px; width: 280px;
+            opacity: 0; pointer-events: auto; cursor: help;
+        }
+
+        .jwt-part .title {
+            font-family: var(--font-text); font-weight: 600;
+            margin-bottom: 12px; letter-spacing: 2px;
+            font-size: 1rem; text-align: center;
+        }
+
+        .jwt-part .code-block {
+            font-family: var(--font-code); font-size: 0.85rem;
+            line-height: 1.5; white-space: pre-wrap;
+            position: relative; height: 110px;
+        }
+
+        .code-json, .code-b64 { position: absolute; top: 0; left: 0; width: 100%; }
+        .code-b64 { opacity: 0; word-break: break-all; text-align: center; margin-top: 15px;}
+
+        #part-header { border-color: var(--color-header); }
+        #part-header .title, #part-header .code-b64 { color: var(--color-header); }
+
+        #part-payload { border-color: var(--color-payload); }
+        #part-payload .title, #part-payload .code-b64 { color: var(--color-payload); }
+
+        #part-signature {
+            background: rgba(10, 10, 10, 0.95);
+            border: 1px solid var(--color-signature);
+            border-radius: 12px; padding: 15px 30px;
+            text-align: center; opacity: 0;
+            pointer-events: auto; cursor: help;
+        }
+        #part-signature .title { color: var(--color-signature); font-weight: 600; margin-bottom: 8px; letter-spacing: 2px;}
+        #part-signature .formula { font-family: var(--font-code); font-size: 1rem; line-height: 1.6; }
+
+        .jwt-compact {
+            position: absolute;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-family: var(--font-code);
+            font-size: 1.1rem;
+            background: #111;
+            border: 1px solid rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            z-index: 20; opacity: 0;
+            pointer-events: auto; cursor: help;
+            white-space: nowrap;
+        }
+        .jwt-compact span.h { color: var(--color-header); }
+        .jwt-compact span.p { color: var(--color-payload); }
+        .jwt-compact span.s { color: var(--color-signature); }
+        .jwt-compact span.dot { color: #fff; }
+        .jwt-compact.expired { filter: grayscale(100%); opacity: 0.4; text-decoration: line-through; }
+
+        #validation-icon {
+            position: absolute; font-size: 1.8rem;
+            opacity: 0; transform: translate(-50%, -50%) scale(0);
+            z-index: 25; left: 80%; top: 38%;
+            background: #111; padding: 5px 15px; border-radius: 10px; border: 1px solid var(--color-client);
+            color: var(--color-client);
+        }
+
+        #tooltip {
+            position: fixed; background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255,255,255,0.2); padding: 15px 20px;
+            border-radius: 8px; max-width: 350px;
+            font-family: var(--font-text); font-size: 0.9rem; line-height: 1.5;
+            pointer-events: none; opacity: 0; z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transition: opacity 0.2s ease; color: #ddd;
+        }
+        #tooltip strong { color: #fff; display: block; margin-bottom: 5px; font-size: 1rem; }
+
+    </style>
+</head>
+<body>
+
+    <div id="top-ui">
+        <div id="subtitle">Iniciando motor de animación...</div>
+    </div>
+
+    <div id="canvas">
+        <svg id="connections">
+            <line x1="20%" y1="50%" x2="50%" y2="20%" class="connection-line" />
+            <line x1="20%" y1="50%" x2="80%" y2="50%" class="connection-line" />
+        </svg>
+
+        <div class="node" id="node-client" data-title="Cliente (Frontend/Móvil)" data-desc="Inicia el flujo de autenticación y almacena el JWT. Consume las APIs.">
+            <div class="icon">💻</div><div class="label">Cliente</div>
+        </div>
+        <div class="node" id="node-auth" data-title="Auth Server" data-desc="Verifica credenciales. Es el ÚNICO que conoce la 'Secret Key' para firmar JWTs.">
+            <div class="icon">🔐</div><div class="label">Auth Server</div>
+        </div>
+        <div class="node" id="node-ms" data-title="Microservicio (API)" data-desc="Recibe peticiones. Verifica el JWT localmente mediante matemáticas, sin consultar al Auth Server.">
+            <div class="icon">⚙️</div><div class="label">Microservicio</div>
+        </div>
+
+        <div class="packet" id="pkt-creds">POST /login<br>user: admin<br>pass: ****</div>
+        <div class="packet" id="pkt-refresh">POST /refresh<br>RefreshToken</div>
+
+        <div class="jwt-compact" id="jwt-flying" data-title="JSON Web Token" data-desc="Token seguro por URL. Contiene Header, Payload y Firma.">
+            <span class="h">eyJhbG...</span><span class="dot">.</span><span class="p">eyJzdW...</span><span class="dot">.</span><span class="s">SflKxw...</span>
+        </div>
+
+        <div id="jwt-stage">
+            <div class="jwt-parts-container">
+                <div class="jwt-part" id="part-header" data-title="Header (Cabecera)" data-desc="Define el tipo de token y el algoritmo de cifrado (ej. HS256).">
+                    <div class="title">HEADER</div>
+                    <div class="code-block">
+                        <div class="code-json">{\n  "alg": "HS256",\n  "typ": "JWT"\n}</div>
+                        <div class="code-b64">eyJhbGciOiJIUzI1<br>NiIsInR5cCI6Ik<br>pXVCJ9</div>
+                    </div>
+                </div>
+                <div class="jwt-part" id="part-payload" data-title="Payload (Carga Útil)" data-desc="Contiene los 'claims' (ID, rol, expiración). No usar para datos sensibles.">
+                    <div class="title">PAYLOAD</div>
+                    <div class="code-block">
+                        <div class="code-json">{\n  "sub": "12345",\n  "role": "admin",\n  "exp": 17000000\n}</div>
+                        <div class="code-b64">eyJzdWIiOiIxMjM<br>0NSIsInJvbGUiO<br>iJhZG1pbiIsImV<br>4cCI6MTcwMDAwMDB9</div>
+                    </div>
+                </div>
+            </div>
+            <div id="part-signature" data-title="Signature (Firma)" data-desc="Garantiza integridad. Creada con Header, Payload y la clave secreta del servidor.">
+                <div class="title">SIGNATURE</div>
+                <div class="formula">
+                    HMACSHA256(
+                    <span style="color: var(--color-header)">b64(header)</span> + "." + 
+                    <span style="color: var(--color-payload)">b64(payload)</span>, 
+                    <span style="border: 1px dashed #fff; padding: 1px 4px;">SecretKey</span>
+                    )<br>= <span style="color: var(--color-signature)">SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="validation-icon">✅ Firma Válida</div>
+    </div>
+
+    <div id="controls-bar">
+        <button id="btn-playpause">Pausar ⏸</button>
+        <div id="scrubber-container">
+            <input type="range" id="progress-scrubber" min="0" max="100" value="0" step="0.1">
+        </div>
+        <button id="btn-restart">Reiniciar 🔄</button>
+    </div>
+    
+    <div id="tooltip"></div>
+
+    <script>
+        let isManuallyPaused = false;
+        let isDragging = false;
+        
+        const btnPlayPause = document.getElementById('btn-playpause');
+        const btnRestart = document.getElementById('btn-restart');
+        const scrubber = document.getElementById('progress-scrubber');
+        const subtitleEl = document.getElementById('subtitle');
+        const tooltip = document.getElementById('tooltip');
+
+        const posClient = { left: '20%', top: '50%' };
+        const posAuth = { left: '50%', top: '20%' };
+        const posMS = { left: '80%', top: '50%' };
+        const posStageCenter = { left: '50%', top: '52%' };
+
+        function updateText(html) {
+            subtitleEl.innerHTML = html;
+        }
+
+        const tl = gsap.timeline({ 
+            onUpdate: () => {
+                if (!isDragging) {
+                    scrubber.value = tl.progress() * 100;
+                }
+            },
+            onComplete: () => {
+                btnPlayPause.innerText = "Reiniciar ▶";
+            }
+        });
+
+        tl.add(() => updateText("<strong>Paso 1: Autenticación.</strong>El Cliente envía credenciales seguras al Servidor de Autorización."));
+        tl.set('#pkt-creds', { left: posClient.left, top: posClient.top, opacity: 1, scale: 1 });
+        tl.to('#node-client', { scale: 1.1, duration: 0.2, yoyo: true, repeat: 1 });
+        tl.to('#pkt-creds', { left: posAuth.left, top: posAuth.top, duration: 1.2, ease: "power1.inOut" });
+        tl.to('#pkt-creds', { opacity: 0, scale: 0.5, duration: 0.2 });
+        tl.to('#node-auth', { scale: 1.1, boxShadow: '0 0 30px rgba(255, 204, 0, 0.6)', duration: 0.2, yoyo: true, repeat: 1 });
+        tl.to({}, { duration: 1 });
+
+        tl.add(() => updateText("<strong>Paso 2: Construcción - Header (Cabecera).</strong>El Servidor define un JSON con el tipo de token y el algoritmo de cifrado."));
+        tl.to('#part-header', { opacity: 1, y: -20, duration: 0.6, ease: "back.out(1.2)" });
+        tl.to({}, { duration: 1.2 }); 
+
+        tl.add(() => updateText("<strong>Paso 3: Construcción - Payload (Carga Útil).</strong>Se crea el JSON con los 'Claims' (datos de usuario, rol, expiración)."));
+        tl.to('#part-payload', { opacity: 1, y: -20, duration: 0.6, ease: "back.out(1.2)" });
+        tl.to({}, { duration: 1.2 });
+
+        tl.add(() => updateText("<strong>Paso 4: Codificación a Base64Url.</strong>Los objetos JSON se codifican en texto plano seguro para viajar por internet."));
+        tl.to('.code-json', { opacity: 0, duration: 0.6 });
+        tl.to('.code-b64', { opacity: 1, duration: 0.6 }, "<");
+        tl.to('.jwt-part', { borderColor: '#fff', duration: 0.5, yoyo: true, repeat: 1 });
+        tl.to({}, { duration: 1.5 });
+
+        tl.add(() => updateText("<strong>Paso 5: La Firma (Signature).</strong>El Header y Payload se sellan matemáticamente usando una CLAVE SECRETA del servidor."));
+        tl.to('#part-signature', { opacity: 1, y: -15, duration: 0.6, ease: "back.out(1.2)" });
+        tl.fromTo('#part-signature', {boxShadow: '0 0 0 rgba(0, 204, 255, 0)'}, {boxShadow: '0 0 30px rgba(0, 204, 255, 0.6)', duration: 0.6, yoyo: true, repeat: 2});
+        tl.to({}, { duration: 1.5 });
+
+        tl.add(() => updateText("<strong>Paso 6: El JWT Final.</strong>Las tres partes (Header, Payload, Firma) se concatenan separadas por un punto (.)."));
+        tl.to('.jwt-part, #part-signature', { scale: 0.8, opacity: 0, duration: 0.8, ease: "power2.in" });
+        tl.set('#jwt-flying', { left: posStageCenter.left, top: '65%', opacity: 0, scale: 2 });
+        tl.to('#jwt-flying', { opacity: 1, scale: 1.2, duration: 0.8, ease: "back.out(1.5)" });
+        tl.to('#jwt-flying', { boxShadow: '0 0 25px rgba(255,255,255,0.4)', duration: 0.6, yoyo: true, repeat: 1 });
+        tl.to({}, { duration: 1.2 });
+
+        tl.add(() => updateText("<strong>Paso 7: Entrega del Token.</strong>El JWT se envía al Cliente, quien lo almacenará para futuras peticiones."));
+        tl.to('#jwt-flying', { scale: 1, left: posAuth.left, top: posAuth.top, duration: 0.6, ease: "power1.inOut" });
+        tl.to('#jwt-flying', { left: posClient.left, top: posClient.top, duration: 1.5, ease: "power1.inOut" });
+        tl.to('#node-client', { boxShadow: '0 0 30px rgba(0, 255, 102, 0.6)', duration: 0.3, yoyo: true, repeat: 1 });
+        tl.to({}, { duration: 1.2 });
+
+        tl.add(() => updateText("<strong>Paso 8: Consumo de Microservicios.</strong>El Cliente adjunta el JWT en la cabecera HTTP para acceder a una API protegida."));
+        tl.to('#jwt-flying', { left: posMS.left, top: posMS.top, duration: 1.5, ease: "power1.inOut" });
+        tl.to({}, { duration: 1 });
+
+        tl.add(() => updateText("<strong>Paso 9: Verificación 'Stateless'.</strong>El Microservicio valida la firma matemáticamente. NO consulta a base de datos ni al Auth Server."));
+        tl.to('#jwt-flying', { opacity: 0.2, duration: 0.2 });
+        tl.to('#validation-icon', { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" });
+        tl.to('#node-ms', { boxShadow: '0 0 30px rgba(255, 255, 255, 0.6)', duration: 0.4, yoyo: true, repeat: 2 });
+        tl.to('#validation-icon', { opacity: 0, scale: 0, duration: 0.3 }, "+=1");
+        tl.to('#jwt-flying', { opacity: 1, duration: 0.2 });
+        tl.to('#jwt-flying', { left: posClient.left, top: posClient.top, duration: 1.2, ease: "power1.inOut" });
+        tl.to({}, { duration: 1.5 });
+
+        tl.add(() => updateText("<strong>Paso 10: Expiración y Refresh Token.</strong>El JWT expira por seguridad. El cliente usa un 'Refresh Token' para obtener uno nuevo silenciosamente."));
+        tl.to('#jwt-flying', { className: "+=expired", duration: 0.5 });
+        tl.set('#pkt-refresh', { left: posClient.left, top: posClient.top, opacity: 1, scale: 1 }, "+=0.5");
+        tl.to('#pkt-refresh', { left: posAuth.left, top: posAuth.top, duration: 1.2, ease: "power1.inOut" });
+        tl.to('#pkt-refresh', { opacity: 0, scale: 0.5, duration: 0.2 });
+        tl.to('#node-auth', { scale: 1.1, boxShadow: '0 0 30px rgba(255, 204, 0, 0.6)', duration: 0.2, yoyo: true, repeat: 1 });
+        
+        tl.to('#jwt-flying', { opacity: 0, duration: 0.2 });
+        tl.set('#jwt-flying', { className: "-=expired", left: posAuth.left, top: posAuth.top });
+        tl.to('#jwt-flying', { opacity: 1, duration: 0.2 });
+        tl.to('#jwt-flying', { left: posClient.left, top: posClient.top, duration: 1.5, ease: "power1.inOut" });
+        
+        tl.add(() => updateText("<strong>Flujo Completado.</strong>Arquitectura segura, escalable y distribuida mediante firmas criptográficas."));
+        tl.to({}, { duration: 1 });
+
+        function togglePlayPause() {
+            if (tl.progress() === 1) {
+                tl.restart();
+                btnPlayPause.innerText = "Pausar ⏸";
+                isManuallyPaused = false;
+            } else if (tl.paused()) {
+                tl.play();
+                btnPlayPause.innerText = "Pausar ⏸";
+                isManuallyPaused = false;
+            } else {
+                tl.pause();
+                btnPlayPause.innerText = "Reanudar ▶";
+                isManuallyPaused = true;
+            }
+        }
+
+        btnPlayPause.addEventListener('click', togglePlayPause);
+        btnRestart.addEventListener('click', () => {
+            tl.restart();
+            btnPlayPause.innerText = "Pausar ⏸";
+            isManuallyPaused = false;
+        });
+
+        scrubber.addEventListener('mousedown', () => {
+            isDragging = true;
+            tl.pause();
+        });
+        
+        scrubber.addEventListener('touchstart', () => {
+            isDragging = true;
+            tl.pause();
+        }, {passive: true});
+
+        scrubber.addEventListener('input', (e) => {
+            tl.progress(e.target.value / 100);
+            btnPlayPause.innerText = "Reanudar ▶";
+            isManuallyPaused = true;
+        });
+
+        scrubber.addEventListener('mouseup', () => { isDragging = false; });
+        scrubber.addEventListener('touchend', () => { isDragging = false; });
+
+
+        const interactiveElements = document.querySelectorAll('[data-title]');
+
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                if (!isManuallyPaused && !isDragging) tl.pause();
+                
+                const title = el.getAttribute('data-title');
+                const desc = el.getAttribute('data-desc');
+                tooltip.innerHTML = `<strong>${title}</strong>${desc}`;
+                tooltip.style.opacity = 1;
+                
+                gsap.to(el, { scale: el.classList.contains('node') ? 1.1 : 1.05, duration: 0.2 });
+            });
+
+            el.addEventListener('mousemove', (e) => {
+                const xOffset = 15; const yOffset = 15;
+                let x = e.clientX + xOffset;
+                let y = e.clientY + yOffset;
+                
+                if (x + tooltip.offsetWidth > window.innerWidth) x = e.clientX - tooltip.offsetWidth - xOffset;
+                if (y + tooltip.offsetHeight > window.innerHeight) y = e.clientY - tooltip.offsetHeight - yOffset;
+
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+            });
+
+            el.addEventListener('mouseleave', (e) => {
+                tooltip.style.opacity = 0;
+                gsap.to(el, { scale: 1, duration: 0.2 });
+
+                if (!isManuallyPaused && !isDragging && tl.progress() !== 1) {
+                    tl.play();
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>

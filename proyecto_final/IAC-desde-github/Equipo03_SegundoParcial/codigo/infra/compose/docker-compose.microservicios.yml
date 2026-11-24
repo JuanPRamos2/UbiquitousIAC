@@ -1,0 +1,500 @@
+# Módulo de microservicios — segundo parcial.
+#
+# Se levanta ADEMÁS de los archivos base y de ambiente:
+#
+#   docker compose -f docker-compose.base.yml \
+#                  -f docker-compose.developer.yml \
+#                  -f docker-compose.microservicios.yml up
+#
+# Ocho servicios, cada uno con su propio contenedor, su propia imagen y su
+# propia responsabilidad. Comparten PostgreSQL, MongoDB y Redis porque eso
+# está autorizado; lo que no comparten son vistas, sesiones ni plantillas
+# del sistema web.
+#
+# POR QUÉ DOS LENGUAJES
+# ---------------------
+# Seis servicios están en Python (Flask) y dos en Node (Express), porque
+# los escribieron integrantes distintos. Eso no es un accidente que haya
+# que esconder: es la prueba de que el contrato manda sobre la
+# implementación. Los ocho firman el JWT con el mismo secreto, leen la
+# misma sesión en Redis, devuelven el mismo sobre de error y serializan el
+# XML con las mismas reglas, de modo que un cliente no puede saber en qué
+# lenguaje está escrito el servicio al que le habla.
+#
+# Los puertos solo se publican en developer, para poder abrir el Swagger de
+# cada uno desde el navegador del equipo. En production el acceso pasa por
+# el proxy.
+
+services:
+
+  # ------------------------------------------------ MongoDB (segundo parcial)
+  documentos:
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_BASE:-bienestar}
+    volumes:
+      - datos_mongo:/data/db
+      # Índices y validadores $jsonSchema de la base documental.
+      - ../../db/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # ===================================================== Integrante 1 (Python)
+  auth-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: auth-service/Dockerfile
+    image: bienestar-nexum/auth-service:${VERSION:-local}
+    environment: &entorno_comun
+      APP_AMBIENTE: ${APP_AMBIENTE:?falta APP_AMBIENTE}
+      PG_HOST: datos
+      PG_BASE: ${PG_BASE:-bienestar}
+      PG_USUARIO: ${PG_USUARIO:-bienestar_app}
+      PG_CLAVE: ${PG_CLAVE:?falta PG_CLAVE}
+      REDIS_HOST: cache
+      MONGO_URI: mongodb://documentos:27017
+      MONGO_BASE: ${MONGO_BASE:-bienestar}
+      # El MISMO secreto que el sistema web: por eso un token sirve en
+      # todos y un logout revoca en todos los componentes.
+      JWT_SECRETO: ${JWT_SECRETO:-}
+      JWT_MINUTOS: ${JWT_MINUTOS:-15}
+      NIVEL_BITACORA: ${NIVEL_BITACORA:-INFO}
+      MOSTRAR_ERRORES: ${MOSTRAR_ERRORES:-false}
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  users-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: users-service/Dockerfile
+    image: bienestar-nexum/users-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # ======================================================= Integrante 2 (Node)
+  # Mismo juego de variables de ambiente que los de Python: comun-node/
+  # entorno.js lee PG_HOST, PG_BASE, REDIS_HOST y JWT_SECRETO con esos
+  # nombres a propósito, para que un solo archivo de ambiente sirva para
+  # los ocho servicios. Si cada lenguaje inventara sus nombres, ese archivo
+  # declararía la misma contraseña dos veces y bastaría olvidar una para
+  # que un servicio se conectara a la base equivocada.
+  catalog-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: catalog-service/Dockerfile
+    image: bienestar-nexum/catalog-service:${VERSION:-local}
+    environment:
+      <<: *entorno_comun
+      CATALOGO_CACHE_TTL_SEG: ${CATALOGO_CACHE_TTL_SEG:-300}
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  main-process-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: main-process-service/Dockerfile
+    image: bienestar-nexum/main-process-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # ===================================================== Integrante 3 (Python)
+  documents-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: documents-service/Dockerfile
+    image: bienestar-nexum/documents-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  notifications-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: notifications-service/Dockerfile
+    image: bienestar-nexum/notifications-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # ======================================= Consultas y reportes (Python)
+  # queries-service no depende de MongoDB: solo lee vistas de PostgreSQL y
+  # cachea en Redis. Declararlo como dependiente lo dejaría esperando a una
+  # base que no usa.
+  queries-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: queries-service/Dockerfile
+    image: bienestar-nexum/queries-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  reports-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: reports-service/Dockerfile
+    image: bienestar-nexum/reports-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  algorithms-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: algorithms-service/Dockerfile
+    image: bienestar-nexum/algorithms-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # No depende de MongoDB: lee las series de PostgreSQL y no archiva nada.
+  trends-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: trends-service/Dockerfile
+    image: bienestar-nexum/trends-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # Tampoco depende de MongoDB: los planes, el seguimiento y las
+  # evaluaciones son relacionales y tienen integridad referencial contra
+  # las unidades y las campanias.
+  interventions-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: interventions-service/Dockerfile
+    image: bienestar-nexum/interventions-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # Sin volumen: el archivo generado vive en la misma fila que su registro.
+  export-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: export-service/Dockerfile
+    image: bienestar-nexum/export-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # Parametros, limites e historial: todo relacional.
+  configuration-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: configuration-service/Dockerfile
+    image: bienestar-nexum/configuration-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # Su propia sonda mira solo sus propias dependencias: si vigilar algo
+  # caido lo pusiera en no_listo, el orquestador lo sacaria de servicio
+  # justo cuando hace falta verlo.
+  monitoring-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: monitoring-service/Dockerfile
+    image: bienestar-nexum/monitoring-service:${VERSION:-local}
+    environment:
+      <<: *entorno_comun
+      MONITOREO_EN_DOCKER: "true"
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # Recibe lo que capturaron las aplicaciones cliente sin red.
+  sync-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: sync-service/Dockerfile
+    image: bienestar-nexum/sync-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # La puerta hacia el sistema corporativo.
+  integration-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: integration-service/Dockerfile
+    image: bienestar-nexum/integration-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+
+  consent-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: consent-service/Dockerfile
+    image: bienestar-nexum/consent-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  privacy-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: privacy-service/Dockerfile
+    image: bienestar-nexum/privacy-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  survey-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: survey-service/Dockerfile
+    image: bienestar-nexum/survey-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  indicators-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: indicators-service/Dockerfile
+    image: bienestar-nexum/indicators-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  support-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: support-service/Dockerfile
+    image: bienestar-nexum/support-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      documentos:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  organizational-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: organizational-service/Dockerfile
+    image: bienestar-nexum/organizational-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  audit-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: audit-service/Dockerfile
+    image: bienestar-nexum/audit-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  data-governance-service:
+    build:
+      context: ../../apps/microservicios
+      dockerfile: data-governance-service/Dockerfile
+    image: bienestar-nexum/data-governance-service:${VERSION:-local}
+    environment: *entorno_comun
+    depends_on:
+      datos:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - privada
+    restart: unless-stopped
+
+  # El sistema web aprende a dónde llamar. Si estos servicios no responden,
+  # el portal cae a PostgreSQL y sigue operando: la pantalla de Servicios
+  # permite demostrarlo apagándolos durante la demostración.
+  web:
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      USERS_SERVICE_URL: http://users-service:8000
+      CATALOG_SERVICE_URL: http://catalog-service:8000
+      MAIN_PROCESS_SERVICE_URL: http://main-process-service:8000
+      DOCUMENTS_SERVICE_URL: http://documents-service:8000
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8000
+      QUERIES_SERVICE_URL: http://queries-service:8000
+      REPORTS_SERVICE_URL: http://reports-service:8000
+      ALGORITHMS_SERVICE_URL: http://algorithms-service:8000
+      TRENDS_SERVICE_URL: http://trends-service:8000
+      INTERVENTIONS_SERVICE_URL: http://interventions-service:8000
+      EXPORT_SERVICE_URL: http://export-service:8000
+      CONFIGURATION_SERVICE_URL: http://configuration-service:8000
+      MONITORING_SERVICE_URL: http://monitoring-service:8000
+      SYNC_SERVICE_URL: http://sync-service:8000
+      INTEGRATION_SERVICE_URL: http://integration-service:8000
+      CONSENT_SERVICE_URL: http://consent-service:8000
+      PRIVACY_SERVICE_URL: http://privacy-service:8000
+      SURVEY_SERVICE_URL: http://survey-service:8000
+      INDICATORS_SERVICE_URL: http://indicators-service:8000
+      SUPPORT_SERVICE_URL: http://support-service:8000
+      ORGANIZATIONAL_SERVICE_URL: http://organizational-service:8000
+      AUDIT_SERVICE_URL: http://audit-service:8000
+      DATA_GOVERNANCE_SERVICE_URL: http://data-governance-service:8000
+      MICROSERVICIO_TIMEOUT: "2.5"
+
+volumes:
+  datos_mongo:

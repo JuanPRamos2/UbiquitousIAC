@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Mis accesos{% endblock %}
+{% block contenido %}
+<h1>Quién consultó mis datos</h1>
+<p class="subtitulo">Registro de accesos a tu información de consentimiento y participación.</p>
+
+<div class="aviso aviso-info">
+  Esta pantalla existe porque una promesa de privacidad que no se puede verificar
+  no es una garantía. Aquí ves el mismo registro que consulta el auditor.
+</div>
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Fecha</th><th>Quién</th><th>Qué hizo</th><th>Resultado</th></tr></thead>
+  <tbody>
+  {% for a in accesos %}
+    <tr>
+      <td>{{ a.fecha_hora.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ a.actor_perfil }}</td>
+      <td>{{ a.que_hizo }}</td>
+      <td>{{ a.resultado }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="tenue">Nadie ha consultado tu información todavía.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: Catalog Service API - Bienestar Nexum (Integrante 2)
+  description: |
+    Microservicio de Catálogos Organizacionales y Psicométricos.
+    Responsable: Integrante 2 (Ricardo Arath Sánchez Aguirre #583928).
+    Persistencia: PostgreSQL 15 con baja lógica e invalidación de caché Redis.
+    Formatos soportados: JSON (por defecto) y XML mediante cabecera Accept o parámetro ?format=xml.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3002
+    description: Microservicio local independiente
+  - url: http://localhost:3000
+    description: API Gateway / Monolito
+
+paths:
+  /health:
+    get:
+      summary: Sonda de salud del microservicio
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              example:
+                status: "UP"
+                service: "catalog-service"
+                version: "1.0.0"
+                dependencies:
+                  postgresql: true
+                  redis: true
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <salud>
+                  <status>UP</status>
+                  <service>catalog-service</service>
+                  <dependencies>
+                    <postgresql>true</postgresql>
+                    <redis>true</redis>
+                  </dependencies>
+                </salud>
+
+  /api/v1/catalogos/unidades:
+    get:
+      summary: Listar unidades organizacionales
+      parameters:
+        - name: incluir_inactivas
+          in: query
+          schema:
+            type: boolean
+        - name: format
+          in: query
+          description: Solicitar respuesta en formato xml o json
+          schema:
+            type: string
+            enum: [json, xml]
+      responses:
+        '200':
+          description: Lista de unidades
+          content:
+            application/json:
+              example:
+                data:
+                  - unidad_organizacional_id: "UO-DIR-GEN"
+                    nombre: "Dirección General"
+                    activa: true
+            application/xml:
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <catalogo>
+                  <data>
+                    <item>
+                      <unidad_organizacional_id>UO-DIR-GEN</unidad_organizacional_id>
+                      <nombre>Dirección General</nombre>
+                      <activa>true</activa>
+                    </item>
+                  </data>
+                </catalogo>
+    post:
+      summary: Crear unidad organizacional (Solo ADMIN_SISTEMA)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              unidad_organizacional_id: "UO-NUEVA-01"
+              nombre: "Calidad y Mejora Continua"
+              padre_id: "UO-DIR-GEN"
+      responses:
+        '201':
+          description: Unidad creada
+        '409':
+          description: Conflicto por duplicidad de nombre o clave
+
+  /api/v1/catalogos/unidades/{id}:
+    delete:
+      summary: Baja lógica de unidad organizacional (activa = false)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unidad desactivada lógicamente
+          content:
+            application/json:
+              example:
+                ok: true
+                unidad_organizacional_id: "UO-NUEVA-01"
+                activa: false
+
+  /api/v1/catalogos/instrumentos:
+    get:
+      summary: Listar instrumentos psicométricos
+      responses:
+        '200':
+          description: Lista de instrumentos
+    post:
+      summary: Crear instrumento psicométrico
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              instrumento_id: "INST-CLIMA-01"
+              nombre: "Diagnóstico de Clima Organizacional"
+              tipo: "CLIMA"
+      responses:
+        '201':
+          description: Instrumento registrado
+
+  /api/v1/catalogos/campanias:
+    get:
+      summary: Listar campañas de evaluación
+      responses:
+        '200':
+          description: Lista de campañas
+    post:
+      summary: Crear campaña de evaluación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              nombre: "Evaluación Clima Q4 2026"
+              instrumento_id: "INST-BURNOUT-01"
+              version_instrumento: 1
+              fecha_inicio: "2026-11-01"
+              fecha_fin: "2026-11-30"
+      responses:
+        '201':
+          description: Campaña creada

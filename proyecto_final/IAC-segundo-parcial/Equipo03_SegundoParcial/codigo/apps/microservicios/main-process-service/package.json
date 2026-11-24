@@ -1,0 +1,24 @@
+{
+  "name": "@bienestar-nexum/main-process-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Microservicio del proceso principal de Bienestar Nexum (Equipo 03, Integrante 2)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@bienestar/comun": "file:../comun-node",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.6.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.15.0",
+    "pg": "^8.14.1"
+  }
+}

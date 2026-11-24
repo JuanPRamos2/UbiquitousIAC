@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+      - run: npm ci --prefix services/comun
+      - run: npm test --prefix services/comun
+      - run: npm ci --prefix services/queries-service
+      - run: npm test --prefix services/queries-service
+      - run: npm ci --prefix services/reports-service
+      - run: npm test --prefix services/reports-service

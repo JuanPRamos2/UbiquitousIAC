@@ -3,13 +3,16 @@ services:
     image: postgres:15-bookworm
     restart: unless-stopped
     attach: false
+    networks:
+      nexum:
+        aliases: [postgresql]
     environment:
       POSTGRES_DB: bienestar_nexum
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
       # 5433 en el host evita choque con PostgreSQL local en 5432
-      - "5433:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./bienestar_nexum_v2.sql:/docker-entrypoint-initdb.d/01_bienestar_nexum_v2.sql:ro
@@ -23,6 +26,9 @@ services:
     image: mongo:7
     restart: unless-stopped
     attach: false
+    networks:
+      nexum:
+        aliases: [mongodb]
     ports:
       - "${MONGO_HOST_PORT:-27017}:27017"
     volumes:
@@ -38,6 +44,7 @@ services:
     image: redis:7-bookworm
     restart: unless-stopped
     attach: false
+    networks: [nexum]
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "${REDIS_HOST_PORT:-6379}:6379"
@@ -49,9 +56,15 @@ services:
       timeout: 3s
       retries: 10
 
+  # El monolito sigue siendo la web y, hasta que el equipo extraiga los
+  # servicios, también auth, usuarios, catálogo, encuestas, agregados y auditoría.
+  # DNS interno: api y web. No usar localhost entre contenedores.
   api:
     build: .
     restart: unless-stopped
+    networks:
+      nexum:
+        aliases: [web]
     ports:
       - "${API_HOST_PORT:-3000}:3000"
     environment:
@@ -70,6 +83,8 @@ services:
       MONGO_URL: mongodb://mongo:27017
       MONGO_DB: bienestar_nexum
       REDIS_URL: redis://redis:6379
+      QUERIES_PUBLIC_ORIGIN: ${QUERIES_PUBLIC_ORIGIN:-http://127.0.0.1:3010}
+      REPORTS_PUBLIC_ORIGIN: ${REPORTS_PUBLIC_ORIGIN:-http://127.0.0.1:3020}
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,6 +104,125 @@ services:
       timeout: 5s
       retries: 8
       start_period: 20s
+
+  queries-service:
+    build:
+      context: .
+      dockerfile: services/queries-service/Dockerfile
+    restart: unless-stopped
+    networks: [nexum]
+    ports:
+      - "${QUERIES_HOST_PORT:-3010}:3000"
+    environment:
+      SERVICE_NAME: queries-service
+      PORT: 3000
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-cambia-esta-clave-en-produccion}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_ISSUER: ${JWT_ISSUER:-}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_REQUIRE_SESSION: ${JWT_REQUIRE_SESSION:-true}
+      CACHE_TTL_SEC: ${CACHE_TTL_SEC:-60}
+      REDIS_TTL_LOCK_SEC: ${REDIS_TTL_LOCK_SEC:-10}
+      REDIS_TTL_CONTEXTO_SEC: ${REDIS_TTL_CONTEXTO_SEC:-60}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-60}
+      RATE_LIMIT_WINDOW_SEC: ${RATE_LIMIT_WINDOW_SEC:-60}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: bienestar_nexum
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      MONGO_URL: mongodb://mongo:27017
+      MONGO_DB: bienestar_nexum
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:3000,http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+
+  reports-service:
+    build:
+      context: .
+      dockerfile: services/reports-service/Dockerfile
+    restart: unless-stopped
+    networks: [nexum]
+    ports:
+      - "${REPORTS_HOST_PORT:-3020}:3000"
+    environment:
+      SERVICE_NAME: reports-service
+      PORT: 3000
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-cambia-esta-clave-en-produccion}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_ISSUER: ${JWT_ISSUER:-}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_REQUIRE_SESSION: ${JWT_REQUIRE_SESSION:-true}
+      CACHE_TTL_SEC: ${CACHE_TTL_SEC:-60}
+      REDIS_TTL_LOCK_SEC: ${REDIS_TTL_LOCK_SEC:-10}
+      REDIS_TTL_CONTEXTO_SEC: ${REDIS_TTL_CONTEXTO_SEC:-60}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-60}
+      RATE_LIMIT_WINDOW_SEC: ${RATE_LIMIT_WINDOW_SEC:-60}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: bienestar_nexum
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      MONGO_URL: mongodb://mongo:27017
+      MONGO_DB: bienestar_nexum
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:3000,http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+
+# Integrante 1: auth-service, users-service.
+# Integrante 2: catalog-service, main-process-service.
+# Integrante 3: documents-service, notifications-service.
+# Cuando existan, se agregan aquí con su Dockerfile y esos nombres DNS.
+# Hoy esas responsabilidades viven en el servicio `api` (alias DNS `web`).
+# ESTO SE DEBE CONECTAR CON AUTH SERVICE: el contrato ya usado es
+#   POST http://api:3000/api/auth/login
+#   session:{jti} y revoked:{jti} en Redis
+#   JWT HS256 con el mismo JWT_SECRET
+# Detalle: Redis, Docker, consultas y pruebas/Arquitectura/integracion-con-el-equipo.md
+
+networks:
+  nexum:
+    name: nexum
 
 volumes:
   pgdata:

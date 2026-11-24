@@ -1,0 +1,1 @@
+pg_clave_super.txt y cualquier secreto real NO van en el repositorio.

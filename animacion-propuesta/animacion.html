@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animación Librería con balanceadores, API Gateway y proxies</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>LIBRERÍA UDEM</h1>
+        <p>Entrada propuesta: balanceador, Nginx y Flask</p>
+        <div class="modes">
+            <button id="btn-explore" class="active" type="button">Modo Explorar</button>
+            <button id="btn-learn" type="button">Modo Aprender</button>
+        </div>
+    </header>
+
+    <main id="app-container">
+        <svg id="architecture-canvas" viewBox="0 0 1440 640" preserveAspectRatio="xMidYMid meet">
+            <g id="layer-backgrounds"></g>
+            <g id="layer-connections"></g>
+            <g id="layer-nodes"></g>
+            <g id="layer-packets"></g>
+        </svg>
+
+        <div id="tooltip" class="hidden"></div>
+
+        <div id="learning-panel" class="hidden">
+            <h3 id="learn-title">Concepto</h3>
+            <p id="learn-text"></p>
+            <button id="btn-next-step" type="button">Continuar</button>
+        </div>
+
+        <div id="simulation-controls">
+            <button type="button" id="sim-login">Login y JWT</button>
+            <button type="button" id="sim-books">Catálogo en 3 Books</button>
+            <button type="button" id="sim-compra">Compra</button>
+            <button type="button" id="sim-caida">Pedidos caído</button>
+            <button type="button" id="sim-soap">SOAP sin JWT</button>
+        </div>
+    </main>
+
+    <footer>
+        <div id="timeline">
+            <div class="timeline-step" data-scene="0">01 Entrada</div>
+            <div class="timeline-step" data-scene="1">02 Clientes</div>
+            <div class="timeline-step" data-scene="2">03 Balanceador</div>
+            <div class="timeline-step" data-scene="3">04 Reverse proxy</div>
+            <div class="timeline-step" data-scene="4">05 Reglas</div>
+            <div class="timeline-step" data-scene="5">06 Books ×3</div>
+            <div class="timeline-step" data-scene="6">07 Compra</div>
+            <div class="timeline-step" data-scene="7">08 Si Pedidos cae</div>
+            <div class="timeline-step" data-scene="8">09 Completa</div>
+        </div>
+        <div class="playback-controls">
+            <button id="btn-prev" type="button">← Ant</button>
+            <button id="btn-replay" type="button">↺ Reiniciar</button>
+            <button id="btn-next" type="button">Sig →</button>
+        </div>
+    </footer>
+
+    <script src="app.js?v=2"></script>
+</body>
+</html>

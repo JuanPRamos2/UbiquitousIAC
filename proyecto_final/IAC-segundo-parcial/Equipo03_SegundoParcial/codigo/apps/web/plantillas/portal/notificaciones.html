@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block titulo %}Notificaciones{% endblock %}
+{% block contenido %}
+<h1>Notificaciones</h1>
+<p class="subtitulo">
+  {% if sin_leer %}{{ sin_leer }} sin leer{% else %}Todo al día{% endif %}
+</p>
+
+{% if problema %}
+<div class="aviso aviso-alto">
+  <strong>No se pudo cargar la bandeja.</strong>
+  <p>{{ problema }}</p>
+  <p class="tenue">
+    Las otras pantallas de administración caen a PostgreSQL cuando su
+    microservicio no responde. Esta no puede: las notificaciones viven
+    únicamente en MongoDB, con un índice TTL que las borra a los 90 días.
+    No hay una segunda copia a la que recurrir, y mostrar una bandeja vacía
+    sería peor que decirlo: harías cuenta de que no tienes avisos pendientes
+    cuando lo que pasa es que el servicio está caído.
+  </p>
+</div>
+{% else %}
+
+<p>
+  <a class="btn {{ 'btn-primario' if solo_sin_leer else 'btn-plano' }}"
+     href="{{ url_for('notificaciones.bandeja', sin_leer=1) }}">Solo sin leer</a>
+  <a class="btn {{ 'btn-plano' if solo_sin_leer else 'btn-primario' }}"
+     href="{{ url_for('notificaciones.bandeja') }}">Todas</a>
+  {% if 'CAMPANIA_ADMIN' in permisos or 'INTERVENCION_APROBAR' in permisos
+        or 'PARAMETRO_ADMIN' in permisos %}
+    <a class="btn btn-plano" href="{{ url_for('notificaciones.formulario_envio') }}">Enviar una</a>
+  {% endif %}
+</p>
+
+{% if notificaciones %}
+<div class="lista-tarjetas">
+{% for n in notificaciones %}
+  <article class="tarjeta {{ '' if n.leida else 'tarjeta-destacada' }}">
+    <header>
+      <span class="insignia">{{ n.tipo.replace('_', ' ')|lower }}</span>
+      {% if not n.leida %}<span class="insignia insignia-medio">sin leer</span>{% endif %}
+      <h3 style="margin:6px 0">{{ n.titulo }}</h3>
+    </header>
+    <p>{{ n.mensaje }}</p>
+    <footer class="tenue" style="font-size:12px">
+      {{ n.fecha_creacion }}
+      {% if n.unidad_organizacional_id %} · unidad {{ n.unidad_organizacional_id }}{% endif %}
+      {% if n.campania_id %} · campaña {{ n.campania_id }}{% endif %}
+      {% if n.fecha_expiracion %} · se borra sola el {{ n.fecha_expiracion[:10] }}{% endif %}
+    </footer>
+    {% if not n.leida %}
+    <form method="post" action="{{ url_for('notificaciones.marcar_leida', notificacion_id=n.notificacion_id) }}">
+      <input type="hidden" name="volver_sin_leer" value="{{ 1 if solo_sin_leer else '' }}">
+      <button class="btn btn-plano" type="submit">Marcar como leída</button>
+    </form>
+    {% endif %}
+  </article>
+{% endfor %}
+</div>
+
+{% if paginacion and paginacion.total_paginas > 1 %}
+<nav class="paginacion">
+  {% if paginacion.tiene_anterior %}
+    <a class="btn btn-plano" href="{{ url_for('notificaciones.bandeja', pagina=paginacion.pagina - 1, sin_leer=1 if solo_sin_leer else None) }}">← Anterior</a>
+  {% endif %}
+  <span class="tenue">Página {{ paginacion.pagina }} de {{ paginacion.total_paginas }}</span>
+  {% if paginacion.tiene_siguiente %}
+    <a class="btn btn-plano" href="{{ url_for('notificaciones.bandeja', pagina=paginacion.pagina + 1, sin_leer=1 if solo_sin_leer else None) }}">Siguiente →</a>
+  {% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<p class="tenue">
+  {% if solo_sin_leer %}No tienes notificaciones sin leer.
+  {% else %}No tienes notificaciones.{% endif %}
+</p>
+{% endif %}
+
+<div class="aviso aviso-info">
+  Una notificación nunca lleva un valor de bienestar. El servicio rechaza
+  cualquier mensaje con una cifra decimal: publicar «la carga percibida bajó
+  a 2.9» por esta vía entregaría el dato sin ruido de Laplace, sin umbral
+  <em>k</em> y sin descontar nada del presupuesto de épsilon, es decir
+  saltándose el mecanismo de privacidad completo. Los avisos describen la
+  situación en palabras y remiten al panel.
+</div>
+{% endif %}
+{% endblock %}

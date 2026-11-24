@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD de catalog-service — unidades organizacionales, instrumentos,
+  versiones, reactivos y campañas.
+
+  ORIGEN Y CORRECCIONES
+  =====================
+  Parte del esquema que entregó el Integrante 2 y lo corrige contra el
+  esquema de base de datos realmente entregado. La versión original
+  declaraba `campania_id` y `reactivo_id` como enteros (en la base son
+  cadenas con forma CAMP-2026-S1 y R-01), ponía la escala en el reactivo
+  (vive en la versión del instrumento, porque la misma pregunta puede
+  medirse 1-5 en una versión y 1-7 en la siguiente), declaraba
+  `catalogo.campania.activa` (la columna es `estado`, con cuatro valores:
+  una campaña en BORRADOR no es lo mismo que una CANCELADA) y nombraba
+  `padre_id` en lugar de `unidad_padre_id`. También usaba `xs:anyType`
+  dentro de la respuesta, lo que convierte el contrato en una promesa
+  vacía: cualquier XML lo cumpliría.
+
+  POR QUÉ IMPORTA LA BAJA LÓGICA EN EL CONTRATO
+  =============================================
+  Todas las entidades traen `activa`/`activo` en lugar de desaparecer. Un
+  DELETE de una unidad rompería las llaves foráneas de las respuestas ya
+  registradas o dejaría huérfano el histórico; una unidad que se cierra se
+  marca inactiva, y los agregados de campañas pasadas siguen pudiendo
+  explicarse. El contrato tiene que exponer ese campo porque el cliente
+  necesita distinguir «no existe» de «ya no está en uso».
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <!-- ===================== tipos simples del catálogo ==================== -->
+
+  <xs:simpleType name="IdInstrumento">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="INST-[A-Z0-9-]{2,30}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="IdReactivo">
+    <xs:annotation>
+      <xs:documentation>
+        Forma R-01. Es una cadena, no un entero: los reactivos se citan por
+        clave en los instrumentos impresos y en la NOM-035, y renumerarlos
+        rompería la trazabilidad con el instrumento de origen.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="R-[0-9]{2,3}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="IdDimension">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="DIM-[A-Z]{3,12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TipoUnidad">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="DIRECCION"/>
+      <xs:enumeration value="AREA"/>
+      <xs:enumeration value="DEPARTAMENTO"/>
+      <xs:enumeration value="TURNO"/>
+      <xs:enumeration value="EQUIPO"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TipoInstrumento">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NOM035"/>
+      <xs:enumeration value="CLIMA"/>
+      <xs:enumeration value="BREVE"/>
+      <xs:enumeration value="PERSONALIZADO"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="EstadoCampania">
+    <xs:annotation>
+      <xs:documentation>
+        Cuatro estados, no un booleano. BORRADOR permite preparar una
+        campaña sin que nadie la pueda responder; CANCELADA la cierra sin
+        pretender que produjo resultados, lo que un simple activa=false no
+        podría distinguir de una campaña cerrada con normalidad.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="BORRADOR"/>
+      <xs:enumeration value="ABIERTA"/>
+      <xs:enumeration value="CERRADA"/>
+      <xs:enumeration value="CANCELADA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ===================== unidades organizacionales ==================== -->
+
+  <xs:complexType name="UnidadOrganizacional">
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="nombre"                   type="xs:string"/>
+      <xs:element name="descripcion"              type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="tipo"                     type="TipoUnidad"/>
+      <xs:element name="unidad_padre_id"          type="IdUnidad"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="nivel_jerarquico"         type="xs:nonNegativeInteger"/>
+      <xs:element name="plantilla_declarada"      type="xs:nonNegativeInteger">
+        <xs:annotation>
+          <xs:documentation>
+            Personas declaradas en la unidad. Es el denominador de la
+            cobertura y el insumo del umbral k: una unidad con plantilla
+            de tres nunca podrá publicar un agregado.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="activa"                   type="xs:boolean"/>
+      <xs:element name="fecha_creacion"           type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion"      type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ===================== instrumentos y versiones ===================== -->
+
+  <xs:complexType name="Instrumento">
+    <xs:sequence>
+      <xs:element name="instrumento_id"      type="IdInstrumento"/>
+      <xs:element name="nombre"              type="xs:string"/>
+      <xs:element name="descripcion"         type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="tipo"                type="TipoInstrumento"/>
+      <xs:element name="fuente_id"           type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            Fuente autorizada del instrumento. Es obligatorio: un
+            instrumento psicométrico sin fuente declarada no se puede
+            defender ante una revisión, y la base lo exige con llave
+            foránea contra catalogo.fuente_autorizada.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="activo"              type="xs:boolean"/>
+      <xs:element name="fecha_creacion"      type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="VersionInstrumento">
+    <xs:annotation>
+      <xs:documentation>
+        La escala vive aquí, no en el reactivo: el mismo reactivo puede
+        medirse 1-5 en una versión y 1-7 en la siguiente, y los agregados
+        de campañas viejas tienen que seguir interpretándose con la escala
+        que estaba vigente cuando se respondieron.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="instrumento_id"         type="IdInstrumento"/>
+      <xs:element name="version"                type="xs:positiveInteger"/>
+      <xs:element name="fecha_vigencia_desde"   type="xs:date"/>
+      <xs:element name="fecha_vigencia_hasta"   type="xs:date"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="escala_min"             type="xs:integer"/>
+      <xs:element name="escala_max"             type="xs:integer"/>
+      <xs:element name="publicada"              type="xs:boolean"/>
+      <xs:element name="activa"                 type="xs:boolean"/>
+      <xs:element name="fecha_creacion"         type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion"    type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Reactivo">
+    <xs:sequence>
+      <xs:element name="reactivo_id"         type="IdReactivo"/>
+      <xs:element name="texto"               type="xs:string"/>
+      <xs:element name="dimension_id"        type="IdDimension"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="invertido"           type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>
+            Reactivo de redacción inversa: una respuesta alta significa
+            peor, no mejor. Sin este campo, el cálculo del índice sumaría
+            al revés y el resultado se vería plausible pero estaría mal.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="activo"              type="xs:boolean"/>
+      <xs:element name="fecha_creacion"      type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ============================= campañas ============================= -->
+
+  <xs:complexType name="Campania">
+    <xs:sequence>
+      <xs:element name="campania_id"         type="IdCampania"/>
+      <xs:element name="nombre"              type="xs:string"/>
+      <xs:element name="instrumento_id"      type="IdInstrumento"/>
+      <xs:element name="version_instrumento" type="xs:positiveInteger"/>
+      <xs:element name="fecha_inicio"        type="xs:date"/>
+      <xs:element name="fecha_fin"           type="xs:date"/>
+      <xs:element name="estado"              type="EstadoCampania"/>
+      <xs:element name="secuencia"           type="xs:positiveInteger">
+        <xs:annotation>
+          <xs:documentation>
+            Orden de la campaña en la serie histórica. Es lo que permite
+            hablar de tendencia sin depender de las fechas, que pueden
+            moverse.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="fecha_creacion"      type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="fecha_actualizacion" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ========================= elementos raíz =========================== -->
+  <!--
+    Un elemento raíz por colección, con envoltura plural y elemento hijo
+    singular. Es la misma convención que usan usuarios.xsd y documentos.xsd:
+    un cliente que ya sabe leer una lista del equipo sabe leer esta.
+  -->
+
+  <xs:element name="unidades_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="unidades">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="unidad" type="UnidadOrganizacional"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion"  type="Paginacion" minOccurs="0"/>
+        <xs:element name="desde_cache" type="xs:boolean" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="unidad_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="unidad" type="UnidadOrganizacional"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="instrumentos_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="instrumentos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="instrumento" type="Instrumento"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion"  type="Paginacion" minOccurs="0"/>
+        <xs:element name="desde_cache" type="xs:boolean" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="instrumento_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="instrumento" type="Instrumento"/>
+        <xs:element name="versiones" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="version" type="VersionInstrumento"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="reactivos_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reactivos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="reactivo" type="Reactivo"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion"  type="Paginacion" minOccurs="0"/>
+        <xs:element name="desde_cache" type="xs:boolean" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="reactivo_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reactivo" type="Reactivo"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="campanias_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="campanias">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="campania" type="Campania"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion"  type="Paginacion" minOccurs="0"/>
+        <xs:element name="desde_cache" type="xs:boolean" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="campania_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="campania" type="Campania"/>
+        <xs:element name="unidades" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>
+              Padrón de la campaña: qué unidades están convocadas. La
+              unidad de una respuesta se toma de aquí y nunca de lo que
+              mande el cliente.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="unidad" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+                    <xs:element name="nombre" type="xs:string" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================== catálogos de apoyo (solo lectura) ============== -->
+  <!--
+    Las dimensiones las define la metodología del instrumento y las fuentes
+    autorizadas son una decisión de gobernanza: por eso no hay escritura.
+    catalogo.fuente_autorizada incluye filas con autorizada=false (correo,
+    chat, GPS, teclado, navegación) que están ahí para dejar por escrito lo
+    que el sistema NO puede medir.
+  -->
+
+  <xs:complexType name="Dimension">
+    <xs:sequence>
+      <xs:element name="dimension_id" type="IdDimension"/>
+      <xs:element name="nombre"       type="xs:string"/>
+      <xs:element name="descripcion"  type="xs:string" nillable="true" minOccurs="0"/>
+      <xs:element name="orden"        type="xs:positiveInteger" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FuenteAutorizada">
+    <xs:sequence>
+      <xs:element name="fuente_id"   type="xs:string"/>
+      <xs:element name="nombre"      type="xs:string"/>
+      <xs:element name="descripcion" type="xs:string" nillable="true" minOccurs="0"/>
+      <xs:element name="autorizada"  type="xs:boolean"/>
+      <xs:element name="motivo"      type="xs:string" nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="dimensiones_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="dimensiones">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="dimension" type="Dimension"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="fuentes_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="fuentes">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="fuente" type="FuenteAutorizada"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="versiones_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="versiones">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="version" type="VersionInstrumento"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion"  type="Paginacion" minOccurs="0"/>
+        <xs:element name="desde_cache" type="xs:boolean" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="version_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="version" type="VersionInstrumento"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============ reactivos TAL COMO APARECEN EN UNA VERSIÓN =========== -->
+  <!--
+    Es una forma distinta de Reactivo y por eso tiene su propio tipo y su
+    propio elemento raíz: trae el orden y la obligatoriedad, que viven en
+    catalogo.reactivo_version (no en el reactivo), y la escala, que vive en
+    la versión del instrumento. Es exactamente lo que el portal necesita
+    para pintar el cuestionario: el texto, en qué orden, si se puede dejar
+    en blanco y con qué escala se responde.
+  -->
+
+  <xs:complexType name="ReactivoDeVersion">
+    <xs:sequence>
+      <xs:element name="reactivo_id"  type="IdReactivo"/>
+      <xs:element name="texto"        type="xs:string"/>
+      <xs:element name="dimension_id" type="IdDimension"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="invertido"    type="xs:boolean"/>
+      <xs:element name="activo"       type="xs:boolean"/>
+      <xs:element name="orden"        type="xs:positiveInteger"/>
+      <xs:element name="obligatorio"  type="xs:boolean"/>
+      <xs:element name="escala_min"   type="xs:integer"/>
+      <xs:element name="escala_max"   type="xs:integer"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="reactivos_version_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reactivos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="reactivo" type="ReactivoDeVersion"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion"  type="Paginacion" minOccurs="0"/>
+        <xs:element name="desde_cache" type="xs:boolean" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

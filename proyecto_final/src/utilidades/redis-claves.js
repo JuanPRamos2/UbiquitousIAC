@@ -1,4 +1,9 @@
-/** Estructuras de Redis del diseño políglota. Los TTL se aplican al escribir. */
+/**
+ * Estructuras de Redis del diseño políglota. Los TTL se aplican al escribir.
+ * La política completa, incluidas caché, rate limit y contadores de
+ * queries-service y reports-service, está en services/comun/src/claves-redis.js.
+ * session:{jti} y revoked:{jti} son el contrato con Auth Service.
+ */
 export function claveSesion(jti) {
   return `session:${jti}`;
 }

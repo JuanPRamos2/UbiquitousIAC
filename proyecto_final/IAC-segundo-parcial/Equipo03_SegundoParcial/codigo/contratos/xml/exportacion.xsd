@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD de export-service — egreso e ingreso controlado de agregados.
+
+  LAS TRES COSAS QUE ESTE ESQUEMA OBLIGA A DECIR
+  ==============================================
+  1. CUÁNTAS FILAS SE SUPRIMIERON. `filas_suprimidas` es obligatorio
+     (minOccurs vale 1 por omisión). Un archivo que trajera solo las filas
+     publicadas y no dijera cuántas faltan validaría contra un esquema
+     descuidado, y quien lo leyera concluiría que la campaña tuvo 8
+     unidades cuando tuvo 12. La diferencia entre «8 unidades» y «8 de 12,
+     4 suprimidas» no es de precisión: es la diferencia entre leer bien el
+     archivo y leerlo mal.
+
+  2. QUE EL VALOR LLEVA RUIDO. `advertencia` también es obligatorio, y va
+     DENTRO del archivo. En una nota al pie de la pantalla se pierde en
+     cuanto alguien manda el archivo por correo, y quien lo recibe suelto
+     no tiene de dónde saber que el número no es el promedio real de la
+     unidad.
+
+  3. QUE EXPORTAR NO GASTÓ PRIVACIDAD. `epsilon_consumido` es obligatorio
+     y vale siempre 0. Es la prueba, por archivo, de que la exportación
+     leyó resultados ya publicados en lugar de recalcularlos. Si recalculara,
+     unas cuantas exportaciones agotarían el presupuesto de la campaña y la
+     dejarían sin poder publicar nada.
+
+  POR QUÉ valor_protegido ES nillable Y NO OPCIONAL
+  =================================================
+  Son cosas distintas y la diferencia importa. Un elemento ausente
+  (minOccurs="0") deja al lector sin saber si la fila no tenía valor o si
+  el archivo venía incompleto. Un xsi:nil="true" afirma que no hay valor,
+  y eso es un dato: esa unidad existió, participó y su resultado se
+  suprimió. Cero no sirve para ninguna de las dos cosas: en la escala de
+  este instrumento cero significaría el peor bienestar posible.
+
+  LA IMPORTACIÓN TIENE SU PROPIO ELEMENTO RAÍZ
+  ============================================
+  `AgregadosExternos` y no `ExportacionAgregados`, aunque las filas se
+  parezcan. Un archivo que entra no trae sello de este sistema ni épsilon
+  aplicado por este sistema: trae lo que un tercero declara. Usar el mismo
+  elemento raíz para las dos direcciones invitaría a tratar un agregado
+  importado como uno calculado, que es exactamente lo que el modelo de
+  datos separa en dos tablas para que no pase.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <!-- ===================== tipos simples propios ======================= -->
+
+  <xs:simpleType name="IdExportacion">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="EXP-[0-9A-F]{16}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="IdImportacion">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="IMP-[0-9A-F]{16}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FormatoExportacion">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="json"/>
+      <xs:enumeration value="xml"/>
+      <xs:enumeration value="csv"/>
+      <xs:enumeration value="pdf"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FormatoImportacion">
+    <xs:annotation>
+      <xs:documentation>
+        Sin PDF, y no es un olvido. Un PDF es un formato de presentación:
+        extraer números de uno es adivinar dónde empieza cada celda, y un
+        dato de bienestar leído con heurísticas es peor que no tener el
+        dato.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="json"/>
+      <xs:enumeration value="xml"/>
+      <xs:enumeration value="csv"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="EstadoExportacion">
+    <xs:annotation>
+      <xs:documentation>
+        RECHAZADA es un estado y no la ausencia de un registro. Si una
+        exportación negada no dejara fila, el intento de llevarse un
+        conjunto que permite aislar a tres personas no habría existido
+        nunca, y es justo el intento lo que hay que poder ver.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GENERADA"/>
+      <xs:enumeration value="DESCARGADA"/>
+      <xs:enumeration value="VENCIDA"/>
+      <xs:enumeration value="RECHAZADA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="Sello">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-f]{64}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="EpsilonCero">
+    <xs:annotation>
+      <xs:documentation>
+        Un decimal que solo puede valer cero. Se expresa como un rango
+        [0,0] y no con `fixed="0"` porque `fixed` se compara de forma
+        léxica en algunos validadores: el servicio emite «0.0» y un
+        `fixed="0"` lo rechazaba, aunque los dos sean el mismo número. El
+        rango compara por valor y acepta 0, 0.0 y 0.000 por igual.
+
+        Que esté declarado como tipo, y no como un decimal cualquiera con
+        un comentario al lado, es lo que convierte «exportar no gasta
+        privacidad» en algo que el contrato OBLIGA: un archivo con
+        epsilon_consumido distinto de cero no valida.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ValorInstrumento">
+    <xs:annotation>
+      <xs:documentation>
+        La escala del instrumento es 1..5. El rango está en el esquema y no
+        solo en el código del servicio porque un archivo que entra se valida
+        contra el contrato antes de que nadie lo lea: un valor de 47 o de
+        -3 no es un agregado de este sistema, venga de donde venga.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="1.0"/>
+      <xs:maxInclusive value="5.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ======================= la fila exportada ========================= -->
+
+  <xs:complexType name="FilaAgregadoExportado">
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="unidad"                   type="xs:string"/>
+      <xs:element name="campania_id"              type="IdCampania"/>
+      <xs:element name="dimension"                type="xs:string"/>
+      <xs:element name="estado_publicacion"       type="EstadoPublicacion"/>
+      <xs:element name="valor_protegido"          type="ValorInstrumento"
+                  nillable="true"/>
+      <xs:element name="epsilon_aplicado"         type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="mecanismo"                type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="precision_advertencia"    type="xs:string"
+                  nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ===================== el encabezado del archivo =================== -->
+
+  <xs:complexType name="SeleccionExportada">
+    <xs:annotation>
+      <xs:documentation>
+        Qué se pidió, no qué salió. Las dos cosas son distintas: una
+        selección de 12 unidades puede dar 8 filas publicadas, y sin la
+        selección original no se puede reconstruir después qué se quiso
+        exportar ni revisar si el conjunto era legítimo.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="campanias">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="campania" type="IdCampania"
+                        maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="unidades">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="unidad" type="IdUnidad" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="dimensiones" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="dimension" type="xs:string"
+                        minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EncabezadoExportacion">
+    <xs:sequence>
+      <xs:element name="reporte_id"        type="IdExportacion"/>
+      <xs:element name="tipo"              type="xs:string"/>
+      <xs:element name="titulo"            type="xs:string"/>
+      <xs:element name="fecha_generacion"  type="xs:dateTime"/>
+      <xs:element name="generado_por"      type="IdUsuario"/>
+      <xs:element name="formato"           type="FormatoExportacion"/>
+      <xs:element name="parametros"        type="SeleccionExportada"/>
+      <!-- Los dos conteos son obligatorios. Ver el punto 1 del encabezado. -->
+      <xs:element name="filas_publicadas"  type="xs:nonNegativeInteger"/>
+      <xs:element name="filas_suprimidas"  type="xs:nonNegativeInteger"/>
+      <!-- Siempre 0. Ver el punto 3 del encabezado. -->
+      <xs:element name="epsilon_consumido" type="EpsilonCero"/>
+      <!-- La advertencia de ruido, dentro del archivo. Punto 2. -->
+      <xs:element name="advertencia"       type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- ========================= el archivo que SALE ====================== -->
+
+  <xs:element name="ExportacionAgregados">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="exportacion" type="EncabezadoExportacion"/>
+        <xs:element name="agregados">
+          <xs:complexType>
+            <xs:sequence>
+              <!-- Envoltorio plural, hijo singular: la misma convención
+                   que el resto del sistema, para que el cliente de
+                   escritorio use el mismo analizador aquí. -->
+              <xs:element name="agregado" type="FilaAgregadoExportado"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ======================= el archivo que ENTRA ======================= -->
+
+  <xs:complexType name="FilaAgregadoExterno">
+    <xs:annotation>
+      <xs:documentation>
+        Menos campos que la fila que sale, y eso es deliberado. Un archivo
+        que entra no puede traer `mecanismo` ni `estado_publicacion`: esos
+        los pone este sistema al publicar, y aceptarlos de fuera dejaría a
+        un tercero declarar que su número pasó por un mecanismo de
+        privacidad que nunca lo tocó.
+
+        `epsilon_declarado` y `n_declarado` sí se aceptan, y el nombre dice
+        por qué: son lo que el archivo DECLARA sobre su propia protección.
+        Se guardan sin creérselos.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="unidad_organizacional_id" type="IdUnidad"/>
+      <xs:element name="campania_id"              type="IdCampania"/>
+      <xs:element name="dimension"                type="xs:string"/>
+      <xs:element name="valor"                    type="ValorInstrumento"
+                  nillable="true"/>
+      <xs:element name="epsilon_declarado"        type="xs:decimal"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="n_declarado"              type="xs:nonNegativeInteger"
+                  nillable="true" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="AgregadosExternos">
+    <xs:annotation>
+      <xs:documentation>
+        Elemento raíz distinto del de salida a propósito. Ver el encabezado
+        del esquema: usar el mismo para las dos direcciones invitaría a
+        tratar un agregado importado como uno calculado.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="procedencia" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>
+              Obligatoria. Un agregado sin procedencia es un número sin
+              dueño: dentro de seis meses nadie puede decir si salió de
+              este sistema, de una hoja de cálculo o de una estimación.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="agregados">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="agregado" type="FilaAgregadoExterno"
+                          maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= el acuse de la exportación ======================= -->
+
+  <xs:element name="exportacion_creada">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="exportacion_id"    type="IdExportacion"/>
+        <xs:element name="formato"           type="FormatoExportacion"/>
+        <xs:element name="sello_sha256"      type="Sello"/>
+        <xs:element name="bytes"             type="xs:positiveInteger"/>
+        <xs:element name="filas_publicadas"  type="xs:nonNegativeInteger"/>
+        <xs:element name="filas_suprimidas"  type="xs:nonNegativeInteger"/>
+        <xs:element name="vigencia_horas"    type="xs:positiveInteger"/>
+        <xs:element name="epsilon_consumido" type="EpsilonCero"/>
+        <xs:element name="descarga"          type="xs:string"/>
+        <xs:element name="nota"              type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esquema XSD de reports-service == generación, sellado y descarga.
+
+  TRES CAMPOS QUE PARECEN DECORATIVOS Y NO LO SON
+  ===============================================
+  * epsilon_consumido vale siempre 0. Está en el contrato como prueba, por
+    reporte, de que generarlo no gastó presupuesto de privacidad: un
+    reporte lee lo ya publicado y nunca invoca el cálculo protegido. Si
+    algún día un reporte tuviera que calcular, este campo dejaría de ser
+    cero y el cambio sería imposible de pasar por alto.
+
+  * filas_suprimidas cuenta las filas que van sin valor. Se informa en los
+    metadatos para que nadie divida por el total y reporte una cobertura
+    inflada: ocho de ocho unidades publicadas cuando en realidad fueron
+    ocho de doce.
+
+  * sello_sha256 es el SHA=256 del contenido canónico. Permite que un
+    auditor confronte el archivo que recibió por correo contra lo que
+    salió del servicio, mandando solo el sello. Un reporte no se edita: si
+    los datos cambian se genera otro, con su propio sello, y el viejo
+    sigue siendo la foto de lo que se vio ese día.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <xs:simpleType name="IdReporte">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="RPT-[0-9A-F]{12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="SelloSha256">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-f]{64}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TipoReporte">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="TABLERO_CAMPANIA"/>
+      <xs:enumeration value="PARTICIPACION"/>
+      <xs:enumeration value="PRESUPUESTO_EPSILON"/>
+      <xs:enumeration value="SUPRESIONES"/>
+      <xs:enumeration value="INTERVENCIONES"/>
+      <xs:enumeration value="BITACORA_AUDITORIA"/>
+      <xs:enumeration value="RECOMENDACIONES"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FormatoReporte">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="json"/>
+      <xs:enumeration value="csv"/>
+      <xs:enumeration value="xml"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ======================== catálogo de tipos ========================= -->
+
+  <xs:complexType name="TipoReporteDescrito">
+    <xs:sequence>
+      <xs:element name="tipo"   type="TipoReporte"/>
+      <xs:element name="titulo" type="xs:string"/>
+      <xs:element name="nota"   type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            Qué significan las columnas y cómo NO debe leerse el reporte.
+            Va en el contrato porque un CSV sin esta nota invita a tratar
+            un valor con ruido como si fuera el promedio real de la unidad.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="parametro" type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="parametro_obligatorio" type="xs:boolean"/>
+      <xs:element name="permisos">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="permiso" type="xs:string"
+                        minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="formatos">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="formato" type="FormatoReporte"
+                        minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="catalogo_reportes_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="elementos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="elemento" type="TipoReporteDescrito"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="total" type="xs:nonNegativeInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ====================== metadatos del reporte ======================= -->
+
+  <xs:complexType name="Reporte">
+    <xs:sequence>
+      <xs:element name="reporte_id"        type="IdReporte"/>
+      <xs:element name="tipo"              type="TipoReporte"/>
+      <xs:element name="titulo"            type="xs:string"/>
+      <xs:element name="nota"              type="xs:string"/>
+      <xs:element name="parametro"         type="xs:string"
+                  nillable="true" minOccurs="0"/>
+      <xs:element name="columnas">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="columna" type="xs:string"
+                        minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="total_filas"       type="xs:nonNegativeInteger"/>
+      <xs:element name="filas_suprimidas"  type="xs:nonNegativeInteger"/>
+      <xs:element name="sello_sha256"      type="SelloSha256"/>
+      <xs:element name="generado_por"      type="IdUsuario"/>
+      <xs:element name="perfil_generador"  type="xs:string"/>
+      <xs:element name="fecha_generacion"  type="xs:dateTime"/>
+      <xs:element name="correlacion_id"    type="xs:string" minOccurs="0"/>
+      <xs:element name="epsilon_consumido" type="xs:decimal">
+        <xs:annotation>
+          <xs:documentation>
+            Siempre 0: generar un reporte no consume presupuesto de
+            privacidad porque lee resultados ya publicados.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="reporte_respuesta" type="Reporte"/>
+
+  <xs:element name="reportes_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="elementos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="elemento" type="Reporte"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion" type="Paginacion" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== contenido descargado ========================= -->
+  <!--
+    La descarga en XML lleva las filas. Cada tipo de reporte tiene columnas
+    distintas, de modo que la fila se declara como una secuencia de celdas
+    con nombre: así el esquema sigue cerrado (nada de xs:any) y a la vez
+    sirve para los siete tipos sin tener que declarar siete formas de fila.
+  -->
+
+  <xs:complexType name="Celda">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="columna" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="FilaReporte">
+    <xs:sequence>
+      <xs:element name="celda" type="Celda" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="reporte">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reporte_id"       type="IdReporte"/>
+        <xs:element name="tipo"             type="TipoReporte"/>
+        <xs:element name="titulo"           type="xs:string"/>
+        <xs:element name="parametro"        type="xs:string"
+                    nillable="true" minOccurs="0"/>
+        <xs:element name="sello_sha256"     type="SelloSha256"/>
+        <xs:element name="total_filas"      type="xs:nonNegativeInteger"/>
+        <xs:element name="filas_suprimidas" type="xs:nonNegativeInteger"/>
+        <xs:element name="filas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="fila" type="FilaReporte"
+                          minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ====================== verificación del sello ====================== -->
+
+  <xs:element name="verificacion_respuesta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reporte_id"       type="IdReporte"/>
+        <xs:element name="coincide"         type="xs:boolean"/>
+        <xs:element name="integro"          type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation>
+              El sello recalculado sobre las filas guardadas sigue dando el
+              sello registrado: el documento almacenado no fue alterado.
+              Es distinto de 'coincide', que compara contra el sello que
+              trae quien pregunta.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="sello_registrado" type="SelloSha256"/>
+        <xs:element name="mensaje"          type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

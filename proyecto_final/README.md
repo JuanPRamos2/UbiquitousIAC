@@ -128,4 +128,19 @@ docs/AUDITORIA.md  checklist del parcial
 
 ```bash
 npm test
+npm run test:micro
+INTEGRACION=1 npm run test:integracion
 ```
+
+## Consultas, reportes, Redis y Docker
+
+La guía de esta parte está en [Redis, Docker, consultas y pruebas/LEEME.md](<Redis, Docker, consultas y pruebas/LEEME.md>).
+
+Con los contenedores arriba:
+
+- Web: el puerto de `API_HOST_PORT` (en este entorno, http://127.0.0.1:3001)
+- Consultas y Swagger: http://127.0.0.1:3010/api/docs
+- Reportes y Swagger: http://127.0.0.1:3020/api/docs
+- Gráfica de prueba: http://127.0.0.1:3001/consultas-reportes.html
+
+Si `API_HOST_PORT` sigue en 3000, la web queda en http://127.0.0.1:3000.

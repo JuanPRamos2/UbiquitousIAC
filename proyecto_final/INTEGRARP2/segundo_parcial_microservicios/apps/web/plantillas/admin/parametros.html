@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}Parámetros de privacidad{% endblock %}
+{% block contenido %}
+<h1>Parámetros de privacidad</h1>
+<p class="subtitulo">Umbral k, épsilon por consulta y presupuesto por campaña.</p>
+
+<div class="aviso aviso-info">
+  Cambiar cualquiera de estos valores queda registrado en la bitácora con el
+  usuario que lo hizo. El sistema rechaza valores fuera de rango: un k menor a 5
+  o un épsilon mayor a 2 dejarían de proteger de forma significativa.
+</div>
+
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th style="width:210px">Parámetro</th><th style="width:130px">Valor</th><th>Descripción</th><th style="width:200px">Cambiar</th></tr></thead>
+  <tbody>
+  {% for p in params %}
+    <tr>
+      <td><code>{{ p.clave }}</code></td>
+      <td><strong>{{ p.valor }}</strong></td>
+      <td class="tenue">{{ p.descripcion }}</td>
+      <td>
+        <form method="post" style="display:flex;gap:6px">
+          <input type="hidden" name="clave" value="{{ p.clave }}">
+          <input type="text" name="valor" value="{{ p.valor }}" style="padding:5px 8px;font-size:13px">
+          <button class="btn" type="submit" style="padding:5px 10px;font-size:13px">Guardar</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Presupuesto consumido por unidad y campaña</h2>
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Campaña</th><th>Unidad</th><th>Total</th><th>Consumido</th><th>Restante</th><th>Consultas</th><th>Estado</th></tr></thead>
+  <tbody>
+  {% for b in presupuestos %}
+    <tr>
+      <td>{{ b.campania_id }}</td>
+      <td>{{ b.unidad }}</td>
+      <td>{{ '%.1f'|format(b.epsilon_total) }}</td>
+      <td>{{ '%.1f'|format(b.epsilon_consumido) }}</td>
+      <td>{{ '%.1f'|format(b.epsilon_restante) }}</td>
+      <td>{{ b.consultas_realizadas }}</td>
+      <td>{% if b.agotado %}<span class="insignia insignia-alto">Agotado</span>
+          {% else %}<span class="insignia insignia-ok">Disponible</span>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="tenue">Todavía no se ha consumido presupuesto.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+# Definición de microservicios para Docker Compose - Integrante 2 (Ricardo Sánchez)
+# Se ejecuta complementando docker-compose.yml:
+# docker compose -f docker-compose.yml -f docker-compose.microservicios.yml up -d
+
+services:
+  catalog-service:
+    build:
+      context: .
+      dockerfile: services/catalog-service/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${CATALOG_HOST_PORT:-3002}:3002"
+    environment:
+      PORT: 3002
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: bienestar_nexum
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-cambia-esta-clave-en-produccion}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  main-process-service:
+    build:
+      context: .
+      dockerfile: services/main-process-service/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${MAIN_PROCESS_HOST_PORT:-3003}:3003"
+    environment:
+      PORT: 3003
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: bienestar_nexum
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      MONGO_URL: mongodb://mongo:27017
+      JWT_SECRET: ${JWT_SECRET:-cambia-esta-clave-en-produccion}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy

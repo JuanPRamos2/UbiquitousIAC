@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Solo la carpeta de evidencias, no toda la caché: el proveedor
+         comparte lo que se le declare, y declarar de más es dar acceso a
+         archivos que nada tienen que ver con la foto. -->
+    <cache-path name="evidencias" path="evidencias/"/>
+</paths>

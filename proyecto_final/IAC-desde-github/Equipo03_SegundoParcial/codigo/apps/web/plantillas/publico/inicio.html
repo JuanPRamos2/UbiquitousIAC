@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block titulo %}Plataforma de Bienestar Laboral — Nexum Servicios Corporativos{% endblock %}
+{% block contenido %}
+
+<section class="hero">
+  <div class="hero-copy">
+    <div class="eyebrow">Programa voluntario de prevención de burnout</div>
+    <h1>Tu bienestar, medido sin vigilarte.</h1>
+    <p>Una plataforma para identificar cargas de trabajo problemáticas por área y turno, sin que nadie pueda ver lo que respondiste de forma individual. Participar es voluntario y puedes retirarte cuando quieras.</p>
+    <div class="hero-cta">
+      <a href="{{ url_for('sesion.entrar') }}" class="btn btn-lg">Entrar a la plataforma</a>
+      <a href="#como" class="btn btn-ghost btn-lg">Ver cómo funciona</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <div class="n">5</div>
+    <div class="l">respuestas mínimas por grupo antes de mostrar cualquier resultado</div>
+    <hr>
+    <div class="n2">Seudónimo</div>
+    <div class="l">Tu identidad y tus respuestas se guardan por separado</div>
+    <hr>
+    <div class="n2">100%</div>
+    <div class="l">de los accesos a tu información quedan registrados y los puedes consultar</div>
+  </div>
+</section>
+
+<section class="pub-section" id="como">
+  <h2>Cómo funciona</h2>
+  <p class="lead">Un recorrido corto y claro: consientes, respondes y los resultados solo se muestran de forma agregada.</p>
+  <div class="steps">
+    <div class="st"><h3>Das tu consentimiento</h3><p>Lees el aviso de privacidad y decides participar. Puedes revocarlo después sin dar explicaciones.</p></div>
+    <div class="st"><h3>Respondes la encuesta</h3><p>Tus respuestas se guardan bajo un seudónimo, nunca junto a tu nombre o número de empleado.</p></div>
+    <div class="st"><h3>Se agregan los datos</h3><p>El sistema calcula promedios por unidad, solo si el grupo tiene al menos cinco respuestas.</p></div>
+    <div class="st"><h3>Se actúa por área</h3><p>La organización interviene sobre áreas y turnos, no sobre personas identificadas.</p></div>
+  </div>
+</section>
+
+<section class="pub-section" id="privacidad">
+  <h2>Cómo protegemos tu privacidad</h2>
+  <p class="lead">Estas no son promesas del aviso de privacidad: son reglas construidas dentro del sistema.</p>
+  <div class="feat">
+    <div class="item"><h3>Seudonimización</h3><p>Tu identidad y tus respuestas viven en almacenes separados, unidos solo por un seudónimo de acceso restringido.</p></div>
+    <div class="item"><h3>Umbral mínimo de grupo</h3><p>Ningún resultado se muestra si el grupo tiene menos de cinco respuestas, para que no se pueda deducir quién dijo qué.</p></div>
+    <div class="item"><h3>Sin acceso individual para jefes</h3><p>Ningún mando con autoridad laboral puede llegar a tu dato individual, por diseño del sistema.</p></div>
+    <div class="item"><h3>Transparencia verificable</h3><p>Puedes consultar en cualquier momento quién ha accedido a información relacionada contigo.</p></div>
+  </div>
+</section>
+
+<section class="pub-section" id="normativa">
+  <h2>Marco normativo</h2>
+  <p class="lead">La plataforma se diseñó para cumplir la legislación mexicana vigente en materia laboral y de datos personales.</p>
+  <div class="feat">
+    <div class="item"><h3>NOM-035-STPS-2018</h3><p>Identificación y prevención de factores de riesgo psicosocial en el trabajo, con resultados consultables por el personal.</p></div>
+    <div class="item"><h3>LFPDPPP (2025)</h3><p>Consentimiento libre, específico e informado, revocable en cualquier momento mediante un mecanismo sencillo.</p></div>
+    <div class="item"><h3>Ley Federal del Trabajo</h3><p>La información nunca se usa como insumo de decisiones disciplinarias o de evaluación de desempeño.</p></div>
+  </div>
+</section>
+
+<section class="pub-section" id="documentos">
+  <h2>Qué puedes consultar</h2>
+  <p class="lead">El aviso, la explicación de privacidad y, después de entrar, el portal, los catálogos, los reportes y la administración según tu perfil.</p>
+  <div class="grid2">
+    <a class="card doc-card" href="{{ url_for('publico.aviso') }}">
+      <h2>Aviso de privacidad</h2>
+      <p class="card-sub">Qué se captura, quién accede y qué pasa si revocas el consentimiento</p>
+      <span class="btn btn-sm">Abrir aviso</span>
+    </a>
+    <a class="card doc-card" href="{{ url_for('publico.transparencia') }}">
+      <h2>Transparencia</h2>
+      <p class="card-sub">Cómo se agregan los datos y por qué un grupo pequeño no se publica</p>
+      <span class="btn btn-ghost btn-sm">Abrir transparencia</span>
+    </a>
+    <a class="card doc-card" href="{{ url_for('sesion.entrar') }}">
+      <h2>Portal, reportes y administración</h2>
+      <p class="card-sub">Encuesta, catálogos, evidencias, notificaciones, consultas y motor de reglas</p>
+      <span class="btn btn-ghost btn-sm">Entrar</span>
+    </a>
+  </div>
+</section>
+
+{% endblock %}

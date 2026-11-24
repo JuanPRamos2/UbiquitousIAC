@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block titulo %}Evidencias{% endblock %}
+{% block contenido %}
+<h1>Evidencias de intervención</h1>
+<p class="subtitulo">El respaldo de que un plan se ejecutó de verdad.</p>
+
+{% if problema %}
+<div class="aviso aviso-alto">
+  <strong>No se pudo cargar el listado.</strong>
+  <p>{{ problema }}</p>
+</div>
+{% endif %}
+
+<div class="aviso aviso-info">
+  El archivo queda en el almacén de blobs y sus <strong>metadatos</strong> en
+  MongoDB, a través de <code>documents-service</code>. MongoDB no es un
+  almacén de archivos: guardar un PDF de 8 MB como documento haría lenta
+  cualquier consulta de la colección.
+  <br><br>
+  Cada archivo se guarda bajo el <strong>SHA-256 de su contenido</strong>, no
+  bajo el nombre que manda el navegador. Eso resuelve tres cosas a la vez: un
+  nombre como <code>../../etc/passwd</code> no puede escribir fuera de la
+  carpeta, subir dos veces el mismo archivo no lo duplica, y al descargarlo
+  se puede comprobar que es el mismo que se subió.
+</div>
+
+<h2>Cargar una evidencia</h2>
+<form method="post" action="{{ url_for('evidencias.subir') }}"
+      enctype="multipart/form-data" class="formulario">
+  <div class="campo">
+    <label for="intervencion_id">Plan de intervención</label>
+    <select id="intervencion_id" name="intervencion_id" required>
+      <option value="">— elige el plan —</option>
+      {% for p in planes %}
+        <option value="{{ p.intervencion_id }}"
+                {{ 'selected' if p.intervencion_id == intervencion }}>
+          {{ p.intervencion_id }} — {{ p.unidad }} ({{ p.estado|lower }})
+        </option>
+      {% endfor %}
+    </select>
+    <small class="tenue">Un archivo suelto, sin saber a qué plan pertenece, es
+      basura que nadie podrá interpretar en seis meses.</small>
+  </div>
+  <div class="campo">
+    <label for="descripcion">Qué es</label>
+    <input id="descripcion" name="descripcion" required minlength="10"
+           maxlength="200" placeholder="Minuta de la sesión del comité del 12 de octubre">
+  </div>
+  <div class="campo">
+    <label for="archivo">Archivo</label>
+    <input id="archivo" name="archivo" type="file" required
+           accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt,.csv">
+    <small class="tenue">
+      Formatos: {{ formatos|join(', ') }}. Máximo {{ tamano_maximo_mb }} MB.
+      El tipo se comprueba leyendo los primeros bytes del archivo, no por la
+      extensión: un ejecutable renombrado a <code>.pdf</code> se rechaza.
+    </small>
+  </div>
+  <button class="btn btn-primario" type="submit">Cargar</button>
+</form>
+
+<h2>Evidencias registradas{% if intervencion %} de {{ intervencion }}{% endif %}</h2>
+{% if intervencion %}
+  <p><a class="btn btn-plano" href="{{ url_for('evidencias.listar') }}">Ver todas</a></p>
+{% endif %}
+
+{% if evidencias %}
+<div class="tabla-envoltura">
+<table>
+  <thead>
+    <tr>
+      <th>Archivo</th><th>Qué es</th><th>Plan</th><th>Tamaño</th>
+      <th>Sello</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for e in evidencias %}
+    <tr>
+      <td>{{ e.nombre_original }}
+        <div class="tenue" style="font-size:12px">{{ e.formato|upper }} · {{ e.fecha_creacion }}</div></td>
+      <td>{{ e.descripcion }}</td>
+      <td><code>{{ e.intervencion_id }}</code></td>
+      <td>{{ (e.bytes / 1024)|round(1) }} KB</td>
+      <td><code style="font-size:11px">{{ e.sha256[:16] }}…</code></td>
+      <td>
+        <a class="btn btn-plano"
+           href="{{ url_for('evidencias.descargar', documento_id=e.documento_id) }}">Descargar</a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="tenue">No hay evidencias registradas todavía.</p>
+{% endif %}
+
+<h2>Por qué no se pueden modificar</h2>
+<p class="tenue">
+  Una corrección se carga como archivo nuevo, con su propia fecha; el anterior
+  se conserva. Es la misma regla que <code>documents-service</code> aplica a
+  las evidencias de consentimiento y por el mismo motivo: una evidencia que
+  se puede editar después no sirve como evidencia. Al descargar, el sistema
+  recalcula el SHA-256 del archivo y lo compara con el registrado; si no
+  coinciden, no lo entrega y lo deja anotado en la bitácora.
+</p>
+{% endblock %}

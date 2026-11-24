@@ -26,6 +26,8 @@ const CAR_SVG = `<svg viewBox="0 0 24 36" width="16" height="24" aria-hidden="tr
 const CENTER = [25.6866, -100.3161];
 const fleet = new Map();
 const seenAt = new Map();
+const features = new Map();
+const savedLayer = L.layerGroup();
 
 let framed = false;
 let userMoved = false;
@@ -35,9 +37,11 @@ let activeId = null;
 let messages = 0;
 let retryMs = 400;
 let tileErrors = 0;
+let showSaved = true;
 
 const map = L.map("map", { minZoom: 10, maxZoom: 18, zoomControl: true }).setView(CENTER, 12);
 map.setMaxBounds(L.latLngBounds([25.35, -100.75], [26.05, -99.9]));
+savedLayer.addTo(map);
 
 const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -145,7 +149,17 @@ function makeIcon(color, heading) {
 function popupHtml(data) {
   const streets = data.streets ? `<br>${esc(data.streets)}` : "";
   const route = data.route_name || "Monterrey";
-  return `<strong>${esc(data.vehicle_id)}</strong><br>${esc(route)}${streets}<br>${Number(data.speed).toFixed(1)} km/h · ${compass(data.heading)} ${Math.round(data.heading)}°`;
+  const motion = data.motion ? `<br>${esc(motionLabel(data.motion))}` : "";
+  return `<strong>${esc(data.vehicle_id)}</strong><br>${esc(route)}${streets}${motion}<br>${Number(data.speed).toFixed(1)} km/h · ${compass(data.heading)} ${Math.round(data.heading)}°`;
+}
+
+function motionLabel(motion) {
+  if (motion === "detenido") return "Detenido en semáforo";
+  if (motion === "en tope") return "Pasando tope";
+  if (motion === "frenando") return "Frenando";
+  if (motion === "acelerando") return "Acelerando";
+  if (motion === "en crucero") return "En crucero";
+  return motion || "";
 }
 
 function aim(marker, heading) {
@@ -174,6 +188,10 @@ function renderCard(rec) {
   const streets = rec.card.querySelector(".streets");
   streets.textContent = data.streets || "";
   streets.hidden = !data.streets;
+  const motion = rec.card.querySelector(".motion");
+  motion.textContent = motionLabel(data.motion);
+  motion.hidden = !data.motion;
+  motion.dataset.motion = data.motion || "";
   const stale = rec.card.classList.contains("stale") ? " · sin señal" : "";
   rec.card.querySelector(".meta").textContent =
     `${Number(data.latitude).toFixed(5)}, ${Number(data.longitude).toFixed(5)} · ${compass(data.heading)} ${Math.round(data.heading)}° · ${formatDistance(data.distance_m)}${stale}`;
@@ -188,7 +206,7 @@ function ensure(data) {
   card.type = "button";
   card.className = "card";
   card.style.setProperty("--c", color);
-  card.innerHTML = `<strong class="vid"></strong><span class="speed"></span><span class="route"></span><span class="streets"></span><span class="meta"></span>`;
+  card.innerHTML = `<strong class="vid"></strong><span class="speed"></span><span class="route"></span><span class="streets"></span><span class="motion"></span><span class="meta"></span>`;
   card.addEventListener("click", () => focusVehicle(id));
   const casing = L.polyline([], { color: "#ffffff", weight: 8, opacity: 0.9, lineCap: "round", lineJoin: "round" }).addTo(map);
   const line = L.polyline([], { color, weight: 4, opacity: 0.95, lineCap: "round", lineJoin: "round" }).addTo(map);
@@ -259,14 +277,115 @@ function upsert(data, resetHistory) {
   scheduleFrame();
 }
 
+function featureIcon(feature) {
+  if (feature.kind === "tope") {
+    return L.divIcon({
+      className: "feat-icon",
+      html: `<div class="bump"></div>`,
+      iconSize: [18, 8],
+      iconAnchor: [9, 4],
+    });
+  }
+  const state = feature.state || "rojo";
+  return L.divIcon({
+    className: "feat-icon",
+    html: `<div class="light ${state}"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+}
+
+function removeFeature(id) {
+  const marker = features.get(id);
+  if (!marker) return;
+  map.removeLayer(marker);
+  features.delete(id);
+}
+
+function drawFeature(feature) {
+  const marker = L.marker([feature.latitude, feature.longitude], {
+    icon: featureIcon(feature),
+    zIndexOffset: 80,
+    interactive: true,
+  });
+  const label = feature.kind === "tope" ? "Tope" : `Semáforo ${feature.state || ""}`.trim();
+  marker.bindTooltip(label, { direction: "top", offset: [0, -6] });
+  marker.feature = feature;
+  marker.addTo(map);
+  features.set(feature.id, marker);
+}
+
+function replaceVehicleFeatures(vehicleId, list) {
+  for (const [id, marker] of [...features.entries()]) {
+    if (marker.feature && marker.feature.vehicle_id === vehicleId) removeFeature(id);
+  }
+  for (const feature of list) {
+    feature.vehicle_id = feature.vehicle_id || vehicleId;
+    drawFeature(feature);
+  }
+}
+
+function applyFeatureList(list) {
+  const ids = new Set(list.map((feature) => feature.id));
+  for (const id of [...features.keys()]) {
+    if (!ids.has(id)) removeFeature(id);
+  }
+  for (const feature of list) {
+    if (features.has(feature.id)) removeFeature(feature.id);
+    drawFeature(feature);
+  }
+}
+
+function paintSignal(signal) {
+  const marker = features.get(signal.id);
+  if (!marker || marker.feature.kind !== "semaforo") return;
+  marker.feature.state = signal.state;
+  marker.setIcon(featureIcon(marker.feature));
+  marker.setTooltipContent(`Semáforo ${signal.state}`);
+}
+
 function applySnapshot(msg) {
   const incoming = new Set(msg.vehicles.map((vehicle) => vehicle.vehicle_id));
   for (const id of [...fleet.keys()]) {
     if (!incoming.has(id)) removeVehicle(id);
   }
   for (const vehicle of msg.vehicles) upsert(vehicle, true);
+  if (Array.isArray(msg.features)) applyFeatureList(msg.features);
   document.getElementById("empty").hidden = fleet.size > 0;
   document.getElementById("count").textContent = String(fleet.size);
+}
+
+async function refreshSaved() {
+  const note = document.getElementById("saved-note");
+  if (!showSaved) {
+    savedLayer.clearLayers();
+    return;
+  }
+  try {
+    const index = await fetch("/recorridos").then((response) => response.json());
+    const rows = index.vehicles || [];
+    const distance = rows.reduce((sum, row) => sum + Number(row.distance_m || 0), 0);
+    note.textContent = rows.length
+      ? `Guardado: ${rows.length} ${rows.length === 1 ? "auto" : "autos"} · ${formatDistance(distance)}`
+      : "Todavía no hay recorridos en disco.";
+    savedLayer.clearLayers();
+    await Promise.all(rows.map(async (row) => {
+      const doc = await fetch(`/recorridos/${encodeURIComponent(row.vehicle_id)}`).then((response) => response.json());
+      for (const trip of doc.trips || []) {
+        const latlngs = (trip.points || []).map((point) => [point[0], point[1]]);
+        if (latlngs.length < 2) continue;
+        L.polyline(latlngs, {
+          color: "#10283a",
+          weight: 3,
+          opacity: 0.45,
+          dashArray: "2 10",
+          interactive: false,
+        }).addTo(savedLayer);
+      }
+    }));
+  } catch {
+    note.textContent = "No se pudo leer el recorrido guardado.";
+  }
 }
 
 function beginAutoMove() {
@@ -329,6 +448,10 @@ function connect() {
     noteMessage(msg);
     if (msg.type === "snapshot") applySnapshot(msg);
     else if (msg.type === "update") upsert(msg, false);
+    else if (msg.type === "features") replaceVehicleFeatures(msg.vehicle_id, msg.features || []);
+    else if (msg.type === "signals") {
+      for (const signal of msg.signals || []) paintSignal(signal);
+    }
   };
   ws.onerror = () => ws.close();
   ws.onclose = () => {
@@ -338,7 +461,15 @@ function connect() {
   };
 }
 
+document.getElementById("saved-toggle").addEventListener("click", (event) => {
+  showSaved = !showSaved;
+  event.currentTarget.textContent = showSaved ? "Ocultar recorridos guardados" : "Mostrar recorridos guardados";
+  refreshSaved();
+});
+
 setLink("wait");
 connect();
+refreshSaved();
 setInterval(refreshStale, 1000);
+setInterval(refreshSaved, 5000);
 setTimeout(() => map.invalidateSize(), 0);

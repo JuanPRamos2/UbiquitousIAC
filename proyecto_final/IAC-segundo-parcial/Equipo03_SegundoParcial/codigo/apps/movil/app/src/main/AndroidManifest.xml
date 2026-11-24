@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!--
+      La cámara se usa por intención del sistema (ACTION_IMAGE_CAPTURE), que
+      NO requiere el permiso CAMERA: la foto la toma la aplicación de cámara
+      del teléfono y nos devuelve el archivo. Pedir un permiso que no hace
+      falta es pedirle al usuario que confíe en algo que no necesitamos.
+
+      La declaración <uses-feature required="false"> dice que la aplicación
+      funciona en un equipo sin cámara: la evidencia fotográfica es opcional
+      en una solicitud de apoyo, y marcarla obligatoria sacaría la aplicación
+      de la tienda para esos equipos sin motivo.
+    -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
+    <application
+        android:name=".AplicacionBienestar"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/reglas_extraccion"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_nombre"
+        android:supportsRtl="true"
+        android:networkSecurityConfig="@xml/configuracion_red"
+        android:theme="@style/Theme.BienestarNexum"
+        tools:targetApi="34">
+
+        <!--
+          allowBackup="false" y las reglas de extracción vacías son
+          deliberados: el almacenamiento de la aplicación guarda el token de
+          sesión y el borrador de la encuesta. Un respaldo automático en la
+          nube los sacaría del teléfono, y el borrador de una encuesta de
+          clima laboral es exactamente lo que este sistema promete que nunca
+          sale asociado a una persona.
+        -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_nombre"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.BienestarNexum">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!--
+          El proveedor de archivos entrega a la cámara una ruta dentro de
+          nuestro propio almacenamiento. Sin él habría que escribir la foto
+          en el almacenamiento compartido, donde cualquier aplicación del
+          teléfono podría leerla: una foto que el colaborador adjunta a una
+          solicitud de apoyo no debe quedar en la galería.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.archivos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/rutas_archivos"/>
+        </provider>
+    </application>
+</manifest>

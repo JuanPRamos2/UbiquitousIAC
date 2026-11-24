@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block titulo %}Permisos de {{ perfil.codigo }}{% endblock %}
+{% block contenido %}
+<h1>Permisos de <code>{{ perfil.codigo }}</code></h1>
+<p class="subtitulo">{{ perfil.nombre }}{% if not perfil.activo %} — perfil inactivo{% endif %}</p>
+
+<p><a class="btn btn-plano" href="{{ url_for('perfiles.listar') }}">← Perfiles</a></p>
+
+{% if es_mi_perfil %}
+<div class="aviso aviso-medio">
+  Este es tu propio perfil. No podrás quitarte <code>USUARIO_ADMIN</code>:
+  te dejaría fuera de esta pantalla y la única salida sería entrar a la base
+  de datos a mano.
+</div>
+{% endif %}
+
+<div class="aviso aviso-info">
+  Los permisos <strong>no viajan en el token</strong>. Se consultan en la
+  base en cada petición, así que lo que se cambie aquí surte efecto en la
+  siguiente petición de cada sesión abierta, sin esperar a que caduquen los
+  tokens ya emitidos.
+</div>
+
+<h2>Permisos ordinarios</h2>
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Permiso</th><th>Qué habilita</th><th style="width:120px">Estado</th></tr></thead>
+  <tbody>
+  {% for pm in permisos if not pm.sensible %}
+    <tr>
+      <td><code>{{ pm.codigo }}</code></td>
+      <td class="tenue">{{ pm.descripcion }}</td>
+      <td>
+        <form method="post" action="{{ url_for('perfiles.cambiar_permiso', perfil_id=perfil.perfil_id) }}">
+          <input type="hidden" name="permiso_id" value="{{ pm.permiso_id }}">
+          <input type="hidden" name="conceder" value="{{ 0 if pm.asignado else 1 }}">
+          <button class="btn {{ 'btn-plano' if pm.asignado else 'btn-primario' }}" type="submit">
+            {{ 'Quitar' if pm.asignado else 'Conceder' }}
+          </button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Permisos sensibles</h2>
+<p class="tenue">
+  Dan acceso a agregados de bienestar, a la bitácora de auditoría o a los
+  parámetros de privacidad (umbral <em>k</em>, épsilon, presupuesto).
+  Conceder uno exige escribir el motivo, y el motivo queda en la bitácora:
+  si un comité pregunta por qué este perfil consulta tendencias, la
+  respuesta está escrita y no hay que reconstruirla de memoria.
+</p>
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Permiso</th><th>Qué habilita</th><th style="width:360px">Estado</th></tr></thead>
+  <tbody>
+  {% for pm in permisos if pm.sensible %}
+    <tr>
+      <td><code>{{ pm.codigo }}</code>
+          <span class="insignia insignia-medio">sensible</span></td>
+      <td class="tenue">{{ pm.descripcion }}</td>
+      <td>
+        <form method="post" action="{{ url_for('perfiles.cambiar_permiso', perfil_id=perfil.perfil_id) }}">
+          <input type="hidden" name="permiso_id" value="{{ pm.permiso_id }}">
+          <input type="hidden" name="conceder" value="{{ 0 if pm.asignado else 1 }}">
+          {% if not pm.asignado %}
+            <input name="motivo" required minlength="15" maxlength="200"
+                   placeholder="Motivo (queda en la bitácora)"
+                   style="width:220px;margin-right:6px">
+          {% endif %}
+          <button class="btn {{ 'btn-plano' if pm.asignado else 'btn-primario' }}" type="submit">
+            {{ 'Quitar' if pm.asignado else 'Conceder' }}
+          </button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Cuentas con este perfil</h2>
+{% if cuentas %}
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Usuario</th><th>Nombre</th><th>Correo</th><th>Estado</th></tr></thead>
+  <tbody>
+  {% for c in cuentas %}
+    <tr>
+      <td><code>{{ c.usuario_id }}</code></td>
+      <td>{{ c.nombre }} {{ c.apellido_paterno }}</td>
+      <td class="tenue">{{ c.correo }}</td>
+      <td>{% if c.activo %}<span class="insignia insignia-bajo">activa</span>
+          {% else %}<span class="insignia">inactiva</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="tenue">Ninguna cuenta tiene este perfil asignado todavía.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titulo %}Evidencia de consentimiento{% endblock %}
+{% block contenido %}
+<h1>Evidencia de consentimiento</h1>
+<p class="subtitulo">Verificación de cumplimiento sin acceso al contenido de las respuestas.</p>
+
+<div class="aviso aviso-info">
+  El auditor ve <strong>que existe</strong> consentimiento vigente y de qué versión
+  del aviso, identificado por seudónimo. Nunca ve qué contestó la persona ni quién
+  es. Esa distinción es la garantía G2.
+</div>
+
+<div class="rejilla rejilla-3">
+  {% for r in resumen %}
+  <div class="dato">
+    <div class="cifra">{{ r.n }}</div>
+    <div class="rotulo">{{ r.estado|capitalize }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Últimos eventos vigentes</h2>
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Seudónimo</th><th>Estado</th><th>Fecha</th><th>Versión del aviso</th></tr></thead>
+  <tbody>
+  {% for f in filas %}
+    <tr>
+      <td><code>{{ f.seudonimo_id }}</code></td>
+      <td>{% if f.estado == 'ACEPTADO' %}<span class="insignia insignia-ok">Otorgado</span>
+          {% else %}<span class="insignia insignia-alto">Revocado</span>{% endif %}</td>
+      <td>{{ f.fecha_evento.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ f.aviso_id }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

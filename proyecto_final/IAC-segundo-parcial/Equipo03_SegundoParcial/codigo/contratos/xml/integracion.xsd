@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Contrato XML de integration-service.
+
+  QUÉ VALIDA ESTE ESQUEMA, Y POR QUÉ IMPORTA QUE SEA UN ESQUEMA
+  ==============================================================
+  Este es el archivo que el sistema corporativo tiene que cumplir para
+  entregar estructura organizacional o identificadores seudonimizados. Se
+  publica en `GET /api/v1/integracion/esquema.xsd` para que el equipo de
+  ese sistema pueda validar ANTES de mandar, en lugar de descubrir los
+  problemas a base de rechazos.
+
+  La validación contra esquema ocurre ANTES de leer el contenido, y eso no
+  es un detalle de orden. Un archivo mal formado o con elementos
+  inesperados se rechaza sin que una sola línea de él llegue al código que
+  interpreta renglones. Es la misma decisión que toma la aplicación de
+  escritorio con todas las respuestas que recibe.
+
+  LO QUE EL ESQUEMA SE NIEGA A ADMITIR, Y POR QUÉ ESTÁ AQUÍ
+  =========================================================
+  Los tipos de renglón son `xs:all` CERRADO: no llevan xs:any, y por tanto
+  un elemento no declarado hace fallar la validación. Eso es deliberado y
+  es la mitad del valor de este archivo.
+
+  El servicio ya rechaza los campos de persona con su propia lista —nombre,
+  correo, CURP, sueldo, puesto, fecha de nacimiento—, pero esa lista es
+  una enumeración y una enumeración siempre deja fuera lo que no previó.
+  El esquema invierte la carga: en lugar de enumerar lo prohibido, declara
+  lo permitido, y todo lo demás se rechaza sin tener que haberlo
+  anticipado. Un campo `nss_trabajador` que a nadie se le ocurrió poner en
+  la lista negra no pasa igual.
+
+  Las dos defensas conviven a propósito. El esquema solo actúa sobre XML;
+  la lista del servicio cubre también el JSON, y además nombra el campo
+  culpable en el mensaje de error, que es lo que permite arreglar el
+  origen. Una sola de las dos dejaría un hueco.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="http://nexum.com.mx/bienestar/v1"
+           targetNamespace="http://nexum.com.mx/bienestar/v1"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <xs:include schemaLocation="comun.xsd"/>
+
+  <!-- ===================== tipos simples ============================== -->
+
+  <xs:simpleType name="IdUnidadIntegracion">
+    <xs:annotation>
+      <xs:documentation>
+        Identificador de unidad tal como lo manda el sistema corporativo.
+        El patrón es el mismo que aplica el servicio: letras, números,
+        guion, guion bajo y punto, entre 2 y 40 caracteres. Validarlo aquí
+        permite rechazar un archivo mal armado antes de que toque la base.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z0-9_\-\.]{2,40}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TipoUnidad">
+    <xs:annotation>
+      <xs:documentation>
+        Los tipos que acepta organizacion.unidad_organizacional. La lista
+        la impone una restricción CHECK de la base; el servicio la lee de
+        ahí en lugar de guardar una copia, y este esquema la repite porque
+        un XSD no puede consultar la base. Si la restricción cambia, este
+        archivo es el segundo lugar que hay que tocar, y la prueba
+        test_el_xsd_declara_los_tipos_que_acepta_la_base lo detecta.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="DIRECCION"/>
+      <xs:enumeration value="AREA"/>
+      <xs:enumeration value="DEPARTAMENTO"/>
+      <xs:enumeration value="TURNO"/>
+      <xs:enumeration value="EQUIPO"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ModoIngesta">
+    <xs:annotation>
+      <xs:documentation>
+        VALIDAR no escribe nada: contesta si el archivo pasaría. APLICAR
+        escribe, y es todo o nada.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="VALIDAR"/>
+      <xs:enumeration value="APLICAR"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="IdentificadorExterno">
+    <xs:annotation>
+      <xs:documentation>
+        El identificador que usa el sistema corporativo. Es una cadena
+        OPACA para esta plataforma: no se interpreta, no se descompone y
+        no se usa para nada que no sea emparejarlo con un seudónimo.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="80"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ===================== estructura organizacional =================== -->
+
+  <xs:complexType name="UnidadEntrante">
+    <xs:annotation>
+      <xs:documentation>
+        Un renglón de estructura. `xs:all` SIN xs:any: cualquier elemento
+        no declarado hace fallar la validación. Ahí es donde este esquema
+        atrapa los campos de persona que la lista negra del servicio no
+        previó.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:all>
+      <xs:element name="unidad_organizacional_id" type="IdUnidadIntegracion"/>
+      <xs:element name="nombre_unidad">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="180"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="unidad_padre_id" type="IdUnidadIntegracion"
+                  minOccurs="0" nillable="true"/>
+      <xs:element name="tipo" type="TipoUnidad" minOccurs="0"/>
+      <xs:element name="plantilla_declarada" type="xs:nonNegativeInteger"
+                  minOccurs="0"/>
+      <xs:element name="activa" type="xs:boolean" minOccurs="0"/>
+      <xs:element name="descripcion" type="xs:string" minOccurs="0"
+                  nillable="true"/>
+      <xs:element name="nivel_jerarquico" type="xs:nonNegativeInteger"
+                  minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:element name="ingesta_estructura">
+    <xs:annotation>
+      <xs:documentation>
+        El cuerpo de POST /api/v1/integracion/estructura en XML.
+
+        No lleva la plantilla del padre validada contra la suma de sus
+        hijas: eso NO se puede expresar en XSD y se comprueba en la base
+        con integracion.fn_validar_arbol_propuesto. Se dice aquí para que
+        nadie suponga que pasar el esquema significa que el árbol cuadra.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="fuente_id">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:minLength value="2"/>
+              <xs:maxLength value="40"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="modo" type="ModoIngesta" minOccurs="0"/>
+        <xs:element name="unidades">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="unidad" type="UnidadEntrante"
+                          maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ===================== identificadores ============================= -->
+
+  <xs:complexType name="IdentificadorEntrante">
+    <xs:annotation>
+      <xs:documentation>
+        DOS CADENAS OPACAS y nada más. Que el tipo sea cerrado es lo que
+        impide que llegue un nombre o un número de empleado junto al
+        seudónimo: las tres cosas juntas reconstruirían la identificación
+        completa, que es exactamente lo que la seudonimización evita.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:all>
+      <xs:element name="identificador_externo" type="IdentificadorExterno"/>
+      <xs:element name="seudonimo_id" type="IdSeudonimo"/>
+      <xs:element name="activo" type="xs:boolean" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:element name="ingesta_identificadores">
+    <xs:annotation>
+      <xs:documentation>
+        El cuerpo de POST /api/v1/integracion/identificadores en XML.
+
+        Que un seudónimo exista NO lo valida este esquema: lo comprueba el
+        servicio contra consentimiento.v_estado_vigente, porque lo que
+        hace falta saber no es que el seudónimo tenga la forma correcta,
+        sino que tenga un registro de consentimiento. Esa es la razón de
+        que esta integración no cree personas.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="fuente_id">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:minLength value="2"/>
+              <xs:maxLength value="40"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="modo" type="ModoIngesta" minOccurs="0"/>
+        <xs:element name="identificadores">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="identificador" type="IdentificadorEntrante"
+                          maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "test:micro": "npm test --prefix services/comun && npm test --prefix services/queries-service && npm test --prefix services/reports-service",
+    "test:integracion": "INTEGRACION=1 node --test tests/integracion/flujos.test.js"
   },
   "engines": {
     "node": ">=20"

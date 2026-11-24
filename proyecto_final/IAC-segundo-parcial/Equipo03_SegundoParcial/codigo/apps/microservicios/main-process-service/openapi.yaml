@@ -1,0 +1,814 @@
+# ARCHIVO GENERADO — no editar a mano.
+#
+# Lo produce contratos/generar_openapi_node.py a partir de
+# comun/openapi.py, que es la misma definicion de seguridad, sobre de error
+# y codigos HTTP que usan los seis microservicios en Python. Para cambiar
+# este contrato se edita el generador y se vuelve a ejecutar:
+#
+#     python3 contratos/generar_openapi_node.py
+#
+openapi: 3.0.3
+info:
+  title: main-process-service — Bienestar Nexum
+  version: 1.0.0
+  description: 'Proceso principal del negocio: responder una campaña y pedir apoyo.
+
+    **Integrante 2 (Ricardo Arath Sánchez Aguirre).**
+
+
+    **Regla D-01, que es la razón de ser del servicio:** ninguna operación
+
+    acepta `empleado_id` ni ningún otro identificador directo de persona. Las
+
+    respuestas se registran contra el seudónimo, y la correspondencia entre
+
+    seudónimo y persona no sale de PostgreSQL. Un cuerpo que traiga
+
+    `empleado_id` se rechaza completo con 400 `PRIVACIDAD_D01` en lugar de
+
+    limpiarse en silencio.
+
+
+    Dos bases, cada una donde le toca: la respuesta se registra en PostgreSQL a
+
+    través de una función `SECURITY DEFINER` (el rol de la aplicación no tiene
+
+    INSERT en el esquema `autoreporte`), y el documento espejo y los eventos
+
+    operacionales van a MongoDB, donde la estructura cambia de versión a
+
+    versión.
+
+
+    Todas las respuestas existen en JSON y en XML: `Accept: application/xml` o
+
+    `?formato=xml`. El XML valida contra `contratos/xml/proceso.xsd`.
+
+    '
+  contact:
+    name: Equipo 03 — Proyecto 4
+    email: equipo03@udem.edu.mx
+servers:
+- url: http://localhost:8104
+  description: developer
+- url: https://api.bienestar-nexum.mx
+  description: production
+tags:
+- name: Encuestas
+  description: Registro de respuestas y entregas.
+- name: Apoyo
+  description: Solicitudes de apoyo seudonimizadas.
+- name: Trazabilidad
+  description: Eventos operacionales del proceso.
+security:
+- bearerAuth: []
+paths:
+  /api/v1/encuestas/respuestas:
+    post:
+      tags:
+      - Encuestas
+      summary: Registrar la respuesta a una campaña
+      description: 'Exige AUTOREPORTE_RESPONDER.
+
+
+        **Regla D-01:** si el cuerpo trae `empleado_id`, la petición se rechaza completa con 400 `PRIVACIDAD_D01`.
+        No se limpia el campo en silencio a propósito: un cliente que manda `empleado_id` está programado
+        con un modelo equivocado del sistema y conviene que lo sepa.
+
+
+        La escritura pasa por una función `SECURITY DEFINER` de PostgreSQL: el rol de la aplicación no
+        tiene INSERT sobre el esquema `autoreporte`. La función hace cumplir RN-01 (una respuesta por
+        campaña), RN-02 (consentimiento vigente), que la campaña esté abierta, y toma la unidad del padrón.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudRespuesta'
+            examples:
+              valida:
+                summary: Respuesta normal
+                value:
+                  campania_id: CAMP-2026-S1
+                  valores:
+                    R-01: 4
+                    R-02: 3
+              rechazada:
+                summary: 'Rechazada: trae empleado_id'
+                value:
+                  campania_id: CAMP-2026-S1
+                  empleado_id: EMP-7781
+                  valores:
+                    R-01: 4
+      responses:
+        '201':
+          description: Acuse del registro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcuseRespuesta'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<proceso_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <estado>REGISTRADA</estado>\n</proceso_respuesta>"
+        '400': &id001
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401': &id002
+          $ref: '#/components/responses/NoAutenticado'
+        '403': &id003
+          $ref: '#/components/responses/SinPermiso'
+        '404': &id004
+          $ref: '#/components/responses/NoEncontrado'
+        '422': &id005
+          $ref: '#/components/responses/ValidacionFallida'
+        '429': &id006
+          $ref: '#/components/responses/LimiteExcedido'
+        '500': &id007
+          $ref: '#/components/responses/ErrorInterno'
+  /api/v1/encuestas/agregados/resumen:
+    get:
+      tags:
+      - Encuestas
+      summary: Cuántas entregas hay por unidad y campaña
+      description: 'Exige AGREGADO_UNIDAD o AGREGADO_GLOBAL. Son conteos de entrega: los puntajes solo
+        salen del mecanismo de agregación protegida de PostgreSQL, que aplica umbral k y ruido de Laplace,
+        y nunca de aquí.'
+      parameters:
+      - name: campania_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: desde
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: hasta
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - &id008
+        name: formato
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - xml
+        description: Alternativa a la cabecera Accept, para poder pedir XML desde la barra de direcciones
+          del navegador durante la demostracion.
+      responses:
+        '200':
+          description: Resumen de entregas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumenEntregas'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<agregados_resumen xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <total_grupos>12</total_grupos>\n</agregados_resumen>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/encuestas/respuestas/propias:
+    get:
+      tags:
+      - Encuestas
+      summary: Comprobante de participación propia
+      description: Exige PARTICIPACION_PROPIA. Devuelve el acuse, no las respuestas.
+      parameters:
+      - *id008
+      responses:
+        '200':
+          description: Acuses de participación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipacionPropia'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<participacion_propia xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <seudonimo_id>SEUD-00042</seudonimo_id>\n</participacion_propia>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/solicitudes-apoyo:
+    post:
+      tags:
+      - Apoyo
+      summary: Pedir apoyo de forma seudonimizada
+      description: 'Exige APOYO_SOLICITAR. El seudónimo se resuelve en la base a partir del usuario de
+        la sesión y NO se acepta del cliente: aceptarlo permitiría pedir apoyo en nombre de otra persona
+        o, peor, descubrir el seudónimo de alguien probando valores.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudApoyoAlta'
+      responses:
+        '201':
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudApoyo'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<solicitud_apoyo xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <estado>ABIERTA</estado>\n</solicitud_apoyo>"
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+    get:
+      tags:
+      - Apoyo
+      summary: Listar solicitudes para atenderlas
+      description: 'Exige APOYO_ATENDER, que es un permiso DISTINTO de APOYO_SOLICITAR: quien puede pedir
+        apoyo no debe poder leer las solicitudes de los demás, y quien las atiende no necesita poder crearlas
+        en nombre de nadie.'
+      parameters:
+      - &id009
+        name: pagina
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Numero de pagina, empezando en 1.
+      - &id010
+        name: tamano
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        description: Elementos por pagina. El tope de 100 evita que una sola peticion pida un volumen
+          que tumbe el servicio.
+      - &id011
+        name: formato
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - xml
+        description: Alternativa al encabezado Accept, util para probar desde el navegador.
+      - name: estado
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: &id013
+          - ABIERTA
+          - EN_PROCESO
+          - CERRADA
+      - *id008
+      responses:
+        '200':
+          description: Página de solicitudes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  solicitudes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SolicitudApoyo'
+                  paginacion: &id012
+                    $ref: '#/components/schemas/Paginacion'
+            application/xml:
+              schema:
+                type: string
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/solicitudes-apoyo/{id}/estado:
+    patch:
+      tags:
+      - Apoyo
+      summary: Mover una solicitud de estado
+      description: 'Exige APOYO_ATENDER. El cambio se hace con una actualización condicional: la condición
+        del estado de origen va en el WHERE, de modo que dos especialistas que muevan la misma solicitud
+        al mismo tiempo no puedan aplicar los dos cambios. El segundo recibe 409.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambioEstadoSolicitud'
+            example:
+              estado: EN_PROCESO
+              nota: Contactada el area de bienestar.
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudApoyo'
+            application/xml:
+              schema:
+                type: string
+              example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<solicitud_apoyo xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+                >\n  <estado>EN_PROCESO</estado>\n</solicitud_apoyo>"
+        '409':
+          description: Transición no permitida desde el estado actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+  /api/v1/eventos-proceso:
+    get:
+      tags:
+      - Trazabilidad
+      summary: Eventos operacionales del proceso
+      description: 'Exige BITACORA_CONSULTAR. Los eventos se emiten DESPUÉS de que la operación quedó
+        registrada: si falla la emisión, la operación no se pierde, porque la trazabilidad se puede reconstruir
+        y la respuesta de una persona no.'
+      parameters:
+      - *id009
+      - *id010
+      - *id011
+      - name: tipo
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: correlacion_id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 'Permite seguir una operación a través de los ocho servicios: el mismo identificador
+          viaja en la cabecera X-Correlacion-Id.'
+      - *id008
+      responses:
+        '200':
+          description: Eventos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  eventos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventoProceso'
+                  paginacion: *id012
+            application/xml:
+              schema:
+                type: string
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '422': *id005
+        '429': *id006
+        '500': *id007
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token emitido por auth-service o por el sistema web. Ambos firman con el mismo secreto
+        y comparten Redis, de modo que un cierre de sesion revoca en todos los componentes.
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - codigo
+          - mensaje
+          properties:
+            codigo:
+              type: string
+              description: Codigo estable; el cliente programa contra esto, no contra el mensaje.
+              example: SIN_PERMISO
+            mensaje:
+              type: string
+              example: El perfil Colaborador no tiene el permiso requerido.
+            detalles:
+              type: array
+              items:
+                type: object
+                properties:
+                  campo:
+                    type: string
+                    example: correo
+                  problema:
+                    type: string
+                    example: no es un correo valido
+            correlacion_id:
+              type: string
+              example: a1b2c3d4e5f60718
+    Paginacion:
+      type: object
+      properties:
+        pagina:
+          type: integer
+          example: 1
+        tamano:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 143
+        total_paginas:
+          type: integer
+          example: 8
+        tiene_siguiente:
+          type: boolean
+          example: true
+        tiene_anterior:
+          type: boolean
+          example: false
+    SolicitudRespuesta:
+      type: object
+      required:
+      - campania_id
+      - valores
+      description: 'La respuesta se registra contra el seudónimo de quien tiene la sesión: NO se admite
+        empleado_id ni ningún otro identificador de persona, y la unidad se toma del padrón de la campaña
+        y no de lo que mande el cliente.'
+      properties:
+        campania_id:
+          type: string
+          example: CAMP-2026-S1
+        valores:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Reactivo a valor, dentro de la escala de la versión del instrumento.
+          example:
+            R-01: 4
+            R-02: 3
+            R-03: 5
+    AcuseRespuesta:
+      type: object
+      properties:
+        estado:
+          type: string
+          enum:
+          - REGISTRADA
+          - DUPLICADA
+          - SIN_CONSENTIMIENTO
+          - CAMPANIA_CERRADA
+          - FUERA_DE_PADRON
+          description: No es un booleano porque las cuatro negativas son distintas y el portal tiene que
+            explicar cada una.
+        mensaje:
+          type: string
+        seudonimo_id:
+          type: string
+          example: SEUD-00042
+        campania_id:
+          type: string
+        instrumento_id:
+          type: string
+          nullable: true
+        version_instrumento:
+          type: integer
+          nullable: true
+        documento_id:
+          type: string
+          nullable: true
+        documento_pendiente:
+          type: boolean
+          description: 'La respuesta quedó en PostgreSQL pero el documento espejo en MongoDB no se pudo
+            escribir. Se informa en lugar de fallar: la respuesta de la persona no se pierde por una caída
+            de la base documental.'
+        evento_id:
+          type: string
+          nullable: true
+    GrupoEntregas:
+      type: object
+      description: Cuenta ENTREGAS, no puntajes. Contar entregas no revela ninguna respuesta, pero un
+        conteo muy bajo sí revelaría que en esa unidad respondió prácticamente una persona, y por eso
+        cada grupo viene marcado.
+      properties:
+        unidad_organizacional_id:
+          type: string
+        campania_id:
+          type: string
+        respuestas:
+          type: integer
+        suficiente_para_publicar:
+          type: boolean
+    ResumenEntregas:
+      type: object
+      properties:
+        total_grupos:
+          type: integer
+        campania_id:
+          type: string
+          nullable: true
+        umbral_aviso:
+          type: integer
+          example: 5
+        nota:
+          type: string
+        agregados:
+          type: array
+          items:
+            $ref: '#/components/schemas/GrupoEntregas'
+    AcuseParticipacion:
+      type: object
+      description: 'Comprobante de participación, no el contenido: que una persona sepa que respondió
+        está bien; devolverle lo que contestó sería otra vía de salida para las respuestas.'
+      properties:
+        campania_id:
+          type: string
+        instrumento_id:
+          type: string
+        version_instrumento:
+          type: integer
+        fecha:
+          type: string
+          format: date-time
+        reactivos_respondidos:
+          type: integer
+    ParticipacionPropia:
+      type: object
+      properties:
+        seudonimo_id:
+          type: string
+        total:
+          type: integer
+        respuestas:
+          type: array
+          items:
+            $ref: '#/components/schemas/AcuseParticipacion'
+    SolicitudApoyoAlta:
+      type: object
+      required:
+      - mensaje
+      properties:
+        mensaje:
+          type: string
+          minLength: 20
+          example: Llevo tres semanas con doble turno y no logro recuperarme entre jornadas.
+    EntradaHistorial:
+      type: object
+      properties:
+        estado:
+          type: string
+          enum: *id013
+        actor_id:
+          type: string
+          nullable: true
+          description: 'Quien MOVIÓ la solicitud, no quien la pidió: la rendición de cuentas de quien
+            atiende es lo contrario de la privacidad de quien pide.'
+        fecha:
+          type: string
+          format: date-time
+        nota:
+          type: string
+    SolicitudApoyo:
+      type: object
+      description: 'El especialista que la atiende ve el mensaje y el historial y no tiene forma de resolver
+        quién lo escribió: eso es lo que hace que alguien se atreva a pedir apoyo.'
+      properties:
+        id:
+          type: string
+        seudonimo_id:
+          type: string
+        mensaje:
+          type: string
+        fecha:
+          type: string
+          format: date-time
+        estado:
+          type: string
+          enum: *id013
+        fecha_actualizacion:
+          type: string
+          format: date-time
+          nullable: true
+        historial:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntradaHistorial'
+        evento_id:
+          type: string
+          nullable: true
+    CambioEstadoSolicitud:
+      type: object
+      required:
+      - estado
+      description: 'Transiciones dirigidas: ABIERTA puede pasar a EN_PROCESO o a CERRADA, EN_PROCESO solo
+        a CERRADA, y CERRADA no vuelve a abrirse. Reabrir borraría el rastro de que se cerró; en su lugar
+        se crea una solicitud nueva.'
+      properties:
+        estado:
+          type: string
+          enum: *id013
+        nota:
+          type: string
+    EventoProceso:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum:
+          - RESPUESTA_REGISTRADA
+          - RESPUESTA_INCOMPLETA
+          - SOLICITUD_CREADA
+          - SOLICITUD_ESTADO_ACTUALIZADO
+          - SOLICITUD_NO_ENCONTRADA
+        seudonimo_id:
+          type: string
+          description: Trae el valor literal SIN_SEUDONIMO cuando el evento no pertenece a una persona.
+        correlacion_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        detalle:
+          type: object
+          description: 'Campos declarados, no abiertos: un detalle libre sería el hueco por el que terminaría
+            viajando un empleado_id.'
+  responses:
+    SolicitudInvalida:
+      description: Parametro mal formado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: PARAMETRO_INVALIDO
+              mensaje: '''tamano'' debe estar entre 1 y 100.'
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>PARAMETRO_INVALIDO</codigo>\n    <mensaje>'tamano' debe estar entre\
+            \ 1 y 100.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    NoAutenticado:
+      description: Falta el token, es invalido, expiro o la sesion fue revocada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: SESION_REVOCADA
+              mensaje: La sesion fue cerrada o revocada.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>SESION_REVOCADA</codigo>\n    <mensaje>La sesion fue cerrada o revocada.</mensaje>\n\
+            \    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n  </error>\n</error_respuesta>"
+    SinPermiso:
+      description: El perfil no tiene el permiso necesario.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: SIN_PERMISO
+              mensaje: El perfil Colaborador no tiene ninguno de los permisos requeridos.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>SIN_PERMISO</codigo>\n    <mensaje>El perfil Colaborador no tiene\
+            \ ninguno de los permisos requeridos.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    NoEncontrado:
+      description: El recurso no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: RECURSO_NO_ENCONTRADO
+              mensaje: La ruta solicitada no existe en este servicio.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>RECURSO_NO_ENCONTRADO</codigo>\n    <mensaje>La ruta solicitada\
+            \ no existe en este servicio.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    ValidacionFallida:
+      description: La solicitud trae campos invalidos. Se devuelven TODOS los problemas de una vez, no
+        solo el primero.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: VALIDACION
+              mensaje: La solicitud tiene campos invalidos.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>VALIDACION</codigo>\n    <mensaje>La solicitud tiene campos invalidos.</mensaje>\n\
+            \    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n  </error>\n</error_respuesta>"
+    LimiteExcedido:
+      description: Se rebaso el limite de consumo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: LIMITE_EXCEDIDO
+              mensaje: Mas de 120 peticiones por 60 segundos.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>LIMITE_EXCEDIDO</codigo>\n    <mensaje>Mas de 120 peticiones por\
+            \ 60 segundos.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"
+    ErrorInterno:
+      description: Falla no prevista. Fuera de developer no se devuelve el detalle.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              codigo: ERROR_INTERNO
+              mensaje: Error interno del servicio. El evento quedo registrado.
+              detalles: []
+              correlacion_id: a1b2c3d4e5f60718
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error_respuesta xmlns=\"http://nexum.com.mx/bienestar/v1\"\
+            >\n  <error>\n    <codigo>ERROR_INTERNO</codigo>\n    <mensaje>Error interno del servicio.\
+            \ El evento quedo registrado.</mensaje>\n    <detalles/>\n    <correlacion_id>a1b2c3d4e5f60718</correlacion_id>\n\
+            \  </error>\n</error_respuesta>"

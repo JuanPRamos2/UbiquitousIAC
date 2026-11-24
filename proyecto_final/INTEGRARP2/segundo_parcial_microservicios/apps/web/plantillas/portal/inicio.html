@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titulo %}Mi portal{% endblock %}
+{% block contenido %}
+
+<h1>Hola</h1>
+<p class="subtitulo">Perfil: <strong>{{ sesion.perfil }}</strong>{% if sesion.unidad_alcance %} &middot; alcance: {{ sesion.unidad_alcance }}{% endif %}</p>
+
+{% if participacion %}
+<div class="rejilla rejilla-3" style="margin-bottom:22px">
+  <div class="dato">
+    <div class="cifra">
+      {% if participacion.estado_consentimiento == 'ACEPTADO' %}
+        <span class="insignia insignia-ok">Vigente</span>
+      {% else %}
+        <span class="insignia insignia-alto">{{ participacion.estado_consentimiento or 'Sin otorgar' }}</span>
+      {% endif %}
+    </div>
+    <div class="rotulo">Consentimiento</div>
+  </div>
+  <div class="dato">
+    <div class="cifra">{{ participacion.campanias_respondidas or 0 }}</div>
+    <div class="rotulo">Campañas respondidas</div>
+  </div>
+  <div class="dato">
+    <div class="cifra" style="font-size:17px">{{ participacion.ultima_participacion and participacion.ultima_participacion.strftime('%d/%m/%Y') or '—' }}</div>
+    <div class="rotulo">Última participación</div>
+  </div>
+</div>
+{% endif %}
+
+{% if 'AUTOREPORTE_RESPONDER' in permisos %}
+<h2>Campañas abiertas para ti</h2>
+{% if pendientes %}
+  {% for c in pendientes %}
+  <div class="tarjeta" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+    <div>
+      <strong>{{ c.campania }}</strong>
+      <div class="tenue">Del {{ c.fecha_inicio }} al {{ c.fecha_fin }}</div>
+    </div>
+    <a class="btn btn-primario" href="{{ url_for('portal.encuesta', campania_id=c.campania_id) }}">Responder</a>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="aviso aviso-info">
+    No tienes campañas pendientes. Aparecen aquí cuando hay una campaña abierta
+    para tu unidad y tu consentimiento está vigente.
+  </div>
+{% endif %}
+{% endif %}
+
+{% if 'AGREGADO_UNIDAD' in permisos or 'AGREGADO_GLOBAL' in permisos %}
+<h2>Resultados</h2>
+<div class="tarjeta">
+  <p>Consulta los resultados agregados protegidos de las unidades a tu alcance.</p>
+  <p class="tenue">Recuerda: cada consulta consume presupuesto de privacidad, y ese
+  presupuesto es finito por campaña y unidad. No es un límite administrativo: es
+  lo que impide deducir respuestas individuales repitiendo consultas.</p>
+  <a class="btn btn-primario" href="{{ url_for('panel.inicio') }}">Abrir el panel</a>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block titulo %}Panel de resultados{% endblock %}
+
+{% block contenido %}
+<h1>Panel de resultados</h1>
+<p class="subtitulo">Resultados agregados protegidos por unidad organizacional.</p>
+
+<form method="get" class="tarjeta">
+  <div class="fila-campos">
+    <div>
+      <label for="unidad">Unidad</label>
+      <select id="unidad" name="unidad" onchange="this.form.submit()">
+        {% for u in unidades %}
+          <option value="{{ u.unidad_organizacional_id }}" {{ 'selected' if u.unidad_organizacional_id == unidad }}>
+            {{ u.nombre }} ({{ u.plantilla_declarada }} personas)
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="campania">Campaña</label>
+      <select id="campania" name="campania" onchange="this.form.submit()">
+        {% for c in campanias %}
+          <option value="{{ c.campania_id }}" {{ 'selected' if c.campania_id == campania }}>
+            {{ c.nombre }} ({{ c.estado|lower }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <noscript><button class="btn" type="submit">Consultar</button></noscript>
+</form>
+
+{% if resultado %}
+  {% if resultado.estado == 'PUBLICADO' %}
+    <div class="rejilla rejilla-3">
+      <div class="dato">
+        <div class="cifra">{{ '%.2f'|format(resultado.valor_protegido) }}</div>
+        <div class="rotulo">Índice protegido (escala 1–5)</div>
+      </div>
+      <div class="dato">
+        <div class="cifra">{{ resultado.n }}</div>
+        <div class="rotulo">Respuestas en el grupo (k mínimo = 5)</div>
+      </div>
+      <div class="dato">
+        <div class="cifra">ε = {{ '%.1f'|format(resultado.epsilon) }}</div>
+        <div class="rotulo">Presupuesto consumido por esta consulta</div>
+      </div>
+    </div>
+
+    <div class="aviso aviso-ok">
+      <strong>Este número no es el promedio real.</strong>
+      Se le sumó ruido de Laplace con escala {{ '%.4f'|format(resultado.escala_ruido) }},
+      calibrado a la sensibilidad de la consulta. {{ resultado.mensaje }}
+      {% if reutilizado %}
+      <div class="tenue" style="margin-top:7px">
+        Esta vista no consumió presupuesto: muestra el valor ya publicado.
+        Recalcularlo gastaría épsilon de nuevo y daría un número distinto,
+        porque el ruido se sortea en cada cálculo.
+      </div>
+      {% endif %}
+    </div>
+
+  {% elif 'UMBRAL' in resultado.estado or 'INSUFICIENTE' in resultado.estado %}
+    <div class="aviso aviso-error">
+      <strong>Resultado suprimido.</strong>
+      El grupo tiene {{ resultado.n }} respuestas y el umbral mínimo es 5.
+      No se muestra un valor parcial ni aproximado: con tan pocas respuestas,
+      publicar el promedio permitiría deducir respuestas individuales.
+      <div class="tenue" style="margin-top:6px">{{ resultado.mensaje }}</div>
+    </div>
+
+  {% elif 'PRESUPUESTO' in resultado.estado %}
+    <div class="aviso aviso-error">
+      <strong>Presupuesto de privacidad agotado.</strong>
+      Esta unidad ya consumió su presupuesto de épsilon para esta campaña.
+      Esto es distinto de que falte participación: hay datos suficientes, pero
+      seguir consultando erosionaría la garantía de privacidad.
+      <div class="tenue" style="margin-top:6px">{{ resultado.mensaje }}</div>
+    </div>
+
+  {% else %}
+    <div class="aviso aviso-info">{{ resultado.mensaje or resultado.estado }}</div>
+  {% endif %}
+{% endif %}
+
+{% if presupuesto %}
+<h2>Presupuesto de privacidad de esta unidad</h2>
+<div class="tarjeta">
+  <div class="rejilla rejilla-3">
+    <div class="dato">
+      <div class="cifra">{{ '%.1f'|format(presupuesto.epsilon_consumido) }}</div>
+      <div class="rotulo">Épsilon consumido</div>
+    </div>
+    <div class="dato">
+      <div class="cifra">{{ '%.1f'|format(presupuesto.epsilon_restante) }}</div>
+      <div class="rotulo">Épsilon restante</div>
+    </div>
+    <div class="dato">
+      <div class="cifra">{{ presupuesto.consultas_realizadas }}</div>
+      <div class="rotulo">Consultas realizadas</div>
+    </div>
+  </div>
+  <p class="tenue" style="margin-top:12px">
+    El presupuesto es finito por diseño. Cada consulta revela un poco de
+    información sobre el grupo; agotado el presupuesto, el sistema deja de
+    publicar para esa unidad y campaña, aunque quien consulte tenga permiso.
+  </p>
+</div>
+{% endif %}
+
+<h2>Tendencia entre campañas</h2>
+<div class="tarjeta">
+  <figure id="grafica" style="height:340px;margin:0"></figure>
+  <p class="tenue" style="margin-top:10px">
+    Cada punto es un valor ya publicado con ruido aplicado. Consultar esta
+    gráfica no consume presupuesto: lee resultados protegidos que ya existen,
+    en lugar de calcular nuevos.
+  </p>
+</div>
+
+{% if tablero %}
+<h2>Detalle por dimensión</h2>
+<div class="tabla-envoltura">
+<table>
+  <thead><tr><th>Dimensión</th><th>Estado</th><th>Valor protegido</th><th>Participación</th><th>ε</th><th>Precisión</th></tr></thead>
+  <tbody>
+  {% for t in tablero %}
+    <tr>
+      <td>{{ t.dimension or 'Índice global' }}</td>
+      <td>{{ t.estado_publicacion }}</td>
+      <td>{{ t.valor_protegido is not none and '%.2f'|format(t.valor_protegido) or '—' }}</td>
+      <td>{{ t.participacion_protegida or '—' }}</td>
+      <td>{{ t.epsilon_aplicado is not none and '%.1f'|format(t.epsilon_aplicado) or '—' }}</td>
+      <td>
+        {% if t.precision_advertencia %}
+          <span class="insignia insignia-medio" title="{{ t.precision_advertencia }}">Revisar</span>
+          <div class="tenue" style="font-size:12px">{{ t.precision_advertencia }}</div>
+        {% else %}<span class="insignia insignia-ok">Suficiente</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/highcharts.js') }}"></script>
+<script>
+(function () {
+  var unidad = {{ unidad|tojson }};
+  if (!unidad) return;
+
+  fetch("{{ url_for('panel.tendencia_json') }}?unidad=" + encodeURIComponent(unidad))
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (d) {
+      if (!d.categorias || !d.categorias.length) {
+        document.getElementById('grafica').innerHTML =
+          '<p class="tenue">Todavía no hay resultados publicados para esta unidad.</p>';
+        return;
+      }
+      Highcharts.chart('grafica', {
+        chart:  { type: 'line', style: { fontFamily: 'inherit' } },
+        title:  { text: null },
+        credits:{ enabled: false },
+        xAxis:  { categories: d.categorias },
+        yAxis:  { title: { text: 'Índice protegido (1–5)' }, min: 1, max: 5 },
+        legend: { enabled: false },
+        tooltip:{
+          formatter: function () {
+            var i = this.point.index;
+            return '<b>' + this.x + '</b><br>Valor protegido: <b>' +
+                   this.y.toFixed(2) + '</b><br>Respuestas: ' + d.n[i] +
+                   '<br>Escala del ruido: ' + (d.ruido[i] || 0).toFixed(4);
+          }
+        },
+        series: [{
+          name: 'Índice protegido',
+          data: d.valores,
+          color: '#1F3864',
+          marker: { radius: 5 }
+        }]
+      });
+    })
+    .catch(function (e) {
+      document.getElementById('grafica').innerHTML =
+        '<p class="tenue">No se pudo dibujar la tendencia (' + e + '). ' +
+        'Los valores siguen disponibles en la tabla por dimensión.</p>';
+    });
+})();
+</script>
+{% endblock %}

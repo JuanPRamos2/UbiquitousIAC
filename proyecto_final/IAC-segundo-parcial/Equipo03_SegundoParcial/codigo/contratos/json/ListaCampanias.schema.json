@@ -1,0 +1,501 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexum.com.mx/bienestar/contratos/ListaCampanias.schema.json",
+  "title": "ListaCampanias",
+  "description": "Generado desde el contrato OpenAPI de catalog-service. No editar a mano: ejecutar contratos/generar_json.py.",
+  "type": "object",
+  "properties": {
+    "campanias": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Campania"
+      }
+    },
+    "paginacion": {
+      "$ref": "#/$defs/Paginacion"
+    },
+    "desde_cache": {
+      "type": "boolean",
+      "description": "La respuesta salió de Redis."
+    }
+  },
+  "$defs": {
+    "Error": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "codigo",
+            "mensaje"
+          ],
+          "properties": {
+            "codigo": {
+              "type": "string",
+              "description": "Codigo estable; el cliente programa contra esto, no contra el mensaje.",
+              "example": "SIN_PERMISO"
+            },
+            "mensaje": {
+              "type": "string",
+              "example": "El perfil Colaborador no tiene el permiso requerido."
+            },
+            "detalles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "campo": {
+                    "type": "string",
+                    "example": "correo"
+                  },
+                  "problema": {
+                    "type": "string",
+                    "example": "no es un correo valido"
+                  }
+                }
+              }
+            },
+            "correlacion_id": {
+              "type": "string",
+              "example": "a1b2c3d4e5f60718"
+            }
+          }
+        }
+      }
+    },
+    "Paginacion": {
+      "type": "object",
+      "properties": {
+        "pagina": {
+          "type": "integer",
+          "example": 1
+        },
+        "tamano": {
+          "type": "integer",
+          "example": 20
+        },
+        "total": {
+          "type": "integer",
+          "example": 143
+        },
+        "total_paginas": {
+          "type": "integer",
+          "example": 8
+        },
+        "tiene_siguiente": {
+          "type": "boolean",
+          "example": true
+        },
+        "tiene_anterior": {
+          "type": "boolean",
+          "example": false
+        }
+      }
+    },
+    "UnidadOrganizacional": {
+      "type": "object",
+      "description": "Unidad del árbol organizacional. No desaparece nunca: se marca inactiva. Un DELETE rompería las llaves foráneas de las respuestas ya registradas.",
+      "properties": {
+        "unidad_organizacional_id": {
+          "type": "string",
+          "example": "UO-CC-TURNO-B"
+        },
+        "nombre": {
+          "type": "string",
+          "example": "Call Center - Turno B"
+        },
+        "descripcion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "DIRECCION",
+            "AREA",
+            "DEPARTAMENTO",
+            "TURNO",
+            "EQUIPO"
+          ]
+        },
+        "unidad_padre_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Nulo solo en la raíz."
+        },
+        "nivel_jerarquico": {
+          "type": "integer"
+        },
+        "plantilla_declarada": {
+          "type": "integer",
+          "description": "Personas declaradas en la unidad. Es el denominador de la cobertura y el insumo del umbral k: una unidad con plantilla de tres nunca podrá publicar un agregado."
+        },
+        "activa": {
+          "type": "boolean"
+        },
+        "fecha_creacion": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fecha_actualizacion": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "Instrumento": {
+      "type": "object",
+      "properties": {
+        "instrumento_id": {
+          "type": "string",
+          "example": "INST-BIENESTAR"
+        },
+        "nombre": {
+          "type": "string"
+        },
+        "descripcion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "NOM035",
+            "CLIMA",
+            "BREVE",
+            "PERSONALIZADO"
+          ]
+        },
+        "fuente_id": {
+          "type": "string",
+          "example": "FUENTE-AUTOREPORTE",
+          "description": "Fuente autorizada. Obligatorio: un instrumento psicométrico sin fuente declarada no se puede defender ante una revisión."
+        },
+        "activo": {
+          "type": "boolean"
+        },
+        "fecha_creacion": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fecha_actualizacion": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "VersionInstrumento": {
+      "type": "object",
+      "description": "La escala vive aquí y no en el reactivo: el mismo reactivo puede medirse 1-5 en una versión y 1-7 en la siguiente, y los agregados de campañas viejas tienen que seguir interpretándose con la escala vigente cuando se respondieron.",
+      "properties": {
+        "instrumento_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fecha_vigencia_desde": {
+          "type": "string",
+          "format": "date"
+        },
+        "fecha_vigencia_hasta": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "escala_min": {
+          "type": "integer",
+          "example": 1
+        },
+        "escala_max": {
+          "type": "integer",
+          "example": 5
+        },
+        "publicada": {
+          "type": "boolean"
+        },
+        "activa": {
+          "type": "boolean"
+        },
+        "fecha_creacion": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fecha_actualizacion": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "Reactivo": {
+      "type": "object",
+      "properties": {
+        "reactivo_id": {
+          "type": "string",
+          "pattern": "^R-[0-9]{2,3}$",
+          "example": "R-01"
+        },
+        "texto": {
+          "type": "string"
+        },
+        "dimension_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "example": "DIM-CARGA"
+        },
+        "invertido": {
+          "type": "boolean",
+          "description": "Reactivo de redacción inversa: una respuesta alta significa peor, no mejor. Sin este campo el índice se sumaría al revés y el resultado se vería plausible estando mal."
+        },
+        "activo": {
+          "type": "boolean"
+        },
+        "fecha_creacion": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fecha_actualizacion": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ReactivoDeVersion": {
+      "type": "object",
+      "description": "Reactivo tal como aparece DENTRO de una versión: con su orden, si es obligatorio y con qué escala se responde. Es lo que el portal necesita para pintar el cuestionario.",
+      "properties": {
+        "reactivo_id": {
+          "type": "string"
+        },
+        "texto": {
+          "type": "string"
+        },
+        "dimension_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "invertido": {
+          "type": "boolean"
+        },
+        "activo": {
+          "type": "boolean"
+        },
+        "orden": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "obligatorio": {
+          "type": "boolean"
+        },
+        "escala_min": {
+          "type": "integer"
+        },
+        "escala_max": {
+          "type": "integer"
+        }
+      }
+    },
+    "Campania": {
+      "type": "object",
+      "properties": {
+        "campania_id": {
+          "type": "string",
+          "example": "CAMP-2026-S1"
+        },
+        "nombre": {
+          "type": "string"
+        },
+        "instrumento_id": {
+          "type": "string"
+        },
+        "version_instrumento": {
+          "type": "integer"
+        },
+        "fecha_inicio": {
+          "type": "string",
+          "format": "date"
+        },
+        "fecha_fin": {
+          "type": "string",
+          "format": "date"
+        },
+        "estado": {
+          "type": "string",
+          "enum": [
+            "BORRADOR",
+            "ABIERTA",
+            "CERRADA",
+            "CANCELADA"
+          ],
+          "description": "Cuatro estados, no un booleano: BORRADOR permite preparar una campaña sin que nadie la pueda responder, y CANCELADA la cierra sin pretender que produjo resultados."
+        },
+        "secuencia": {
+          "type": "integer",
+          "description": "Orden en la serie histórica. Permite hablar de tendencia sin depender de las fechas, que pueden moverse."
+        },
+        "fecha_creacion": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fecha_actualizacion": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "Dimension": {
+      "type": "object",
+      "properties": {
+        "dimension_id": {
+          "type": "string",
+          "example": "DIM-CARGA"
+        },
+        "nombre": {
+          "type": "string"
+        },
+        "descripcion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "orden": {
+          "type": "integer"
+        }
+      }
+    },
+    "FuenteAutorizada": {
+      "type": "object",
+      "description": "Incluye filas con autorizada=false (correo, chat, GPS, teclado, navegación): están ahí para dejar por escrito lo que el sistema NO puede medir. Por eso el catálogo es de solo lectura: un endpoint de escritura permitiría autorizarlas.",
+      "properties": {
+        "fuente_id": {
+          "type": "string"
+        },
+        "nombre": {
+          "type": "string"
+        },
+        "descripcion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "autorizada": {
+          "type": "boolean"
+        },
+        "motivo": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ListaUnidades": {
+      "type": "object",
+      "properties": {
+        "unidades": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UnidadOrganizacional"
+          }
+        },
+        "paginacion": {
+          "$ref": "#/$defs/Paginacion"
+        },
+        "desde_cache": {
+          "type": "boolean",
+          "description": "La respuesta salió de Redis."
+        }
+      }
+    },
+    "ListaInstrumentos": {
+      "type": "object",
+      "properties": {
+        "instrumentos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Instrumento"
+          }
+        },
+        "paginacion": {
+          "$ref": "#/$defs/Paginacion"
+        },
+        "desde_cache": {
+          "type": "boolean",
+          "description": "La respuesta salió de Redis."
+        }
+      }
+    },
+    "ListaVersiones": {
+      "type": "object",
+      "properties": {
+        "versiones": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VersionInstrumento"
+          }
+        },
+        "paginacion": {
+          "$ref": "#/$defs/Paginacion"
+        },
+        "desde_cache": {
+          "type": "boolean",
+          "description": "La respuesta salió de Redis."
+        }
+      }
+    },
+    "ListaReactivos": {
+      "type": "object",
+      "properties": {
+        "reactivos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Reactivo"
+          }
+        },
+        "paginacion": {
+          "$ref": "#/$defs/Paginacion"
+        },
+        "desde_cache": {
+          "type": "boolean",
+          "description": "La respuesta salió de Redis."
+        }
+      }
+    },
+    "ListaReactivosVersion": {
+      "type": "object",
+      "properties": {
+        "reactivos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReactivoDeVersion"
+          }
+        },
+        "paginacion": {
+          "$ref": "#/$defs/Paginacion"
+        },
+        "desde_cache": {
+          "type": "boolean",
+          "description": "La respuesta salió de Redis."
+        }
+      }
+    }
+  }
+}

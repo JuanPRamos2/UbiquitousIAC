@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titulo %}Enviar notificación{% endblock %}
+{% block contenido %}
+<h1>Enviar una notificación</h1>
+<p class="subtitulo">A una unidad completa o a nadie en particular.</p>
+
+<p><a class="btn btn-plano" href="{{ url_for('notificaciones.bandeja') }}">← Bandeja</a></p>
+
+<div class="aviso aviso-medio">
+  <strong>El mensaje no puede contener cifras decimales.</strong>
+  El servicio lo rechaza con <code>CIFRA_NO_PERMITIDA</code>, y es a
+  propósito: un valor de bienestar enviado por esta vía llegaría sin ruido
+  de Laplace, sin comprobar el umbral <em>k</em> y sin descontar nada del
+  presupuesto de épsilon. El mecanismo de privacidad diferencial solo
+  protege si <em>todas</em> las salidas pasan por él. Describe la situación
+  en palabras y remite al panel para el detalle.
+</div>
+
+<form method="post" action="{{ url_for('notificaciones.enviar') }}" class="formulario">
+  <div class="campo">
+    <label for="tipo">Tipo</label>
+    <select id="tipo" name="tipo" required>
+      <option value="CAMPANIA_ABIERTA">Campaña abierta</option>
+      <option value="RECORDATORIO_ENCUESTA">Recordatorio de encuesta</option>
+      <option value="CONDICION_DETECTADA">Condición detectada</option>
+      <option value="PLAN_APROBADO">Plan de intervención aprobado</option>
+      <option value="CONSENTIMIENTO_POR_VENCER">Consentimiento por vencer</option>
+    </select>
+  </div>
+  <div class="campo">
+    <label for="titulo">Título</label>
+    <input id="titulo" name="titulo" required minlength="5" maxlength="120">
+  </div>
+  <div class="campo">
+    <label for="mensaje">Mensaje</label>
+    <textarea id="mensaje" name="mensaje" required minlength="10" rows="4"
+              placeholder="El motor de reglas detectó una condición sostenida en tu unidad. Revisa el panel para el detalle."></textarea>
+  </div>
+  <div class="campo">
+    <label for="unidad_organizacional_id">Unidad destinataria</label>
+    <select id="unidad_organizacional_id" name="unidad_organizacional_id">
+      <option value="">— sin unidad —</option>
+      {% for u in unidades %}
+        <option value="{{ u.unidad_organizacional_id }}">{{ u.nombre }}</option>
+      {% endfor %}
+    </select>
+    <small class="tenue">Se resuelven los usuarios con alcance en esa unidad.
+      Nunca se notifica a una persona por su resultado individual: no existe
+      tal resultado.</small>
+  </div>
+  <div class="campo">
+    <label for="campania_id">Campaña (opcional)</label>
+    <select id="campania_id" name="campania_id">
+      <option value="">— ninguna —</option>
+      {% for c in campanias %}
+        <option value="{{ c.campania_id }}">{{ c.campania_id }} — {{ c.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-primario" type="submit">Enviar</button>
+</form>
+{% endblock %}

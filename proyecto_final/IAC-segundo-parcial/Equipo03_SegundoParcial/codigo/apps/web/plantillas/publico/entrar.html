@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Iniciar sesión — Bienestar Laboral{% endblock %}
+{% block contenido %}
+<div class="login-card">
+  <div class="login-brand">
+    <div>
+      <div class="brand-mark">Nexum Servicios Corporativos</div>
+      <h1>Plataforma de Bienestar Laboral</h1>
+      <p>Tus respuestas se guardan bajo un seudónimo. Ni tu jefe directo ni Recursos Humanos pueden ver lo que contestaste de forma individual.</p>
+    </div>
+    <div class="brand-foot">
+      Cumple NOM-035-STPS-2018 y la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
+    </div>
+  </div>
+  <div class="login-form">
+    <h2>Iniciar sesión</h2>
+    <p class="sub">Usa tu correo institucional.</p>
+    <form method="post" novalidate>
+      <input type="hidden" name="siguiente" value="{{ siguiente }}">
+      <div class="field">
+        <label for="correo">Correo</label>
+        <input type="email" id="correo" name="correo" required autofocus
+               autocomplete="username" placeholder="nombre.apellido@nexum.com.mx">
+      </div>
+      <div class="field">
+        <label for="contrasena">Contraseña</label>
+        <input id="contrasena" name="contrasena" type="password" required
+               autocomplete="current-password" {% if ambiente == 'developer' %}value="demo123"{% endif %}>
+      </div>
+      <button class="btn btn-full" type="submit">Entrar</button>
+    </form>
+    <p style="margin-top:14px;font-size:13.5px"><a href="{{ url_for('publico.inicio') }}">← Volver al inicio</a></p>
+    {% if ambiente == 'developer' %}
+    <div class="demo-hint">
+      <strong>Cuentas de demostración.</strong> Las cinco usan la contraseña <strong>demo123</strong>.
+      El menú y los datos cambian según el perfil.
+      <table>
+        <tr><td>Colaborador</td><td>ana.perez@nexum.com.mx</td></tr>
+        <tr><td>Líder de unidad</td><td>lucia.hernandez@nexum.com.mx</td></tr>
+        <tr><td>Especialista</td><td>mariana.solis@nexum.com.mx</td></tr>
+        <tr><td>Auditor</td><td>roberto.garcia@nexum.com.mx</td></tr>
+        <tr><td>Administrador</td><td>carlos.ramirez@nexum.com.mx</td></tr>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

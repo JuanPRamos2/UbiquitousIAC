@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="response">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="success" type="xs:boolean"/>
+        <xs:element name="message" type="xs:string"/>
+        <xs:element name="data" type="grafica"/>
+        <xs:element name="meta" type="metaConsulta" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="grafica">
+    <xs:sequence>
+      <xs:element name="categories" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="category" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="series" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="serie" type="serie" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="nota" type="xs:string" minOccurs="0"/>
+      <xs:element name="unidad_organizacional_id" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="serie">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="data" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="point" minOccurs="0" maxOccurs="unbounded">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:pattern value="|-?\d+(\.\d+)?"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="metaConsulta">
+    <xs:sequence>
+      <xs:element name="cache">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="HIT"/>
+            <xs:enumeration value="MISS"/>
+            <xs:enumeration value="BYPASS"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="servicio" type="xs:string"/>
+      <xs:element name="correlacion_id" type="xs:string" minOccurs="0"/>
+      <xs:element name="clave_cache" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
