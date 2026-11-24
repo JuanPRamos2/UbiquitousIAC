@@ -192,6 +192,12 @@ def test_una_escritura_a_medias_no_deja_un_archivo_valido_a_medias(almacen_tempo
 # El servicio lo expone de verdad
 # =========================================================================
 
+def test_sin_bucket_no_hay_url_firmada(monkeypatch):
+    monkeypatch.delenv("GCS_BUCKET", raising=False)
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+    assert archivos.url_firmada("a" * 64) is None
+
+
 def test_documents_service_expone_la_carga_y_la_descarga():
     fuente = open(os.path.join(SERVICIO, "app.py"), encoding="utf-8").read()
     assert '/archivos"' in fuente or "/archivos'" in fuente
@@ -199,6 +205,7 @@ def test_documents_service_expone_la_carga_y_la_descarga():
     assert "archivos.validar" in fuente, (
         "El endpoint tiene que validar con el modulo, no reimplementarlo.")
     assert "archivos.leer" in fuente
+    assert "/archivos/<sha256>/url" in fuente
 
 
 def test_el_portal_ya_no_valida_por_su_cuenta():

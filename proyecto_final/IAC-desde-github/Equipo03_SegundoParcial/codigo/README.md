@@ -25,6 +25,23 @@ de épsilon. Ver `db/migraciones/001_rol_motor_y_funciones_definer.sql`.
 
 ---
 
+## Despliegue compartido en Google Cloud
+
+La copia que usa el equipo no es el Docker de una laptop. Es la máquina
+`nexum-equipo03` del proyecto `proyecto-prueba-610248`. El portal queda en
+<https://34.41.26.94.sslip.io>.
+
+Esa máquina aplica dos archivos de este repositorio, además del compose de
+developer:
+
+- `docker-compose.gcp.yml` cierra los puertos de las bases y guarda las
+  evidencias en el bucket `nexum-610248-evidencias`.
+- `infra/caddy/Caddyfile` publica el portal por HTTPS.
+
+La llave `signer.json` no se versiona. Sin ella el portal sigue sirviendo;
+lo que no se puede firmar es la URL temporal de un archivo. Quien despliega
+la guarda en la virtual, en `/opt/nexum/signer.json`.
+
 ## Arranque rápido
 
 Un comando, sin variables que recordar:

@@ -1,0 +1,81 @@
+# Capa de Google Cloud. Se usa encima del compose de developer, en la
+# máquina nexum-equipo03, y no en la laptop de cada integrante:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gcp.yml up -d --build
+#
+# El portal queda solo en 127.0.0.1:8000. Caddy, en el puerto 443, es quien
+# lo publica. Las bases y los microservicios no se publican al exterior:
+# entre ellos se hablan por la red interna de Docker.
+#
+# La llave signer.json NO está en este repositorio. Vive en la virtual, en
+# /opt/nexum/signer.json, y se monta dentro de documents-service.
+
+services:
+  datos:
+    ports: !reset []
+  cache:
+    ports: !reset []
+  documentos:
+    ports: !reset []
+
+  web:
+    ports: !override
+      - "127.0.0.1:8000:8000"
+    volumes: !override
+      - /mnt/evidencias:/var/lib/bienestar/evidencias
+
+  auth-service:
+    ports: !reset []
+  users-service:
+    ports: !reset []
+  catalog-service:
+    ports: !reset []
+  main-process-service:
+    ports: !reset []
+  documents-service:
+    environment:
+      ALMACEN_EVIDENCIAS: /var/lib/bienestar/evidencias
+      GCS_BUCKET: nexum-610248-evidencias
+      GOOGLE_APPLICATION_CREDENTIALS: /run/gcp/signer.json
+    volumes:
+      - /mnt/evidencias:/var/lib/bienestar/evidencias
+      - /opt/nexum/signer.json:/run/gcp/signer.json:ro
+    ports: !reset []
+  notifications-service:
+    ports: !reset []
+  queries-service:
+    ports: !reset []
+  reports-service:
+    ports: !reset []
+  algorithms-service:
+    ports: !reset []
+  trends-service:
+    ports: !reset []
+  interventions-service:
+    ports: !reset []
+  export-service:
+    ports: !reset []
+  configuration-service:
+    ports: !reset []
+  monitoring-service:
+    ports: !reset []
+  sync-service:
+    ports: !reset []
+  integration-service:
+    ports: !reset []
+  consent-service:
+    ports: !reset []
+  privacy-service:
+    ports: !reset []
+  survey-service:
+    ports: !reset []
+  indicators-service:
+    ports: !reset []
+  support-service:
+    ports: !reset []
+  organizational-service:
+    ports: !reset []
+  audit-service:
+    ports: !reset []
+  data-governance-service:
+    ports: !reset []

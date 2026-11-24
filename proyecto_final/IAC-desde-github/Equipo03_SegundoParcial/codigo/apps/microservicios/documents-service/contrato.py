@@ -156,6 +156,20 @@ RUTAS = {
         "responses": dict({"200": {"description": "El archivo"}},
                           **RESPUESTAS_ERROR)}},
 
+    "/api/v1/documentos/archivos/{sha256}/url": {"get": {
+        "tags": ["Documentos"],
+        "summary": "URL firmada y temporal para un archivo privado",
+        "description":
+            "Devuelve una direccion de Cloud Storage que vence a los 10 "
+            "minutos. Solo existe en el despliegue de Google, donde el "
+            "archivo vive en el bucket. En developer responde 409 y el "
+            "cliente usa la descarga directa.",
+        "parameters": [{"name": "sha256", "in": "path", "required": True,
+                        "schema": {"type": "string",
+                                   "pattern": "^[0-9a-f]{64}$"}}],
+        "responses": dict({"200": {"description": "Direccion temporal"}},
+                          **RESPUESTAS_ERROR)}},
+
     "/api/v1/documentos/evidencia-apoyo": {"post": {
         "tags": ["Documentos"],
         "summary": "Adjunta una foto a la solicitud de apoyo de quien llama",

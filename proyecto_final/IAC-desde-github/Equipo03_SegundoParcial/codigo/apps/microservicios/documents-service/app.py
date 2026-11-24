@@ -369,6 +369,31 @@ def subir_archivo():
                      201, raiz="documento_creado")
 
 
+@app.get(f"{BASE}/archivos/<sha256>/url")
+@requiere_permiso("INTERVENCION_SEGUIMIENTO", "INTERVENCION_APROBAR",
+                  "CONSENT_EVIDENCIA_AUDIT", "BITACORA_CONSULTAR")
+def url_de_archivo(sha256):
+    """Dirección temporal para un archivo privado del bucket.
+
+    Solo existe cuando el servicio tiene GCS_BUCKET y la llave de firma.
+    En developer no hay bucket: se responde 409 y el cliente usa la
+    descarga directa.
+    """
+    limite_consumo(maximo=60)
+    if not re.fullmatch(r"[0-9a-f]{64}", sha256 or ""):
+        raise ErrorApi("PARAMETRO_INVALIDO",
+                       "El sello tiene que ser un SHA-256 en hexadecimal.", 400)
+    url = archivos.url_firmada(sha256)
+    if not url:
+        raise ErrorApi(
+            "URL_NO_DISPONIBLE",
+            "Este ambiente no firma direcciones. El archivo se descarga "
+            "por el servicio.", 409)
+    _bitacora("EVIDENCIA_DESCARGADA", "EXITO", recurso=sha256)
+    return responder({"sha256": sha256, "url": url, "expira_en_segundos": 600},
+                     200, raiz="url_firmada")
+
+
 @app.get(f"{BASE}/archivos/<sha256>")
 @requiere_permiso("INTERVENCION_SEGUIMIENTO", "INTERVENCION_APROBAR",
                   "CONSENT_EVIDENCIA_AUDIT", "BITACORA_CONSULTAR")

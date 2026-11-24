@@ -196,6 +196,26 @@ def guardar(contenido, sha256):
     return True
 
 
+def url_firmada(sha256, minutos=10):
+    """URL temporal de Cloud Storage, o None si este ambiente no firma.
+
+    En developer el archivo se descarga por el propio servicio. En la
+    máquina de Google, GCS_BUCKET y la llave de la cuenta de servicio
+    permiten entregar el archivo sin abrirlo al mundo: la dirección deja
+    de servir cuando vence.
+    """
+    bucket = os.environ.get("GCS_BUCKET", "").strip()
+    llave = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+    if not bucket or not llave or not os.path.isfile(llave):
+        return None
+    from datetime import timedelta
+    from google.cloud import storage
+    cliente = storage.Client.from_service_account_json(llave)
+    blob = cliente.bucket(bucket).blob(f"{sha256[:2]}/{sha256[2:4]}/{sha256}")
+    return blob.generate_signed_url(
+        version="v4", expiration=timedelta(minutes=minutos), method="GET")
+
+
 def leer(sha256):
     """Devuelve el contenido, o lanza si no está o si fue alterado."""
     ruta = ruta_de(sha256)

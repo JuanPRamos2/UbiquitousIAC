@@ -1,0 +1,6 @@
+# Portal público de la máquina nexum-equipo03.
+# sslip.io convierte el nombre en la IP 34.41.26.94, y Caddy pide el
+# certificado a Let's Encrypt. Si la IP reservada cambia, cambia esta línea.
+34.41.26.94.sslip.io {
+    reverse_proxy 127.0.0.1:8000
+}

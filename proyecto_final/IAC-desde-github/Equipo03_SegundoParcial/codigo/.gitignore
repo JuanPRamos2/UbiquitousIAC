@@ -5,6 +5,8 @@ infra/ambientes/*.env
 # Secretos
 infra/secretos/*
 !infra/secretos/LEEME.txt
+signer.json
+**/signer.json
 
 # Certificados
 *.pem

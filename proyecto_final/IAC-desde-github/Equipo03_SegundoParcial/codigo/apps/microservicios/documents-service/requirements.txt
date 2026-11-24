@@ -4,3 +4,4 @@ PyJWT==2.8.0
 redis==5.0.4
 psycopg2-binary==2.9.9
 pymongo==4.8.0
+google-cloud-storage==2.19.0
