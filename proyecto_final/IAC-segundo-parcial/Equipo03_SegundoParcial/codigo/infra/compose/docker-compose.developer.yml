@@ -21,10 +21,13 @@ services:
       # supresiones, y un plan de intervención con seguimiento). Sin los
       # tres últimos, el portal levanta con pantallas vacías y no se puede
       # demostrar nada.
-      - ../../db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/08_semilla_02.sql:ro
-      - ../../db/semilla/03_campania_abierta_demo.sql:/docker-entrypoint-initdb.d/09_semilla_03.sql:ro
-      - ../../db/semilla/04_agregados_y_riesgo_demo.sql:/docker-entrypoint-initdb.d/10_semilla_04.sql:ro
-      - ../../db/semilla/05_intervencion_demo.sql:/docker-entrypoint-initdb.d/11_semilla_05.sql:ro
+      # 91–94, no 08–11: las migraciones ocupan 03–19 y los permisos
+      # van en 90. Con el prefijo viejo la semilla corría a la mitad de
+      # las migraciones y el arranque abortaba antes de los permisos.
+      - ../../db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/91_semilla.sql:ro
+      - ../../db/semilla/03_campania_abierta_demo.sql:/docker-entrypoint-initdb.d/92_semilla.sql:ro
+      - ../../db/semilla/04_agregados_y_riesgo_demo.sql:/docker-entrypoint-initdb.d/93_semilla.sql:ro
+      - ../../db/semilla/05_intervencion_demo.sql:/docker-entrypoint-initdb.d/94_semilla.sql:ro
     networks:
       - privada
       - publica          # solo en developer, para poder conectarse desde el host

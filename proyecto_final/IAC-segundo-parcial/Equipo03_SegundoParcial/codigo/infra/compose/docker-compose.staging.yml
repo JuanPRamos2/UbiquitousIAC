@@ -15,7 +15,9 @@ services:
 
   datos:
     volumes:
-      - ../../db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/02_volumen_sintetico.sql:ro
+      # Después de migraciones (03–19) y permisos (90). El prefijo 02
+      # la ejecutaba antes de que existieran los objetos de las migraciones.
+      - ../../db/semilla/02_volumen_sintetico.sql:/docker-entrypoint-initdb.d/91_semilla.sql:ro
     deploy:
       resources:
         limits:

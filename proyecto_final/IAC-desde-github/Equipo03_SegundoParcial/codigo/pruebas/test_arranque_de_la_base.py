@@ -35,6 +35,10 @@ COMPOSES = [
     os.path.join(RAIZ, "docker-compose.yml"),
     os.path.join(RAIZ, "infra", "compose", "docker-compose.base.yml"),
 ]
+COMPOSES_CON_SEMILLA = COMPOSES + [
+    os.path.join(RAIZ, "infra", "compose", "docker-compose.developer.yml"),
+    os.path.join(RAIZ, "infra", "compose", "docker-compose.staging.yml"),
+]
 
 
 def archivos_de(carpeta, extension=".sql"):
@@ -53,6 +57,53 @@ def test_el_compose_monta_todas_las_migraciones(compose):
         f"{os.path.basename(compose)} no monta estas migraciones: {faltan}. "
         f"Una base creada con este archivo levanta y falla al primer uso "
         f"real; la sonda de salud no lo detecta.")
+
+
+@pytest.mark.parametrize("compose", COMPOSES, ids=lambda p: os.path.basename(p))
+def test_el_compose_monta_el_esquema_antes_de_las_migraciones(compose):
+    """Sin 00 y 01 la migración 001 aborta y el volumen queda vacío.
+
+    Postgres solo ejecuta initdb.d al crear el directorio de datos. Si el
+    primer script falla, el contenedor reinicia, ve el directorio ya
+    escrito y se salta el resto. pg_isready responde igual, así que la
+    sonda dice healthy sobre una base sin tablas.
+    """
+    if not os.path.exists(compose):
+        pytest.skip(f"no existe {compose}")
+    texto = open(compose, encoding="utf-8").read()
+    for obligatorio in ("00_rol_aplicacion.sh", "01_esquema.sql"):
+        assert obligatorio in texto, (
+            f"{os.path.basename(compose)} no monta {obligatorio}. "
+            f"La migración 001 hace GRANT sobre esquemas que crea "
+            f"01_esquema.sql; sin ese archivo el arranque aborta y la "
+            f"base queda vacía.")
+    assert texto.index("00_rol_aplicacion.sh") < texto.index("01_esquema.sql") < texto.index(
+        "001_rol_motor_y_funciones_definer.sql"), (
+        "El orden de initdb.d tiene que ser rol, esquema y después "
+        "migraciones. Cualquier otro orden aborta el arranque.")
+
+
+@pytest.mark.parametrize("compose", COMPOSES_CON_SEMILLA, ids=lambda p: os.path.basename(p))
+def test_la_semilla_se_monta_despues_de_permisos(compose):
+    """El entrypoint ordena initdb.d por el nombre de destino, no por el de origen.
+
+    Un destino 08_semilla corre entre las migraciones 08 y 09. La semilla
+    inserta sobre objetos que crean migraciones posteriores y el script
+    aborta; el volumen queda a medias y pg_isready sigue diciendo que sí.
+    """
+    if not os.path.exists(compose):
+        pytest.skip(f"no existe {compose}")
+    texto = open(compose, encoding="utf-8").read()
+    montajes = re.findall(
+        r"docker-entrypoint-initdb\.d/(\d{2}[^:\s]*)", texto)
+    semillas = [m for m in montajes if "semilla" in m]
+    if not semillas:
+        pytest.skip("este compose no monta semilla")
+    for destino in semillas:
+        prefijo = int(destino[:2])
+        assert prefijo > 90, (
+            f"{os.path.basename(compose)} monta la semilla como {destino}. "
+            f"Tiene que ir después de 90_permisos.sh.")
 
 
 @pytest.mark.parametrize("compose", COMPOSES, ids=lambda p: os.path.basename(p))

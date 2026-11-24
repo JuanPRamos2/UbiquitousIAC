@@ -35,7 +35,7 @@ export async function listarUnidades({ activa = null, actor = null, dbPg = null 
     params.push(permitidas);
   }
 
-  sql += ` ORDER BY nivel, nombre`;
+  sql += ` ORDER BY nivel_jerarquico, nombre`;
   const filas = await queryPg(sql, params);
   return filas;
 }
@@ -78,7 +78,7 @@ export async function obtenerArbolJerarquico(id, { actor = null, dbPg = null } =
          JOIN arbol a ON u.unidad_padre_id = a.unidad_organizacional_id
         WHERE u.activa = true
      )
-     SELECT * FROM arbol ORDER BY profundidad, nivel, nombre`,
+     SELECT * FROM arbol ORDER BY profundidad, nivel_jerarquico, nombre`,
     [uId]
   );
 

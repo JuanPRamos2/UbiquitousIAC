@@ -88,6 +88,14 @@ services:
       # al primer uso real, y la sonda de salud no lo detectaba. Hay una
       # prueba que recorre la carpeta y falla si falta alguna: es la que
       # avisó cuando se agregaron la 009 y la 010.
+      #
+      # El esquema va ANTES de las migraciones. La 001 otorga privilegios
+      # sobre autoreporte, agregado y el resto; si el volumen se crea sin
+      # 00 y 01, esa migración aborta, Postgres reinicia con el directorio
+      # ya escrito y se salta el resto. La sonda queda en healthy y la
+      # base no tiene tablas.
+      - ./db/esquema/00_rol_aplicacion.sh:/docker-entrypoint-initdb.d/00_rol_aplicacion.sh:ro
+      - ./db/esquema/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
       - ./db/migraciones/001_rol_motor_y_funciones_definer.sql:/docker-entrypoint-initdb.d/03_mig_001.sql:ro
       - ./db/migraciones/002_acciones_del_sistema_web.sql:/docker-entrypoint-initdb.d/04_mig_002.sql:ro
       - ./db/migraciones/003_registrar_autoreporte.sql:/docker-entrypoint-initdb.d/05_mig_003.sql:ro
